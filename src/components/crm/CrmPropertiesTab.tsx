@@ -13,7 +13,10 @@ import {
   Trash2,
   AlertTriangle,
   X,
-  CheckCircle2
+  CheckCircle2,
+  Shield,
+  ShieldCheck,
+  ShieldAlert
 } from 'lucide-react';
 import Image from 'next/image';
 import { AddPropertyModal, EditPropertyModal } from '@/components/admin/Modals';
@@ -37,6 +40,9 @@ export function CrmPropertiesTab() {
   const [isExcelOpen, setIsExcelOpen] = useState(false);
   const [isDeleteAllOpen, setIsDeleteAllOpen] = useState(false);
   const [isDeletingAll, setIsDeletingAll] = useState(false);
+  const [tempSafeIds, setTempSafeIds] = useState<Set<number | string>>(new Set());
+  const [modalSearchTerm, setModalSearchTerm] = useState('');
+  const [showPropertySelector, setShowPropertySelector] = useState(true);
   const [notificationMsg, setNotificationMsg] = useState<string | null>(null);
 
   const fetchProperties = () => {
@@ -106,16 +112,83 @@ export function CrmPropertiesTab() {
     }
   };
 
+  const handleTogglePropertySafe = async (prop: any) => {
+    const newVal = !prop.isSafe;
+    // Optimistic UI update
+    setProperties((prev) =>
+      prev.map((p) => (String(p.id) === String(prop.id) ? { ...p, isSafe: newVal } : p))
+    );
+    try {
+      const res = await fetch(`/api/admin/properties/${prop.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isSafe: newVal })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setNotificationMsg(
+          newVal
+            ? `🛡️ Property "${prop.name || 'Listing'}" is now marked SAFE & protected from deletion!`
+            : `Property "${prop.name || 'Listing'}" safe protection removed.`
+        );
+        setTimeout(() => setNotificationMsg(null), 4000);
+        fetchProperties();
+      } else {
+        alert(data.error || 'Failed to update safe status');
+        fetchProperties();
+      }
+    } catch (e: any) {
+      console.error(e);
+      fetchProperties();
+    }
+  };
+
+  const handleOpenDeleteAllModal = () => {
+    if (properties.length === 0) {
+      alert('No properties available to delete.');
+      return;
+    }
+    const safeSet = new Set(properties.filter((p) => p.isSafe).map((p) => p.id));
+    setTempSafeIds(safeSet);
+    setModalSearchTerm('');
+    setShowPropertySelector(true);
+    setIsDeleteAllOpen(true);
+  };
+
+  const handleToggleTempSafe = (id: number | string) => {
+    setTempSafeIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleSelectAllTempSafe = (makeSafe: boolean) => {
+    if (makeSafe) {
+      setTempSafeIds(new Set(properties.map((p) => p.id)));
+    } else {
+      setTempSafeIds(new Set());
+    }
+  };
+
   const handleDeleteProperty = async (prop: any) => {
+    if (prop.isSafe) {
+      alert(`Property "${prop.name || 'Listing'}" is marked as SAFE and protected from deletion. Please remove its Safe status first if you wish to delete it.`);
+      return;
+    }
     if (!confirm('Are you sure you want to delete this property?')) return;
     try {
       const res = await fetch(`/api/admin/properties/${prop.id}`, {
         method: 'DELETE'
       });
-      if (res.ok) {
+      const data = await res.json();
+      if (res.ok && data.success) {
         fetchProperties();
         setNotificationMsg(`✓ Deleted property "${prop.name || 'Listing'}".`);
         setTimeout(() => setNotificationMsg(null), 4000);
+      } else {
+        alert(data.error || 'Failed to delete property');
       }
     } catch (e) {
       console.error(e);
@@ -123,17 +196,48 @@ export function CrmPropertiesTab() {
   };
 
   const handleDeleteAllProperties = async () => {
+    const safeIdsArray = Array.from(tempSafeIds);
+    const toDeleteCount = properties.length - safeIdsArray.length;
+
+    if (toDeleteCount <= 0) {
+      alert('All properties are marked as SAFE! There are no unprotected properties to delete. If you want to delete properties, deselect them from Safe.');
+      return;
+    }
+
+    const confirmMsg = safeIdsArray.length > 0
+      ? `Are you sure you want to delete ${toDeleteCount} unprotected properties?\n\n🛡️ ${safeIdsArray.length} SAFE properties will be kept intact and NOT deleted.`
+      : `Are you sure you want to permanently delete ALL ${properties.length} properties? This cannot be undone!`;
+
+    if (!confirm(confirmMsg)) return;
+
     setIsDeletingAll(true);
     try {
+      // First, persist any newly marked safe properties in DB
+      for (const safeId of safeIdsArray) {
+        const prop = properties.find((p) => String(p.id) === String(safeId));
+        if (prop && !prop.isSafe) {
+          await fetch(`/api/admin/properties/${safeId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ isSafe: true })
+          }).catch(() => {});
+        }
+      }
+
       const res = await fetch('/api/admin/properties', {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ safeIds: safeIdsArray })
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        setProperties([]);
         setIsDeleteAllOpen(false);
-        setNotificationMsg(`✓ Successfully deleted all ${data.deletedCount ?? properties.length} properties.`);
-        setTimeout(() => setNotificationMsg(null), 4000);
+        fetchProperties();
+        setNotificationMsg(
+          data.message ||
+          `✓ Successfully deleted ${data.deletedCount} properties. ${data.safePreservedCount || safeIdsArray.length} safe properties were preserved and NOT deleted!`
+        );
+        setTimeout(() => setNotificationMsg(null), 5000);
       } else {
         alert(data.error || 'Failed to delete all properties');
       }
@@ -217,6 +321,12 @@ export function CrmPropertiesTab() {
                 <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-zinc-100 text-zinc-700 border border-zinc-200">
                   {properties.length} {properties.length === 1 ? 'Property' : 'Properties'}
                 </span>
+                {properties.some((p) => p.isSafe) && (
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1 shadow-2xs">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                    {properties.filter((p) => p.isSafe).length} Safe Protected
+                  </span>
+                )}
               </div>
               <p className="text-xs text-zinc-500">Live catalog for sales advisors</p>
             </div>
@@ -227,9 +337,9 @@ export function CrmPropertiesTab() {
             {/* Delete All Button (Danger) */}
             {properties.length > 0 && (
               <button
-                onClick={() => setIsDeleteAllOpen(true)}
+                onClick={handleOpenDeleteAllModal}
                 className="flex items-center gap-1.5 px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/80 rounded-xl text-xs font-semibold transition cursor-pointer shadow-2xs whitespace-nowrap"
-                title="Delete all properties from database"
+                title="Delete all properties with Safe Property protection"
               >
                 <Trash2 className="w-3.5 h-3.5 text-rose-600" />
                 <span>Delete All</span>
@@ -321,27 +431,231 @@ export function CrmPropertiesTab() {
 
       {/* Delete All Confirmation Modal */}
       {isDeleteAllOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl w-full max-w-md p-6 border border-zinc-200 shadow-2xl relative animate-in zoom-in-95 duration-200">
-            <div className="w-12 h-12 rounded-2xl bg-rose-100 border border-rose-200 flex items-center justify-center text-rose-600 mb-4 shadow-2xs">
-              <Trash2 className="w-6 h-6" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] p-5 sm:p-6 border border-zinc-200 shadow-2xl relative animate-in zoom-in-95 duration-200 flex flex-col overflow-hidden">
+            {/* Top header */}
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-rose-100 border border-rose-200 flex items-center justify-center text-rose-600 shadow-2xs">
+                  <Trash2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-zinc-900 leading-tight">
+                    Delete All Properties?
+                  </h3>
+                  <p className="text-xs text-zinc-500 mt-0.5">
+                    Select properties to keep safe before performing bulk deletion
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsDeleteAllOpen(false)}
+                className="p-1.5 rounded-xl text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
-            <h3 className="text-lg font-bold text-zinc-900">
-              Delete All Properties?
-            </h3>
-            <p className="text-xs text-zinc-500 mt-1.5 leading-relaxed">
-              This will permanently delete all <strong className="text-zinc-900 font-semibold">{properties.length} properties</strong> from your live inventory database, including all associated photos and specifications.
-            </p>
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto py-3 space-y-3.5 pr-1">
+              {/* Prominent Badge requested by user */}
+              <div className="bg-amber-50/95 border-2 border-amber-300 rounded-2xl p-4 text-amber-950 shadow-xs">
+                <div className="flex items-start gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
+                    <ShieldAlert className="w-4 h-4" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-200 text-amber-950 text-[10px] font-black uppercase tracking-wider mb-1">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-700" />
+                      Safety Protection Badge
+                    </div>
+                    <h4 className="text-xs sm:text-sm font-extrabold text-amber-950 leading-snug">
+                      &ldquo;If you want to save some property please select the property that you want to safe&rdquo;
+                    </h4>
+                    <p className="text-[11px] text-amber-900/80 mt-1 font-medium">
+                      Select properties below to mark them as <strong className="text-emerald-800 bg-emerald-100 px-1 py-0.5 rounded font-bold">Safe</strong>. Safe properties will <u>NOT</u> be deleted!
+                    </p>
+                  </div>
+                </div>
+              </div>
 
-            <div className="p-3 my-4 bg-rose-50/80 border border-rose-200 rounded-xl text-rose-800 text-xs flex items-start gap-2.5">
-              <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-              <span>
-                <strong>Warning:</strong> This operation cannot be reversed. All property records will be wiped from your catalog.
-              </span>
+              {/* Stats overview */}
+              <div className="grid grid-cols-3 gap-2">
+                <div className="p-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-center">
+                  <span className="text-[9px] uppercase font-bold text-zinc-400 block tracking-wider">
+                    Total
+                  </span>
+                  <span className="text-base font-black text-zinc-900">
+                    {properties.length}
+                  </span>
+                </div>
+                <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-center">
+                  <span className="text-[9px] uppercase font-bold text-emerald-700 block tracking-wider">
+                    🛡️ Safe (Kept)
+                  </span>
+                  <span className="text-base font-black text-emerald-800">
+                    {tempSafeIds.size}
+                  </span>
+                </div>
+                <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-xl text-center">
+                  <span className="text-[9px] uppercase font-bold text-rose-700 block tracking-wider">
+                    ⚠️ Deleting
+                  </span>
+                  <span className="text-base font-black text-rose-800">
+                    {Math.max(0, properties.length - tempSafeIds.size)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Search & Bulk Safe Selection Bar */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
+                <div className="relative flex-1">
+                  <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Search properties to safe..."
+                    value={modalSearchTerm}
+                    onChange={(e) => setModalSearchTerm(e.target.value)}
+                    className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl border border-zinc-200 focus:outline-hidden focus:border-amber-400 bg-zinc-50"
+                  />
+                  {modalSearchTerm && (
+                    <button
+                      onClick={() => setModalSearchTerm('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-zinc-400 hover:text-zinc-600"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => handleSelectAllTempSafe(true)}
+                    className="px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 text-[11px] font-bold transition flex items-center gap-1 cursor-pointer"
+                  >
+                    <ShieldCheck className="w-3 h-3" />
+                    <span>Select All as Safe</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSelectAllTempSafe(false)}
+                    className="px-2.5 py-1.5 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-[11px] font-bold transition cursor-pointer"
+                  >
+                    <span>Clear Safe</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Property Selection List */}
+              <div className="border border-zinc-200 rounded-2xl divide-y divide-zinc-100 max-h-60 overflow-y-auto bg-white">
+                {(() => {
+                  const filteredList = properties.filter((p) => {
+                    if (!modalSearchTerm.trim()) return true;
+                    const q = modalSearchTerm.toLowerCase();
+                    const name = (p.name || p.title || '').toLowerCase();
+                    const loc = (p.location || p.address || '').toLowerCase();
+                    return name.includes(q) || loc.includes(q);
+                  });
+
+                  if (filteredList.length === 0) {
+                    return (
+                      <div className="p-6 text-center text-xs text-zinc-400">
+                        No properties found matching your search.
+                      </div>
+                    );
+                  }
+
+                  return filteredList.map((prop) => {
+                    const isSafe = tempSafeIds.has(prop.id);
+                    return (
+                      <div
+                        key={prop.id}
+                        onClick={() => handleToggleTempSafe(prop.id)}
+                        className={`p-3 flex items-center justify-between gap-2 transition cursor-pointer ${
+                          isSafe
+                            ? 'bg-emerald-50/60 hover:bg-emerald-50 border-l-4 border-l-emerald-500'
+                            : 'hover:bg-zinc-50 border-l-4 border-l-transparent'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <input
+                            type="checkbox"
+                            checked={isSafe}
+                            onChange={() => handleToggleTempSafe(prop.id)}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-zinc-300 cursor-pointer"
+                          />
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-bold text-xs text-zinc-900 truncate">
+                                {prop.name || prop.title}
+                              </span>
+                              {isSafe ? (
+                                <span className="px-1.5 py-0.5 rounded text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 inline-flex items-center gap-0.5">
+                                  <ShieldCheck className="w-2.5 h-2.5 text-emerald-600" />
+                                  Safe (Kept)
+                                </span>
+                              ) : (
+                                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                                  ⚠️ Deleting
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-[10px] text-zinc-500 mt-0.5 truncate">
+                              {prop.location || 'Pune'} &bull; {prop.priceFormatted || 'Price on Request'}
+                            </div>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleTempSafe(prop.id);
+                          }}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 shrink-0 cursor-pointer ${
+                            isSafe
+                              ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-2xs'
+                              : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
+                          }`}
+                        >
+                          <ShieldCheck className={`w-3 h-3 ${isSafe ? 'text-white' : 'text-zinc-500'}`} />
+                          <span>{isSafe ? 'Safe' : 'Save Property'}</span>
+                        </button>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+
+              {/* Warning/Confirmation Note */}
+              <div className={`p-3 rounded-xl text-xs flex items-start gap-2.5 ${
+                tempSafeIds.size > 0 
+                  ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' 
+                  : 'bg-rose-50/80 border border-rose-200 text-rose-800'
+              }`}>
+                {tempSafeIds.size > 0 ? (
+                  <>
+                    <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <span>
+                      <strong>Safe Protection Active:</strong> {tempSafeIds.size} properties are marked as Safe and will <u>NOT</u> be deleted. Only the remaining {properties.length - tempSafeIds.size} unprotected properties will be removed.
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                    <span>
+                      <strong>Warning:</strong> 0 properties selected as Safe. All {properties.length} properties will be permanently wiped from the database.
+                    </span>
+                  </>
+                )}
+              </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2.5 mt-6">
+            {/* Footer Buttons */}
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-zinc-100 mt-1">
               <button
                 type="button"
                 onClick={() => setIsDeleteAllOpen(false)}
@@ -353,13 +667,26 @@ export function CrmPropertiesTab() {
               <button
                 type="button"
                 onClick={handleDeleteAllProperties}
-                disabled={isDeletingAll}
-                className="flex items-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold transition cursor-pointer shadow-xs disabled:opacity-50"
+                disabled={isDeletingAll || properties.length - tempSafeIds.size === 0}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition cursor-pointer shadow-xs disabled:opacity-50 ${
+                  properties.length - tempSafeIds.size === 0
+                    ? 'bg-zinc-200 text-zinc-400 cursor-not-allowed shadow-none'
+                    : 'bg-rose-600 hover:bg-rose-700 text-white'
+                }`}
               >
                 {isDeletingAll ? (
                   <>
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span>Deleting All...</span>
+                    <span>Deleting Unprotected...</span>
+                  </>
+                ) : properties.length - tempSafeIds.size === 0 ? (
+                  <span>All Properties Safe (Nothing to Delete)</span>
+                ) : tempSafeIds.size > 0 ? (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>
+                      Delete {properties.length - tempSafeIds.size} Unprotected ({tempSafeIds.size} Safe Kept)
+                    </span>
                   </>
                 ) : (
                   <>
@@ -430,8 +757,16 @@ export function CrmPropertiesTab() {
                     <Building2 className="w-10 h-10 text-zinc-300" />
                   </div>
                 )}
-                <div className="absolute top-3 left-3 px-2 py-1 bg-white/90 backdrop-blur-xs rounded-md text-[10px] font-bold text-zinc-900 border border-black/5 shadow-xs">
-                  {prop.configuration || prop.pt_name || 'Commercial'}
+                <div className="absolute top-3 left-3 flex items-center gap-1.5 flex-wrap">
+                  <div className="px-2 py-1 bg-white/90 backdrop-blur-xs rounded-md text-[10px] font-bold text-zinc-900 border border-black/5 shadow-xs">
+                    {prop.configuration || prop.pt_name || 'Commercial'}
+                  </div>
+                  {prop.isSafe && (
+                    <div className="px-2 py-1 bg-emerald-600 text-white rounded-md text-[10px] font-black shadow-xs flex items-center gap-1 border border-emerald-400">
+                      <ShieldCheck className="w-3 h-3 text-emerald-200" />
+                      Safe
+                    </div>
+                  )}
                 </div>
                 {prop.status && (
                   <div className="absolute top-3 right-3 px-2 py-1 bg-amber-500 text-white rounded-md text-[10px] font-bold shadow-xs">
@@ -481,29 +816,43 @@ export function CrmPropertiesTab() {
                       <ArrowRight className="w-3 h-3 group-hover/btn:translate-x-0.5 transition-transform" />
                     </button>
                   </div>
-                  <div className="flex items-center gap-2 mt-1">
+                  <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => handleTogglePropertySafe(prop)}
+                      title={prop.isSafe ? 'Property is Safe (Protected). Click to remove Safe' : 'Mark as Safe (protect from delete all)'}
+                      className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition cursor-pointer flex items-center justify-center gap-1 border ${
+                        prop.isSafe
+                          ? 'bg-emerald-100 text-emerald-800 border-emerald-300 hover:bg-emerald-200'
+                          : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 border-zinc-200'
+                      }`}
+                    >
+                      <ShieldCheck className={`w-3.5 h-3.5 ${prop.isSafe ? 'text-emerald-600' : 'text-zinc-400'}`} />
+                      <span>{prop.isSafe ? 'Safe' : 'Make Safe'}</span>
+                    </button>
                     <button 
                       onClick={() => handleTogglePublish(prop)}
-                      className={`flex-1 py-1.5 rounded-lg text-[11px] font-bold transition cursor-pointer border ${
+                      className={`flex-1 min-w-[100px] py-1.5 rounded-lg text-[11px] font-bold transition cursor-pointer border ${
                         prop.publishStatus === 'Published'
                           ? 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 border-zinc-200'
                           : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-indigo-200'
                       }`}
                     >
-                      {prop.publishStatus === 'Published' ? 'Unpublish' : 'Publish to Website'}
+                      {prop.publishStatus === 'Published' ? 'Unpublish' : 'Publish'}
                     </button>
                     <button 
                       onClick={() => {
                         setEditingProperty(prop);
                         setIsEditOpen(true);
                       }}
-                      className="px-3 py-1.5 bg-zinc-100 text-zinc-700 hover:bg-zinc-200 border border-zinc-200 rounded-lg text-[11px] font-bold transition cursor-pointer flex items-center justify-center"
+                      className="px-2.5 py-1.5 bg-zinc-100 text-zinc-700 hover:bg-zinc-200 border border-zinc-200 rounded-lg text-[11px] font-bold transition cursor-pointer flex items-center justify-center"
                     >
                       Edit
                     </button>
                     <button 
                       onClick={() => handleDeleteProperty(prop)}
-                      className="px-3 py-1.5 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 rounded-lg text-[11px] font-bold transition cursor-pointer flex items-center justify-center"
+                      className="px-2.5 py-1.5 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 rounded-lg text-[11px] font-bold transition cursor-pointer flex items-center justify-center"
+                      title={prop.isSafe ? 'Property is Safe and protected from deletion' : 'Delete property'}
                     >
                       Delete
                     </button>
