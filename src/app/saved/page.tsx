@@ -27,7 +27,9 @@ import {
   Phone,
   Mail,
   Award,
-  Printer
+  Printer,
+  ShieldAlert,
+  X
 } from 'lucide-react';
 import { PublicHeader } from '@/components/public/PublicHeader';
 import { useSavedProperties } from '@/context/SavedPropertiesContext';
@@ -203,7 +205,17 @@ const FALLBACK_PROPERTIES: PropertyItem[] = [
 
 export default function SavedPropertiesPage() {
   const router = useRouter();
-  const { savedIds, savedCount, isSaved, toggleSave, clearSaved, currentUser } = useSavedProperties();
+  const {
+    savedIds,
+    savedCount,
+    isSaved,
+    toggleSave,
+    clearSaved,
+    clearSavedExcept,
+    isSafeSaved,
+    toggleSafeSaved,
+    currentUser
+  } = useSavedProperties();
   const { isInCompare, toggleCompare } = usePropertyComparison();
 
   const [allProperties, setAllProperties] = useState<PropertyItem[]>(FALLBACK_PROPERTIES);
@@ -214,6 +226,7 @@ export default function SavedPropertiesPage() {
   const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>('login');
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
+  const [tempSafeIds, setTempSafeIds] = useState<Set<string>>(new Set());
   const [filterType, setFilterType] = useState<'all' | 'commercial' | 'residential' | 'ready'>('all');
 
   // Load all properties to match saved IDs
@@ -474,12 +487,20 @@ export default function SavedPropertiesPage() {
                     </button>
 
                     <button
-                      onClick={() => setClearConfirmOpen(true)}
+                      onClick={() => {
+                        const safeSet = new Set(
+                          savedPropertiesRaw
+                            .filter((p) => isSafeSaved(p.id))
+                            .map((p) => String(p.id))
+                        );
+                        setTempSafeIds(safeSet);
+                        setClearConfirmOpen(true);
+                      }}
                       className="px-3 py-2 rounded-xl bg-white border border-zinc-200 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-600 text-zinc-500 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
-                      title="Clear all saved properties"
+                      title="Clear saved properties with Safe protection"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">Clear</span>
+                      <span className="hidden sm:inline">Clear All</span>
                     </button>
                   </>
                 )}
@@ -678,7 +699,13 @@ export default function SavedPropertiesPage() {
                       />
 
                       {/* Top Badges */}
-                      <div className="absolute top-3 left-3 flex items-center gap-1.5">
+                      <div className="absolute top-3 left-3 flex items-center gap-1.5 flex-wrap">
+                        {isSafeSaved(prop.id) && (
+                          <span className="bg-emerald-600/95 backdrop-blur-md text-white text-[10px] font-black px-2.5 py-1 rounded-xl shadow-md border border-emerald-400 flex items-center gap-1">
+                            <ShieldCheck className="w-3 h-3 text-emerald-200" />
+                            Safe
+                          </span>
+                        )}
                         <span className="bg-zinc-950/85 backdrop-blur-md text-white text-[11px] font-bold px-2.5 py-1 rounded-xl border border-white/20">
                           {prop.label || 'Prime Asset'}
                         </span>
@@ -786,6 +813,28 @@ export default function SavedPropertiesPage() {
                           >
                             <Heart className="w-4 h-4 fill-rose-500 text-rose-500" />
                           </button>
+
+                          {/* 3. SAFE PROPERTY BUTTON */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const wasSafe = toggleSafeSaved(prop.id);
+                              showToast(
+                                wasSafe
+                                  ? `🛡️ "${prop.name}" is marked Safe and protected from clearing!`
+                                  : `"${prop.name}" Safe protection removed.`
+                              );
+                            }}
+                            className={`px-2.5 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer border ${
+                              isSafeSaved(prop.id)
+                                ? 'bg-emerald-100 text-emerald-800 border-emerald-300 font-extrabold shadow-2xs'
+                                : 'bg-white border-zinc-200 hover:border-zinc-300 text-zinc-700 hover:bg-zinc-50'
+                            }`}
+                            title={isSafeSaved(prop.id) ? 'Property is Safe (Protected). Click to remove safe' : 'Mark as Safe (protect from delete all)'}
+                          >
+                            <ShieldCheck className={`w-3.5 h-3.5 ${isSafeSaved(prop.id) ? 'text-emerald-700' : 'text-zinc-400'}`} />
+                            <span className="hidden sm:inline">{isSafeSaved(prop.id) ? 'Safe ✓' : 'Safe'}</span>
+                          </button>
                         </div>
 
                         {/* Right Group: View Details & Instant Enquiry */}
@@ -890,37 +939,168 @@ export default function SavedPropertiesPage() {
         </div>
       </main>
 
-      {/* CLEAR ALL CONFIRMATION MODAL */}
+      {/* CLEAR ALL CONFIRMATION MODAL WITH SAFE PROPERTY PROTECTION */}
       {clearConfirmOpen && (
-        <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-sm w-full shadow-2xl border border-zinc-200 text-center space-y-4 animate-in fade-in zoom-in-95">
-            <div className="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mx-auto border border-rose-200">
-              <Trash2 className="w-6 h-6" />
-            </div>
-            <div>
-              <h4 className="font-black text-base text-zinc-950">
-                Clear Your Entire Shortlist?
-              </h4>
-              <p className="text-xs text-zinc-500 mt-1">
-                This will remove all {savedProperties.length} properties from your saved shortlist collection.
-              </p>
-            </div>
-            <div className="flex items-center gap-2 pt-2">
+        <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-zinc-200 p-5 sm:p-6 space-y-4 animate-in fade-in zoom-in-95 max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between pb-2 border-b border-zinc-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center border border-rose-200">
+                  <Trash2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="font-black text-base text-zinc-950">
+                    Clear Saved Shortlist
+                  </h4>
+                  <p className="text-[11px] text-zinc-500">
+                    Select properties to keep safe before clearing
+                  </p>
+                </div>
+              </div>
               <button
+                type="button"
+                onClick={() => setClearConfirmOpen(false)}
+                className="p-1 rounded-lg text-zinc-400 hover:text-zinc-700 transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Prominent Safety Badge Notice as requested by User */}
+            <div className="bg-amber-50/90 border-2 border-amber-300 rounded-2xl p-3.5 shadow-xs">
+              <div className="flex items-start gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 mt-0.5">
+                  <ShieldAlert className="w-4 h-4" />
+                </div>
+                <div className="flex-1">
+                  <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-200 text-amber-950 text-[10px] font-black uppercase tracking-wider mb-1">
+                    <ShieldCheck className="w-3 h-3 text-emerald-700" />
+                    Property Protection Badge
+                  </div>
+                  <p className="text-xs sm:text-sm font-extrabold text-amber-950 leading-snug">
+                    &ldquo;If you want to save some property please select the property that you want to safe&rdquo;
+                  </p>
+                  <p className="text-[11px] text-amber-900/80 mt-1">
+                    Properties marked as <strong className="text-emerald-800 bg-emerald-100 px-1 py-0.5 rounded font-bold">Safe</strong> will <u>NOT</u> be deleted from your shortlist.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Selection list */}
+            <div className="flex-1 overflow-y-auto space-y-2 max-h-60 border border-zinc-200 rounded-2xl p-2 bg-zinc-50/50">
+              <div className="flex items-center justify-between px-2 py-1 text-[11px]">
+                <span className="font-bold text-zinc-600">
+                  {tempSafeIds.size} of {savedPropertiesRaw.length} Safe
+                </span>
+                <div className="space-x-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setTempSafeIds(new Set(savedPropertiesRaw.map((p) => String(p.id))))
+                    }
+                    className="text-emerald-700 hover:underline font-bold"
+                  >
+                    Select All Safe
+                  </button>
+                  <span>&bull;</span>
+                  <button
+                    type="button"
+                    onClick={() => setTempSafeIds(new Set())}
+                    className="text-zinc-500 hover:underline"
+                  >
+                    Clear All Safe
+                  </button>
+                </div>
+              </div>
+
+              {savedPropertiesRaw.map((prop) => {
+                const idStr = String(prop.id);
+                const isSafe = tempSafeIds.has(idStr);
+                return (
+                  <div
+                    key={prop.id}
+                    onClick={() => {
+                      setTempSafeIds((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(idStr)) next.delete(idStr);
+                        else next.add(idStr);
+                        return next;
+                      });
+                    }}
+                    className={`p-2.5 rounded-xl border text-xs flex items-center justify-between gap-2 transition cursor-pointer ${
+                      isSafe
+                        ? 'bg-emerald-50 border-emerald-300 text-emerald-950 font-bold'
+                        : 'bg-white border-zinc-200 text-zinc-800 hover:bg-zinc-100/70'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      <input
+                        type="checkbox"
+                        checked={isSafe}
+                        onChange={() => {}}
+                        className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-zinc-300 pointer-events-none"
+                      />
+                      <span className="truncate">{prop.name}</span>
+                    </div>
+
+                    <span
+                      className={`px-2 py-0.5 rounded-md text-[10px] shrink-0 font-bold ${
+                        isSafe
+                          ? 'bg-emerald-200 text-emerald-900 border border-emerald-400'
+                          : 'bg-rose-50 text-rose-700 border border-rose-200'
+                      }`}
+                    >
+                      {isSafe ? '🛡️ Safe (Kept)' : '⚠️ Deleting'}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center gap-2 pt-2 border-t border-zinc-100">
+              <button
+                type="button"
                 onClick={() => setClearConfirmOpen(false)}
                 className="flex-1 py-2.5 rounded-xl border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-xs font-bold transition cursor-pointer"
               >
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={() => {
-                  clearSaved();
-                  setClearConfirmOpen(false);
-                  showToast('Your shortlist has been cleared');
+                  if (tempSafeIds.size > 0) {
+                    const toDeleteCount = savedPropertiesRaw.length - tempSafeIds.size;
+                    clearSavedExcept(Array.from(tempSafeIds));
+                    setClearConfirmOpen(false);
+                    showToast(
+                      toDeleteCount > 0
+                        ? `Removed ${toDeleteCount} properties. ${tempSafeIds.size} safe properties were not deleted!`
+                        : `All ${tempSafeIds.size} properties kept safe.`
+                    );
+                  } else {
+                    clearSaved();
+                    setClearConfirmOpen(false);
+                    showToast('Your shortlist has been cleared');
+                  }
                 }}
-                className="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-black transition cursor-pointer"
+                disabled={savedPropertiesRaw.length - tempSafeIds.size === 0}
+                className={`flex-1 py-2.5 rounded-xl text-xs font-black transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                  savedPropertiesRaw.length - tempSafeIds.size === 0
+                    ? 'bg-zinc-200 text-zinc-400 cursor-not-allowed'
+                    : 'bg-rose-600 hover:bg-rose-500 text-white'
+                }`}
               >
-                Yes, Clear All
+                {savedPropertiesRaw.length - tempSafeIds.size === 0 ? (
+                  <span>All Properties Safe</span>
+                ) : tempSafeIds.size > 0 ? (
+                  <span>
+                    Clear {savedPropertiesRaw.length - tempSafeIds.size} Unprotected
+                  </span>
+                ) : (
+                  <span>Yes, Clear All</span>
+                )}
               </button>
             </div>
           </div>

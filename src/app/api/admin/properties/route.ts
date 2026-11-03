@@ -73,6 +73,7 @@ export async function GET(req: NextRequest) {
           ...p,
           hideName: Boolean(dossier.hideName),
           hidePrice: Boolean(dossier.hidePrice),
+          isSafe: Boolean(dossier.isSafe),
           description: cleanDescription || p.description || '',
           highlights: dossier.highlights || [],
           connectivity: dossier.connectivity || [],

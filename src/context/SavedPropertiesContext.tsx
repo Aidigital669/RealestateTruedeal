@@ -6,11 +6,15 @@ import { getClientSession, setClientSession, UserProfile } from '@/lib/user-auth
 interface SavedPropertiesContextType {
   savedIds: string[];
   savedCount: number;
+  safeSavedIds: string[];
   isSaved: (propertyId: string | number) => boolean;
+  isSafeSaved: (propertyId: string | number) => boolean;
   toggleSave: (propertyId: string | number, propertyName?: string) => boolean;
+  toggleSafeSaved: (propertyId: string | number) => boolean;
   addToSaved: (propertyId: string | number) => void;
   removeFromSaved: (propertyId: string | number) => void;
   clearSaved: () => void;
+  clearSavedExcept: (keepIds: (string | number)[]) => void;
   currentUser: UserProfile | null;
   switchPatronProfile: (user: UserProfile | null) => void;
 }
@@ -19,6 +23,7 @@ const SavedPropertiesContext = createContext<SavedPropertiesContextType | undefi
 
 const GUEST_STORAGE_KEY = 'anv_saved_properties_guest';
 const LEGACY_STORAGE_KEY = 'anv_saved_properties';
+const SAFE_STORAGE_KEY = 'anv_safe_properties_list';
 
 function getStorageKeyForUser(user: UserProfile | null): string {
   if (user && (user.id || user.email)) {
@@ -30,6 +35,7 @@ function getStorageKeyForUser(user: UserProfile | null): string {
 
 export function SavedPropertiesProvider({ children }: { children: React.ReactNode }) {
   const [savedIds, setSavedIds] = useState<string[]>([]);
+  const [safeSavedIds, setSafeSavedIds] = useState<string[]>([]);
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
 
   // Load saved properties per logged-in human user
@@ -43,15 +49,12 @@ export function SavedPropertiesProvider({ children }: { children: React.ReactNod
       const storedRaw = localStorage.getItem(storageKey);
 
       if (storedRaw !== null) {
-        // User has explicit saved list stored
         const parsed: string[] = JSON.parse(storedRaw);
         setSavedIds(parsed);
       } else if (user && user.savedPropertyIds && Array.isArray(user.savedPropertyIds)) {
-        // First time human logged in with pre-seeded preferences
         setSavedIds(user.savedPropertyIds);
         localStorage.setItem(storageKey, JSON.stringify(user.savedPropertyIds));
       } else if (!user) {
-        // Check fallback legacy storage if guest
         const legacyRaw = localStorage.getItem(LEGACY_STORAGE_KEY);
         if (legacyRaw) {
           const parsed = JSON.parse(legacyRaw);
@@ -62,6 +65,17 @@ export function SavedPropertiesProvider({ children }: { children: React.ReactNod
         }
       } else {
         setSavedIds([]);
+      }
+
+      // Load safe protected IDs
+      const safeRaw = localStorage.getItem(SAFE_STORAGE_KEY);
+      if (safeRaw) {
+        try {
+          const parsedSafe = JSON.parse(safeRaw);
+          if (Array.isArray(parsedSafe)) {
+            setSafeSavedIds(parsedSafe.map(String));
+          }
+        } catch (e) {}
       }
     } catch (e) {
       console.warn('Error loading saved properties:', e);
@@ -93,7 +107,6 @@ export function SavedPropertiesProvider({ children }: { children: React.ReactNod
         const storageKey = getStorageKeyForUser(user);
         localStorage.setItem(storageKey, JSON.stringify(newList));
         
-        // If human user is logged in, sync to their cloud profile in session
         if (user) {
           const updatedUser: UserProfile = {
             ...user,
@@ -101,7 +114,6 @@ export function SavedPropertiesProvider({ children }: { children: React.ReactNod
           };
           setClientSession(updatedUser);
         } else {
-          // Keep legacy updated as well for guest compatibility
           localStorage.setItem(LEGACY_STORAGE_KEY, JSON.stringify(newList));
         }
 
@@ -112,8 +124,38 @@ export function SavedPropertiesProvider({ children }: { children: React.ReactNod
     }
   };
 
+  const persistSafe = (newSafeList: string[]) => {
+    setSafeSavedIds(newSafeList);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(SAFE_STORAGE_KEY, JSON.stringify(newSafeList));
+      } catch (e) {
+        console.warn('Error saving safe properties:', e);
+      }
+    }
+  };
+
   const isSaved = (propertyId: string | number): boolean => {
     return savedIds.includes(String(propertyId));
+  };
+
+  const isSafeSaved = (propertyId: string | number): boolean => {
+    return safeSavedIds.includes(String(propertyId));
+  };
+
+  const toggleSafeSaved = (propertyId: string | number): boolean => {
+    const idStr = String(propertyId);
+    let next: string[];
+    let wasSafe = false;
+    if (safeSavedIds.includes(idStr)) {
+      next = safeSavedIds.filter((id) => id !== idStr);
+      wasSafe = false;
+    } else {
+      next = [...safeSavedIds, idStr];
+      wasSafe = true;
+    }
+    persistSafe(next);
+    return wasSafe;
   };
 
   const toggleSave = (propertyId: string | number, propertyName?: string): boolean => {
@@ -149,17 +191,21 @@ export function SavedPropertiesProvider({ children }: { children: React.ReactNod
     persist([]);
   };
 
+  const clearSavedExcept = (keepIds: (string | number)[]) => {
+    const keepSet = new Set(keepIds.map((id) => String(id)));
+    const remaining = savedIds.filter((id) => keepSet.has(String(id)));
+    persist(remaining);
+  };
+
   const switchPatronProfile = (user: UserProfile | null) => {
     if (user) {
       setClientSession(user);
     } else {
-      // Switch to guest
       if (typeof window !== 'undefined') {
         localStorage.removeItem('anv_client_session');
         window.dispatchEvent(new Event('anv_auth_change'));
       }
     }
-    // Re-load saved properties for this new profile immediately
     setTimeout(() => loadSaved(), 50);
   };
 
@@ -168,11 +214,15 @@ export function SavedPropertiesProvider({ children }: { children: React.ReactNod
       value={{
         savedIds,
         savedCount: savedIds.length,
+        safeSavedIds,
         isSaved,
+        isSafeSaved,
         toggleSave,
+        toggleSafeSaved,
         addToSaved,
         removeFromSaved,
         clearSaved,
+        clearSavedExcept,
         currentUser,
         switchPatronProfile
       }}

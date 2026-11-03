@@ -18,6 +18,7 @@ export interface DossierData {
   rpsStatus?: string;
   hideName?: boolean;
   hidePrice?: boolean;
+  isSafe?: boolean;
 }
 
 export interface ParsedDossier {
@@ -64,7 +65,8 @@ export function parseDossierData(rawDescription: string = ''): ParsedDossier {
         possession: typeof parsed.possession === 'string' && parsed.possession.trim() ? parsed.possession.trim() : undefined,
         rpsStatus: typeof parsed.rpsStatus === 'string' && parsed.rpsStatus.trim() ? parsed.rpsStatus.trim() : undefined,
         hideName: Boolean(parsed.hideName),
-        hidePrice: Boolean(parsed.hidePrice)
+        hidePrice: Boolean(parsed.hidePrice),
+        isSafe: Boolean(parsed.isSafe)
       }
     };
   } catch (err) {
@@ -105,6 +107,9 @@ export function embedDossierData(cleanNarrative: string, dossier: DossierData): 
   }
   if (dossier.hidePrice !== undefined) {
     payload.hidePrice = Boolean(dossier.hidePrice);
+  }
+  if (dossier.isSafe !== undefined) {
+    payload.isSafe = Boolean(dossier.isSafe);
   }
 
   if (Object.keys(payload).length === 0) {
