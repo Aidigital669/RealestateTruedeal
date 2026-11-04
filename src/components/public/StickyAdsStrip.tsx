@@ -119,11 +119,6 @@ export function StickyAdsStrip() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Hide on admin or crm pages
-  if (pathname?.startsWith('/admin') || pathname?.startsWith('/crm')) {
-    return null;
-  }
-
   const checkScroll = () => {
     if (!scrollRef.current) return;
     const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
@@ -132,8 +127,11 @@ export function StickyAdsStrip() {
   };
 
   useEffect(() => {
+    if (pathname?.startsWith('/admin') || pathname?.startsWith('/crm')) {
+      return;
+    }
     checkScroll();
-  }, []);
+  }, [pathname]);
 
   const handleScroll = (direction: 'left' | 'right') => {
     if (!scrollRef.current) return;
@@ -161,6 +159,11 @@ export function StickyAdsStrip() {
     const text = encodeURIComponent(ad.ctaMessage);
     window.open(`https://wa.me/919373020701?text=${text}`, '_blank');
   };
+
+  // Hide on admin or crm pages - placed AFTER all hooks to adhere to React Rules of Hooks
+  if (pathname?.startsWith('/admin') || pathname?.startsWith('/crm')) {
+    return null;
+  }
 
   return (
     <>

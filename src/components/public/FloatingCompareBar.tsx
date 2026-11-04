@@ -11,8 +11,13 @@ export function FloatingCompareBar() {
   const pathname = usePathname();
   const { compareList, removeFromCompare, clearCompare } = usePropertyComparison();
 
-  // Don't show floating bar if comparison list is empty or if already on compare page
-  if (compareList.length === 0 || pathname === '/compare') {
+  // Don't show floating bar if comparison list is empty, on compare page, or on admin/crm portals
+  if (
+    compareList.length === 0 ||
+    pathname === '/compare' ||
+    pathname?.startsWith('/admin') ||
+    pathname?.startsWith('/crm')
+  ) {
     return null;
   }
 
