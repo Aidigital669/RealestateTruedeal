@@ -135,7 +135,7 @@ export function StickyAdsStrip() {
 
   const handleScroll = (direction: 'left' | 'right') => {
     if (!scrollRef.current) return;
-    const scrollAmount = 140;
+    const scrollAmount = scrollRef.current.clientWidth || 188;
     scrollRef.current.scrollBy({
       left: direction === 'left' ? -scrollAmount : scrollAmount,
       behavior: 'smooth'
@@ -178,10 +178,10 @@ export function StickyAdsStrip() {
             type="button"
             onClick={() => setIsMinimized(false)}
             className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-950/95 hover:bg-zinc-900 text-white border border-amber-500/30 shadow-xl backdrop-blur-md transition-all hover:scale-105 cursor-pointer"
-            title="Expand Ads"
+            title="Expand Ads-Prime"
           >
             <span className="w-2 h-2 rounded-full bg-amber-400" />
-            <span className="text-xs font-black uppercase tracking-wider text-amber-400">ADS</span>
+            <span className="text-xs font-black tracking-wide text-amber-400">Ads-Prime</span>
             <span className="text-[10px] text-zinc-400 font-semibold bg-zinc-800 px-1.5 py-0.2 rounded-full">
               {AD_ITEMS.length}
             </span>
@@ -189,10 +189,10 @@ export function StickyAdsStrip() {
         ) : (
           /* Full Sticky Strip */
           <div className="relative bg-zinc-950/95 backdrop-blur-xl border border-zinc-800/90 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.6)] p-2 sm:p-2.5 flex items-center gap-2 sm:gap-2.5 transition-all max-w-[calc(100vw-24px)]">
-            {/* Left Header Label: "ADS" */}
+            {/* Left Header Label: "Ads-Prime" */}
             <div className="flex items-center justify-center shrink-0 pr-1.5 border-r border-zinc-800/80">
-              <div className="bg-amber-400 text-zinc-950 font-black text-xs px-2.5 py-1.5 rounded-lg tracking-wider uppercase shadow-xs">
-                ADS
+              <div className="bg-gradient-to-r from-amber-400 to-amber-500 text-zinc-950 font-black text-[11px] sm:text-xs px-2.5 py-1.5 rounded-lg tracking-wide shadow-xs whitespace-nowrap">
+                Ads-Prime
               </div>
             </div>
 
@@ -208,19 +208,19 @@ export function StickyAdsStrip() {
               </button>
             )}
 
-            {/* Circles Rail: Shows ~4 Ads initially, horizontal scrolling reveals more */}
+            {/* Circles Rail: Shows exactly 3 Ads at a time, horizontal scrolling reveals more */}
             <div
               ref={scrollRef}
               onScroll={checkScroll}
-              className="flex items-center gap-2.5 sm:gap-3 overflow-x-auto scrollbar-none py-1 px-0.5 max-w-[210px] sm:max-w-[250px] scroll-smooth"
-              style={{ scrollSnapType: 'x proximity' }}
+              className="flex items-center gap-2 sm:gap-2.5 overflow-x-auto scrollbar-none py-1 px-0.5 w-[164px] sm:w-[190px] max-w-[164px] sm:max-w-[190px] scroll-smooth"
+              style={{ scrollSnapType: 'x mandatory' }}
             >
               {AD_ITEMS.map((ad) => (
                 <button
                   key={ad.id}
                   type="button"
                   onClick={() => handleOpenAd(ad)}
-                  className="flex flex-col items-center gap-1 shrink-0 group/circle cursor-pointer focus:outline-none"
+                  className="flex flex-col items-center gap-1 shrink-0 group/circle cursor-pointer focus:outline-none w-[48px] sm:w-[56px]"
                   style={{ scrollSnapAlign: 'start' }}
                   title={`${ad.name} - ${ad.tagline}`}
                 >
@@ -248,7 +248,7 @@ export function StickyAdsStrip() {
               <button
                 type="button"
                 onClick={handlePromoteClick}
-                className="flex flex-col items-center gap-1 shrink-0 group/promote cursor-pointer focus:outline-none"
+                className="flex flex-col items-center gap-1 shrink-0 group/promote cursor-pointer focus:outline-none w-[48px] sm:w-[56px]"
                 title="Advertise your business here on ANV Realty"
                 style={{ scrollSnapAlign: 'start' }}
               >
