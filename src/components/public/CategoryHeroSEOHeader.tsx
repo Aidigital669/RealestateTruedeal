@@ -81,11 +81,6 @@ export function CategoryHeroSEOHeader({
           <h1 className="text-base sm:text-lg md:text-xl font-black text-white tracking-tight leading-snug">
             {title}
           </h1>
-
-          {/* Line 3: Simple 1-line SEO Description / Tagline */}
-          <p className="text-xs sm:text-[13px] text-zinc-300 font-normal leading-relaxed max-w-4xl">
-            {category.tagline} — <span className="text-zinc-400">Verified inventory across prime corridors with 0% brokerage and direct title clearance.</span>
-          </p>
         </div>
 
         {/* Right Trust Badge (Compact) */}
