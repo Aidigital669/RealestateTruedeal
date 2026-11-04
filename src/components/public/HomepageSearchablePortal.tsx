@@ -706,7 +706,7 @@ export function HomepageSearchablePortal({
   const [showBackToSearch, setShowBackToSearch] = useState(false);
 
   // Table Header Dropdown States
-  const [activeHeaderDropdown, setActiveHeaderDropdown] = useState<'developer' | 'locality' | 'typography' | 'price' | 'status' | 'sort' | 'buyer_locality' | 'buyer_typography' | null>(null);
+  const [activeHeaderDropdown, setActiveHeaderDropdown] = useState<'developer' | 'locality' | 'typography' | 'price' | 'status' | 'sort' | 'sort_cards' | 'buyer_locality' | 'buyer_typography' | null>(null);
   const [headerSearchQuery, setHeaderSearchQuery] = useState('');
   const headerDropdownRef = useRef<HTMLDivElement>(null);
   const [expandedSortCategory, setExpandedSortCategory] = useState<'price' | 'name' | 'location' | 'area' | null>(null);
@@ -2214,9 +2214,9 @@ export function HomepageSearchablePortal({
           <div id="properties-section" className="space-y-6">
             {/* ================= 1. INSTITUTIONAL COMPARISON TABLE (SEEN FIRST) ================= */}
             {(propertyViewMode === 'table' || propertyViewMode === 'both') && sortedProperties.length > 0 && (
-              <div id="properties-table-container" className="mb-10 bg-white rounded-3xl shadow-sm border border-zinc-200 overflow-hidden w-full max-w-full">
-                <div className="bg-zinc-950 p-4 sm:p-6 text-white flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                  <div>
+              <div id="properties-table-container" className="mb-4 sm:mb-8 bg-white rounded-2xl sm:rounded-3xl shadow-sm border border-zinc-200 overflow-hidden w-full max-w-full">
+                <div className="bg-zinc-950 p-2.5 sm:p-5 text-white flex items-center justify-between gap-2">
+                  <div className="hidden sm:block">
                     <h3 className="text-lg font-bold flex items-center gap-2 tracking-tight text-white">
                       <Building2 className="w-5 h-5 text-amber-400" />
                       <span>
@@ -2224,7 +2224,7 @@ export function HomepageSearchablePortal({
                       </span>
                     </h3>
                   </div>
-                  <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
+                  <div className="flex items-center gap-1.5 sm:gap-2.5 flex-wrap ml-auto sm:ml-0">
                     {/* View Mode Switcher Pill in Table Header */}
                     <div className="inline-flex items-center p-0.5 bg-zinc-900 rounded-xl border border-zinc-800">
                       <button
@@ -2267,34 +2267,30 @@ export function HomepageSearchablePortal({
                         <span className="hidden md:inline">Both</span>
                       </button>
                     </div>
-                    {/* Dedicated Single Sort By Dropdown - MOBILE ONLY (completely hidden on sm/laptop/desktop) */}
-                    <div className="relative sm:hidden">
+
+                    {/* Dedicated Single Sort By Dropdown - ICON-ONLY TRIGGER FOR ALL SCREENS */}
+                    <div className="relative">
                       <button
                         type="button"
                         onClick={() => {
                           setActiveHeaderDropdown(activeHeaderDropdown === 'sort' ? null : 'sort');
                           setHeaderSearchQuery('');
                         }}
-                        className={`text-xs font-extrabold px-3 py-2 rounded-xl transition flex items-center gap-1.5 shadow-sm cursor-pointer ${
+                        className={`p-2 sm:px-2.5 sm:py-2 rounded-xl transition flex items-center justify-center gap-1 shadow-sm cursor-pointer ${
                           sortBy !== 'price_low'
                             ? 'bg-amber-400 text-zinc-950 font-black ring-1 ring-amber-300'
                             : 'bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-700/80'
                         }`}
-                        title="Sort properties"
+                        title={`Sort properties (Active: ${getSortLabel(sortBy)})`}
+                        aria-label="Sort properties"
                       >
-                        <ArrowUpDown className="w-3.5 h-3.5 text-amber-400" />
-                        <span>{getSortLabel(sortBy)}</span>
-                        <ChevronDown
-                          className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                            activeHeaderDropdown === 'sort' ? 'rotate-180 text-amber-400' : 'text-zinc-400'
-                          }`}
-                        />
+                        <ArrowUpDown className={`w-4 h-4 ${sortBy !== 'price_low' ? 'text-zinc-950' : 'text-amber-400'}`} />
                       </button>
 
                       {activeHeaderDropdown === 'sort' && (
                         <div
                           ref={headerDropdownRef}
-                          className="absolute left-0 top-full mt-2 z-[90] w-[calc(100vw-48px)] max-w-sm"
+                          className="absolute right-0 top-full mt-2 z-[90] w-[calc(100vw-32px)] sm:w-88 max-w-sm"
                         >
                           {renderSortDropdownContent()}
                         </div>
@@ -3531,47 +3527,78 @@ export function HomepageSearchablePortal({
                       </span>
                     </h3>
 
-                    {/* View Switcher Pill in Cards Header */}
-                    <div className="inline-flex items-center p-0.5 bg-zinc-100 rounded-xl border border-zinc-200">
-                      <button
-                        type="button"
-                        onClick={() => setPropertyViewMode('table')}
-                        className={`px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
-                          isViewMode('table')
-                            ? 'bg-zinc-950 text-white font-black shadow-xs'
-                            : 'text-zinc-600 hover:text-zinc-950'
-                        }`}
-                        title="Switch to Table Type"
-                      >
-                        <Table className="w-3.5 h-3.5 text-amber-500" />
-                        <span className="hidden sm:inline">Table Type</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPropertyViewMode('paragraph')}
-                        className={`px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
-                          isViewMode('paragraph')
-                            ? 'bg-zinc-950 text-white font-black shadow-xs'
-                            : 'text-zinc-600 hover:text-zinc-950'
-                        }`}
-                        title="Switch to Paragraph Type"
-                      >
-                        <FileText className="w-3.5 h-3.5 text-amber-500" />
-                        <span className="hidden sm:inline">Paragraph Type</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPropertyViewMode('both')}
-                        className={`px-2 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
-                          isViewMode('both')
-                            ? 'bg-zinc-950 text-white font-black shadow-xs'
-                            : 'text-zinc-600 hover:text-zinc-950'
-                        }`}
-                        title="Show Both Table & Paragraph"
-                      >
-                        <Layers className="w-3.5 h-3.5 text-amber-500" />
-                        <span className="hidden sm:inline">Both</span>
-                      </button>
+                    <div className="flex items-center gap-1.5 sm:gap-2">
+                      {/* Sort Icon Button for Cards View */}
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveHeaderDropdown(activeHeaderDropdown === 'sort_cards' ? null : 'sort_cards');
+                            setHeaderSearchQuery('');
+                          }}
+                          className={`p-1.5 sm:px-2 sm:py-1.5 rounded-xl transition flex items-center justify-center gap-1 shadow-xs cursor-pointer ${
+                            sortBy !== 'price_low'
+                              ? 'bg-amber-400 text-zinc-950 font-black ring-1 ring-amber-300'
+                              : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-800 border border-zinc-200'
+                          }`}
+                          title={`Sort properties (Active: ${getSortLabel(sortBy)})`}
+                          aria-label="Sort properties"
+                        >
+                          <ArrowUpDown className={`w-3.5 h-3.5 ${sortBy !== 'price_low' ? 'text-zinc-950' : 'text-amber-600'}`} />
+                        </button>
+
+                        {activeHeaderDropdown === 'sort_cards' && (
+                          <div
+                            ref={headerDropdownRef}
+                            className="absolute right-0 top-full mt-2 z-[90] w-[calc(100vw-32px)] sm:w-88 max-w-sm"
+                          >
+                            {renderSortDropdownContent()}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* View Switcher Pill in Cards Header */}
+                      <div className="inline-flex items-center p-0.5 bg-zinc-100 rounded-xl border border-zinc-200">
+                        <button
+                          type="button"
+                          onClick={() => setPropertyViewMode('table')}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+                            isViewMode('table')
+                              ? 'bg-zinc-950 text-white font-black shadow-xs'
+                              : 'text-zinc-600 hover:text-zinc-950'
+                          }`}
+                          title="Switch to Table Type"
+                        >
+                          <Table className="w-3.5 h-3.5 text-amber-500" />
+                          <span className="hidden sm:inline">Table Type</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPropertyViewMode('paragraph')}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+                            isViewMode('paragraph')
+                              ? 'bg-zinc-950 text-white font-black shadow-xs'
+                              : 'text-zinc-600 hover:text-zinc-950'
+                          }`}
+                          title="Switch to Paragraph Type"
+                        >
+                          <FileText className="w-3.5 h-3.5 text-amber-500" />
+                          <span className="hidden sm:inline">Paragraph Type</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPropertyViewMode('both')}
+                          className={`px-2 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+                            isViewMode('both')
+                              ? 'bg-zinc-950 text-white font-black shadow-xs'
+                              : 'text-zinc-600 hover:text-zinc-950'
+                          }`}
+                          title="Show Both Table & Paragraph"
+                        >
+                          <Layers className="w-3.5 h-3.5 text-amber-500" />
+                          <span className="hidden sm:inline">Both</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
 
