@@ -2268,15 +2268,15 @@ export function HomepageSearchablePortal({
                       </button>
                     </div>
 
-                    {/* Dedicated Single Sort By Dropdown - ICON-ONLY TRIGGER FOR ALL SCREENS */}
-                    <div className="relative">
+                    {/* Dedicated Single Sort By Dropdown - MOBILE ONLY (hidden on laptop and big screens) */}
+                    <div className="relative sm:hidden">
                       <button
                         type="button"
                         onClick={() => {
                           setActiveHeaderDropdown(activeHeaderDropdown === 'sort' ? null : 'sort');
                           setHeaderSearchQuery('');
                         }}
-                        className={`p-2 sm:px-2.5 sm:py-2 rounded-xl transition flex items-center justify-center gap-1 shadow-sm cursor-pointer ${
+                        className={`p-2 rounded-xl transition flex items-center justify-center gap-1 shadow-sm cursor-pointer ${
                           sortBy !== 'price_low'
                             ? 'bg-amber-400 text-zinc-950 font-black ring-1 ring-amber-300'
                             : 'bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-700/80'
@@ -3528,8 +3528,8 @@ export function HomepageSearchablePortal({
                     </h3>
 
                     <div className="flex items-center gap-1.5 sm:gap-2">
-                      {/* Sort Icon Button for Cards View */}
-                      <div className="relative">
+                      {/* Sort Icon Button for Cards View - Mobile Only (hidden on laptop/desktop) */}
+                      <div className="relative sm:hidden">
                         <button
                           type="button"
                           onClick={() => {
