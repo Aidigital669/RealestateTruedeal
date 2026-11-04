@@ -218,9 +218,14 @@ export function isValidProductImage(url: string): boolean {
     return false;
   }
 
-  // Filter known junk/tracking keywords
+  // Check known junk/tracking keywords (match path-level or filename-level appropriately)
+  const filename = clean.split('?')[0].split('/').pop() || clean;
   for (const junk of JUNK_IMAGE_KEYWORDS) {
-    if (clean.includes(junk)) return false;
+    if (junk.startsWith("icon") || junk.startsWith("badge") || junk.startsWith("logo") || junk.endsWith("logo.")) {
+      if (filename.includes(junk) || filename.startsWith(junk)) return false;
+    } else {
+      if (clean.includes(junk)) return false;
+    }
   }
 
   // Must not be an inline base64 image unless substantial size (> 3KB)
@@ -252,13 +257,21 @@ export function isValidProductImage(url: string): boolean {
                      clean.includes("blob.core.windows.net") ||
                      clean.includes("azureedge.net") ||
                      clean.includes("s3.amazonaws.com") ||
+                     clean.includes("cloudfront.net") ||
                      clean.includes("r2.dev") ||
                      clean.includes("supabase.co") ||
                      clean.includes("digitaloceanspaces.com") ||
                      clean.includes("googleusercontent.com") ||
+                     clean.includes("staticmb.com") ||
                      clean.includes("magicbricks") ||
+                     clean.includes("housingcdn.com") ||
                      clean.includes("housing.com") ||
                      clean.includes("99acres") ||
+                     clean.includes("nobroker") ||
+                     clean.includes("squareyards") ||
+                     clean.includes("proptiger") ||
+                     clean.includes("anvrealty") ||
+                     clean.includes("anvreealty") ||
                      clean.includes("wp-content");
 
   return hasImageExt || isImageCdn;
@@ -486,7 +499,14 @@ export function isImageRelevantToProduct(imageUrl: string, title?: string): bool
   const lowerUrl = imageUrl.toLowerCase();
   const lowerTitle = title.toLowerCase();
 
-  // Distinct flavor & product tokens
+  // If this is a real estate property, always accept valid property/architectural photos
+  const isRealEstate = /bhk|apartment|flat|residence|villa|penthouse|office|showroom|shop|warehouse|hospital|land|plot|commercial|residential|property|elevation|floorplan|amenity/i.test(lowerTitle) ||
+                       /property|realestate|project|tower|estate/i.test(lowerUrl);
+  if (isRealEstate) {
+    return true;
+  }
+
+  // Distinct flavor & product tokens for FMCG
   const productTokens = [
     "moringa", "chocolate", "choco", "mushroom", "vanilla", 
     "strawberry", "mango", "turmeric", "haldi", "ashwagandha", 

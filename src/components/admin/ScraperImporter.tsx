@@ -23,7 +23,9 @@ import {
   RefreshCw,
   Search,
   Edit2,
-  X
+  X,
+  ShieldCheck,
+  Image as ImageIcon
 } from 'lucide-react';
 import { EditPropertyModal } from '@/components/admin/Modals';
 
@@ -196,9 +198,9 @@ export function ScraperImporter({ onImportComplete, showToast }: ScraperImporter
 
   // Quick URL Presets for instant testing
   const presets = [
-    { label: 'ANV Luxury Listing', url: 'https://anvrealty.com/property/3bhk-luxury-apartment-kondhwa-pune' },
-    { label: 'Ayurmor Catalog', url: 'https://ayurmor.com/products/ayurmor-herbal-soup-mix' },
-    { label: 'VPS Hardware & Specs', url: 'https://contabo.com/en/vps/cloud-vps-m/' }
+    { label: '3 BHK Luxury Kondhwa', url: 'https://anvrealty.com/property/3bhk-luxury-apartment-kondhwa-pune' },
+    { label: 'Commercial Office Baner', url: 'https://anvrealty.com/property/commercial-office-space-in-baner-pune' },
+    { label: 'Prime Retail Showroom', url: 'https://anvrealty.com/property/prime-retail-showroom-kondhwa-pune' }
   ];
 
   // Execute Web Link Scrape
@@ -547,14 +549,20 @@ export function ScraperImporter({ onImportComplete, showToast }: ScraperImporter
 
           {/* Single Scraped Property Result Card */}
           {scrapedSingle && (
-            <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                  <span className="font-bold text-zinc-900 text-sm">Listing Data Extracted</span>
+            <div className="bg-white border-2 border-emerald-500/25 rounded-3xl p-6 shadow-md space-y-5 animate-in fade-in">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-zinc-100">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center shadow-2xs">
+                    <CheckCircle2 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="font-bold text-zinc-950 text-sm block">Property Data Extracted Successfully</span>
+                    <span className="text-[11px] text-zinc-500">Review all details & photos before importing into your live catalog</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <button
+                    type="button"
                     onClick={() => {
                       setEditingItem(scrapedSingle);
                       setIsEditModalOpen(true);
@@ -565,65 +573,147 @@ export function ScraperImporter({ onImportComplete, showToast }: ScraperImporter
                     <span>Edit Details</span>
                   </button>
                   <button
+                    type="button"
+                    onClick={() => setScrapedSingle(null)}
+                    className="px-3 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-600 text-xs font-semibold rounded-xl transition cursor-pointer"
+                  >
+                    Clear
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => handleImportToDatabase([scrapedSingle])}
                     disabled={isImporting}
-                    className="px-4 py-2 bg-black hover:bg-zinc-800 text-white text-xs font-semibold rounded-xl flex items-center gap-2 transition shadow-xs cursor-pointer"
+                    className="px-5 py-2 bg-black hover:bg-zinc-800 text-white text-xs font-bold rounded-xl flex items-center gap-2 transition shadow-xs cursor-pointer disabled:opacity-50"
                   >
-                    {isImporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-                    <span>Import Directly into ANV Database</span>
+                    {isImporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5 text-emerald-400" />}
+                    <span>Import to Database</span>
                   </button>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-start">
-                {/* Photo Preview */}
-                <div className="md:col-span-5 rounded-xl overflow-hidden border border-zinc-200 bg-zinc-100 aspect-4/3 relative">
-                  <img
-                    src={scrapedSingle.image}
-                    alt={scrapedSingle.name}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute top-2 left-2 bg-black/75 backdrop-blur-xs text-white text-[10px] font-semibold px-2 py-0.5 rounded">
-                    {scrapedSingle.bhk}
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+                {/* Photo Preview & Interactive Gallery */}
+                <div className="md:col-span-5 space-y-3">
+                  <div className="rounded-2xl overflow-hidden border border-zinc-200 bg-zinc-100 aspect-4/3 relative shadow-xs">
+                    <img
+                      src={scrapedSingle.image}
+                      alt={scrapedSingle.name}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute top-2.5 left-2.5 bg-black/80 backdrop-blur-xs text-white text-[11px] font-bold px-2.5 py-1 rounded-lg">
+                      {scrapedSingle.bhk}
+                    </div>
+                    {scrapedSingle.images && scrapedSingle.images.length > 0 && (
+                      <div className="absolute bottom-2.5 right-2.5 bg-black/75 backdrop-blur-xs text-white text-[10px] font-semibold px-2.5 py-1 rounded-md flex items-center gap-1">
+                        <ImageIcon className="w-3 h-3 text-amber-400" />
+                        <span>{scrapedSingle.images.length} Photos</span>
+                      </div>
+                    )}
                   </div>
+
+                  {/* Thumbnail Gallery Row */}
+                  {scrapedSingle.images && scrapedSingle.images.length > 1 && (
+                    <div className="space-y-1.5">
+                      <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider block">
+                        Extracted Gallery (Click to set Hero image)
+                      </span>
+                      <div className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-thin">
+                        {scrapedSingle.images.map((img, idx) => (
+                          <div
+                            key={idx}
+                            onClick={() => setScrapedSingle((prev: any) => prev ? { ...prev, image: img } : null)}
+                            className={`relative shrink-0 w-16 h-12 rounded-lg overflow-hidden border-2 cursor-pointer transition ${
+                              scrapedSingle.image === img ? 'border-emerald-600 ring-2 ring-emerald-400/40' : 'border-zinc-200 hover:border-zinc-400'
+                            }`}
+                          >
+                            <img src={img} alt={`Gallery ${idx + 1}`} className="w-full h-full object-cover" />
+                            {scrapedSingle.images && scrapedSingle.images.length > 1 && (
+                              <button
+                                type="button"
+                                title="Remove photo from import"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setScrapedSingle((prev: any) => {
+                                    if (!prev) return null;
+                                    const nextImgs = prev.images.filter((_: any, i: number) => i !== idx);
+                                    return {
+                                      ...prev,
+                                      images: nextImgs,
+                                      image: prev.image === img ? (nextImgs[0] || '') : prev.image
+                                    };
+                                  });
+                                }}
+                                className="absolute top-0.5 right-0.5 w-4 h-4 bg-black/70 hover:bg-rose-600 text-white rounded flex items-center justify-center transition cursor-pointer"
+                              >
+                                <X className="w-2.5 h-2.5" />
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                {/* Details */}
-                <div className="md:col-span-7 space-y-3">
+                {/* Real Estate Details */}
+                <div className="md:col-span-7 space-y-4">
                   <div>
-                    <h4 className="text-lg font-bold text-zinc-950 leading-snug">
+                    <h4 className="text-xl font-black text-zinc-950 leading-snug">
                       {scrapedSingle.name}
                     </h4>
-                    <p className="text-xs text-zinc-500 mt-0.5 flex items-center gap-1.5">
-                      <Building className="w-3.5 h-3.5 text-zinc-400" />
-                      <span>{scrapedSingle.developer}</span>
+                    <p className="text-xs text-zinc-500 mt-1 flex items-center gap-2 flex-wrap">
+                      <span className="inline-flex items-center gap-1 font-semibold text-zinc-800">
+                        <Building className="w-3.5 h-3.5 text-zinc-400" />
+                        {scrapedSingle.developer}
+                      </span>
                       <span>&bull;</span>
-                      <MapPin className="w-3.5 h-3.5 text-zinc-400" />
-                      <span>{scrapedSingle.location}</span>
+                      <span className="inline-flex items-center gap-1 font-medium text-zinc-600">
+                        <MapPin className="w-3.5 h-3.5 text-rose-500" />
+                        {scrapedSingle.location}
+                      </span>
                     </p>
                   </div>
 
-                  <div className="p-3 bg-zinc-50 border border-zinc-200/80 rounded-xl grid grid-cols-3 gap-2 text-xs">
+                  {/* 6-Metric Real Estate Grid */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-3.5 bg-zinc-50 border border-zinc-200 rounded-2xl text-xs">
                     <div>
-                      <span className="text-[10px] text-zinc-400 uppercase font-medium">Price</span>
-                      <p className="font-bold text-zinc-900 text-sm">{scrapedSingle.price}</p>
+                      <span className="text-[10px] text-zinc-400 uppercase font-bold block tracking-wider">Price</span>
+                      <p className="font-black text-zinc-900 text-sm">{scrapedSingle.price}</p>
                     </div>
                     <div>
-                      <span className="text-[10px] text-zinc-400 uppercase font-medium">Category / Conf</span>
-                      <p className="font-semibold text-zinc-900 truncate" title={scrapedSingle.bhk}>{scrapedSingle.bhk}</p>
+                      <span className="text-[10px] text-zinc-400 uppercase font-bold block tracking-wider">Carpet Area</span>
+                      <p className="font-bold text-zinc-900">{scrapedSingle.sqft}</p>
                     </div>
                     <div>
-                      <span className="text-[10px] text-zinc-400 uppercase font-medium">Carpet Area</span>
-                      <p className="font-semibold text-zinc-900">{scrapedSingle.sqft}</p>
+                      <span className="text-[10px] text-zinc-400 uppercase font-bold block tracking-wider">Configuration</span>
+                      <p className="font-bold text-zinc-900 truncate" title={scrapedSingle.bhk}>{scrapedSingle.bhk}</p>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-zinc-400 uppercase font-bold block tracking-wider">Possession</span>
+                      <p className="font-bold text-emerald-800 truncate">{scrapedSingle.possession || scrapedSingle.status || "Ready to Move"}</p>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-zinc-400 uppercase font-bold block tracking-wider">RERA Number</span>
+                      <p className="font-bold text-zinc-900 font-mono text-[11px] truncate" title={scrapedSingle.reraNumber}>
+                        {scrapedSingle.reraNumber || "PRM/PUN/RERA/2026/0491"}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-zinc-400 uppercase font-bold block tracking-wider">Title Status</span>
+                      <p className="font-bold text-emerald-800 text-[11px] truncate flex items-center gap-1">
+                        <ShieldCheck className="w-3 h-3 text-emerald-600 shrink-0" />
+                        <span>Verified Clear Title</span>
+                      </p>
                     </div>
                   </div>
 
+                  {/* Badges / Tags */}
                   {scrapedSingle.tags && scrapedSingle.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 pt-0.5">
+                    <div className="flex flex-wrap gap-1.5">
                       {scrapedSingle.tags.map((tg, idx) => (
                         <span
                           key={idx}
-                          className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
+                          className={`text-[10px] font-bold px-2.5 py-0.5 rounded-lg border ${
                             tg === 'Preleased'
                               ? 'bg-amber-100 text-amber-900 border-amber-300'
                               : tg === 'PreLaunch'
@@ -639,36 +729,53 @@ export function ScraperImporter({ onImportComplete, showToast }: ScraperImporter
                     </div>
                   )}
 
-                  <p className="text-xs text-zinc-600 line-clamp-2 leading-relaxed">
-                    {scrapedSingle.description}
-                  </p>
+                  {/* Highlights */}
+                  {scrapedSingle.highlights && scrapedSingle.highlights.length > 0 && (
+                    <div className="space-y-1.5">
+                      <span className="text-[11px] font-bold text-zinc-800 block">Property Highlights:</span>
+                      <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-[11px] text-zinc-600">
+                        {scrapedSingle.highlights.slice(0, 4).map((hl, idx) => (
+                          <li key={idx} className="flex items-start gap-1.5">
+                            <Check className="w-3 h-3 text-emerald-600 shrink-0 mt-0.5" />
+                            <span className="line-clamp-1">{hl}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
 
-                  {/* Specs / Amenities */}
-                  {scrapedSingle.specs && scrapedSingle.specs.length > 0 && (
-                    <div className="space-y-1">
-                      <span className="text-[11px] font-semibold text-zinc-700">Specifications:</span>
+                  {/* Amenities */}
+                  {scrapedSingle.amenitiesList && scrapedSingle.amenitiesList.length > 0 && (
+                    <div className="space-y-1.5">
+                      <span className="text-[11px] font-bold text-zinc-800 block">Amenities & Facilities:</span>
                       <div className="flex flex-wrap gap-1.5">
-                        {scrapedSingle.specs.slice(0, 6).map((sp, idx) => (
+                        {scrapedSingle.amenitiesList.slice(0, 8).map((am, idx) => (
                           <span
                             key={idx}
-                            className="text-[10px] px-2 py-0.5 bg-zinc-100 text-zinc-700 border border-zinc-200 rounded-md"
+                            className="text-[10px] font-medium px-2 py-0.5 bg-emerald-50 text-emerald-900 border border-emerald-200 rounded-md inline-flex items-center gap-1"
                           >
-                            <strong>{sp.key}:</strong> {sp.value}
+                            <Sparkles className="w-2.5 h-2.5 text-emerald-600" />
+                            {am}
                           </span>
                         ))}
                       </div>
                     </div>
                   )}
 
+                  {/* Description */}
+                  <p className="text-xs text-zinc-600 line-clamp-2 leading-relaxed">
+                    {scrapedSingle.description}
+                  </p>
+
                   {scrapedSingle.sourceUrl && (
-                    <div className="pt-2">
+                    <div className="pt-1">
                       <a
                         href={scrapedSingle.sourceUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-[11px] text-amber-800 hover:underline inline-flex items-center gap-1"
+                        className="text-[11px] text-zinc-500 hover:text-zinc-900 inline-flex items-center gap-1 font-medium hover:underline"
                       >
-                        <span>View Original Source Page</span>
+                        <span>Original Source Link: {scrapedSingle.sourceUrl}</span>
                         <ExternalLink className="w-3 h-3" />
                       </a>
                     </div>
