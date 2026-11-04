@@ -111,6 +111,7 @@ const AD_ITEMS: AdItem[] = [
 
 export function StickyAdsStrip() {
   const pathname = usePathname();
+  const [mounted, setMounted] = useState(false);
   const [activeAd, setActiveAd] = useState<AdItem | null>(null);
   const [isMinimized, setIsMinimized] = useState(false);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -118,6 +119,10 @@ export function StickyAdsStrip() {
   const [isVideoMuted, setIsVideoMuted] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const checkScroll = () => {
     if (!scrollRef.current) return;
@@ -131,7 +136,7 @@ export function StickyAdsStrip() {
       return;
     }
     checkScroll();
-  }, [pathname]);
+  }, [pathname, mounted]);
 
   const handleScroll = (direction: 'left' | 'right') => {
     if (!scrollRef.current) return;
@@ -160,8 +165,8 @@ export function StickyAdsStrip() {
     window.open(`https://wa.me/919373020701?text=${text}`, '_blank');
   };
 
-  // Hide on admin or crm pages - placed AFTER all hooks to adhere to React Rules of Hooks
-  if (pathname?.startsWith('/admin') || pathname?.startsWith('/crm')) {
+  // Guard against SSR hydration mismatches and hide on admin/crm portals
+  if (!mounted || pathname?.startsWith('/admin') || pathname?.startsWith('/crm')) {
     return null;
   }
 
