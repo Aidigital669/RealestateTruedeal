@@ -23,6 +23,8 @@ import {
   RotateCcw,
   Calendar,
   FileText,
+  Table,
+  Layers,
   Check,
   Lock,
   Phone,
@@ -1438,6 +1440,8 @@ export function HomepageSearchablePortal({
   // Initial State Display Limits: 4 for Comparison Table, 2 for Property Cards
   const [showAllComparison, setShowAllComparison] = useState(false);
   const [showAllCards, setShowAllCards] = useState(false);
+  const [propertyViewMode, setPropertyViewMode] = useState<'both' | 'table' | 'paragraph'>('both');
+  const isViewMode = (mode: 'both' | 'table' | 'paragraph') => propertyViewMode === mode;
 
   const displayedComparisonProperties = useMemo(() => {
     if (showAllComparison) return sortedProperties;
@@ -1445,9 +1449,9 @@ export function HomepageSearchablePortal({
   }, [sortedProperties, showAllComparison]);
 
   const displayedCardProperties = useMemo(() => {
-    if (showAllCards) return sortedProperties;
+    if (showAllCards || propertyViewMode === 'paragraph') return sortedProperties;
     return sortedProperties.slice(0, 2);
-  }, [sortedProperties, showAllCards]);
+  }, [sortedProperties, showAllCards, propertyViewMode]);
 
   const handleShareWhatsApp = () => {
     const currentUrl = typeof window !== 'undefined' ? window.location.href : 'https://anvreeality.com';
@@ -2130,8 +2134,8 @@ export function HomepageSearchablePortal({
             </div>
 
 
-            {/* Real-time Counts (Informative non-clickable badges) */}
-            <div className="mt-3 pt-3 border-t border-zinc-100 flex flex-wrap items-center justify-between gap-2">
+            {/* Real-time Counts & View Mode Switcher */}
+            <div className="mt-3 pt-3 border-t border-zinc-100 flex flex-wrap items-center justify-between gap-2.5">
               <div className="flex items-center gap-2.5 text-xs">
                 <span
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-zinc-950 text-white select-none cursor-default shadow-xs"
@@ -2154,6 +2158,49 @@ export function HomepageSearchablePortal({
                 </span>
               </div>
 
+              {/* View Switcher: Table Type vs Paragraph Type */}
+              <div className="flex items-center gap-1 p-1 bg-zinc-100 rounded-xl border border-zinc-200/90 shadow-2xs">
+                <button
+                  type="button"
+                  onClick={() => setPropertyViewMode('table')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                    propertyViewMode === 'table'
+                      ? 'bg-zinc-950 text-white shadow-xs font-black'
+                      : 'text-zinc-600 hover:text-zinc-950 hover:bg-white/80'
+                  }`}
+                  title="View data as Table Type"
+                >
+                  <Table className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Table Type</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPropertyViewMode('paragraph')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                    propertyViewMode === 'paragraph'
+                      ? 'bg-zinc-950 text-white shadow-xs font-black'
+                      : 'text-zinc-600 hover:text-zinc-950 hover:bg-white/80'
+                  }`}
+                  title="View data as Paragraph / Card Type"
+                >
+                  <FileText className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Paragraph Type</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPropertyViewMode('both')}
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer hidden sm:flex ${
+                    propertyViewMode === 'both'
+                      ? 'bg-zinc-950 text-white shadow-xs font-black'
+                      : 'text-zinc-600 hover:text-zinc-950 hover:bg-white/80'
+                  }`}
+                  title="View Both Table and Paragraph Type"
+                >
+                  <Layers className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Both</span>
+                </button>
+              </div>
+
               {isUserSeller(catalogueSearch || searchQuery) && (
                 <div className="text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-300/80 px-2.5 py-1 rounded-lg flex items-center gap-1.5 animate-in fade-in select-none cursor-default">
                   <Sparkles className="w-3.5 h-3.5 text-amber-600 shrink-0" />
@@ -2166,8 +2213,8 @@ export function HomepageSearchablePortal({
           {/* ================= SECTION 1: VERIFIED PROPERTIES ================= */}
           <div id="properties-section" className="space-y-6">
             {/* ================= 1. INSTITUTIONAL COMPARISON TABLE (SEEN FIRST) ================= */}
-            {sortedProperties.length > 0 && (
-              <div className="mb-10 bg-white rounded-3xl shadow-sm border border-zinc-200 overflow-hidden w-full max-w-full">
+            {(propertyViewMode === 'table' || propertyViewMode === 'both') && sortedProperties.length > 0 && (
+              <div id="properties-table-container" className="mb-10 bg-white rounded-3xl shadow-sm border border-zinc-200 overflow-hidden w-full max-w-full">
                 <div className="bg-zinc-950 p-4 sm:p-6 text-white flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                   <div>
                     <h3 className="text-lg font-bold flex items-center gap-2 tracking-tight text-white">
@@ -2178,6 +2225,48 @@ export function HomepageSearchablePortal({
                     </h3>
                   </div>
                   <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
+                    {/* View Mode Switcher Pill in Table Header */}
+                    <div className="inline-flex items-center p-0.5 bg-zinc-900 rounded-xl border border-zinc-800">
+                      <button
+                        type="button"
+                        onClick={() => setPropertyViewMode('table')}
+                        className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+                          isViewMode('table')
+                            ? 'bg-amber-400 text-zinc-950 font-black shadow-xs'
+                            : 'text-zinc-300 hover:text-white hover:bg-zinc-800'
+                        }`}
+                        title="View data as Table Type"
+                      >
+                        <Table className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">Table Type</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPropertyViewMode('paragraph')}
+                        className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+                          isViewMode('paragraph')
+                            ? 'bg-amber-400 text-zinc-950 font-black shadow-xs'
+                            : 'text-zinc-300 hover:text-white hover:bg-zinc-800'
+                        }`}
+                        title="View data as Paragraph / Card Type"
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">Paragraph Type</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPropertyViewMode('both')}
+                        className={`px-2 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+                          isViewMode('both')
+                            ? 'bg-amber-400 text-zinc-950 font-black shadow-xs'
+                            : 'text-zinc-300 hover:text-white hover:bg-zinc-800'
+                        }`}
+                        title="View Both Table and Paragraph Type"
+                      >
+                        <Layers className="w-3.5 h-3.5" />
+                        <span className="hidden md:inline">Both</span>
+                      </button>
+                    </div>
                     {/* Dedicated Single Sort By Dropdown - MOBILE ONLY (completely hidden on sm/laptop/desktop) */}
                     <div className="relative sm:hidden">
                       <button
@@ -3431,53 +3520,98 @@ export function HomepageSearchablePortal({
 
             {/* ================= 2. PROPERTY PREVIEW CARDS (SEEN SECOND, 2 INITIALLY + SHOW MORE) ================= */}
             {sortedProperties.length > 0 ? (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between pb-1 border-b border-zinc-200/80">
-                  <h3 className="text-sm sm:text-base font-extrabold text-zinc-950 tracking-tight flex items-center gap-2">
-                    <Building2 className="w-4 h-4 text-amber-500" />
-                    <span>Property Showcase</span>
-                    <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
-                      {sortedProperties.length} Available
-                    </span>
-                  </h3>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {displayedCardProperties.map((property) => (
-                    <PropertyCard
-                      key={property.id}
-                      property={property}
-                      onInstantEnquiry={handleInstantEnquiry}
-                      onQuickView={(p) => {
-                        setSelectedDetailsProperty(p);
-                        setDetailsModalOpen(true);
-                      }}
-                      onOpenGallery={openPropertyGallery}
-                    />
-                  ))}
-                </div>
-
-                {/* Show More / Show Less for Property Cards (Top 2 initially) */}
-                {sortedProperties.length > 2 && (
-                  <div className="pt-2 text-center flex items-center justify-center">
-                    <button
-                      type="button"
-                      onClick={() => setShowAllCards(!showAllCards)}
-                      className="inline-flex items-center gap-2 px-8 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 text-sm font-black transition shadow-md hover:shadow-lg cursor-pointer group"
-                    >
-                      <span>
-                        {showAllCards
-                          ? 'Show Less Properties (Show Top 2)'
-                          : `Show All Properties (${sortedProperties.length - 2} More Available)`}
+              (propertyViewMode === 'paragraph' || propertyViewMode === 'both') ? (
+                <div id="properties-showcase-container" className="space-y-6">
+                  <div className="flex items-center justify-between pb-1 border-b border-zinc-200/80">
+                    <h3 className="text-sm sm:text-base font-extrabold text-zinc-950 tracking-tight flex items-center gap-2">
+                      <Building2 className="w-4 h-4 text-amber-500" />
+                      <span>Property Showcase {propertyViewMode === 'paragraph' ? '(Paragraph Type)' : ''}</span>
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
+                        {sortedProperties.length} Available
                       </span>
-                      <ChevronDown
-                        className={`w-4 h-4 text-zinc-950 transition-transform duration-200 ${showAllCards ? 'rotate-180' : ''
-                          }`}
-                      />
-                    </button>
+                    </h3>
+
+                    {/* View Switcher Pill in Cards Header */}
+                    <div className="inline-flex items-center p-0.5 bg-zinc-100 rounded-xl border border-zinc-200">
+                      <button
+                        type="button"
+                        onClick={() => setPropertyViewMode('table')}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+                          isViewMode('table')
+                            ? 'bg-zinc-950 text-white font-black shadow-xs'
+                            : 'text-zinc-600 hover:text-zinc-950'
+                        }`}
+                        title="Switch to Table Type"
+                      >
+                        <Table className="w-3.5 h-3.5 text-amber-500" />
+                        <span className="hidden sm:inline">Table Type</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPropertyViewMode('paragraph')}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+                          isViewMode('paragraph')
+                            ? 'bg-zinc-950 text-white font-black shadow-xs'
+                            : 'text-zinc-600 hover:text-zinc-950'
+                        }`}
+                        title="Switch to Paragraph Type"
+                      >
+                        <FileText className="w-3.5 h-3.5 text-amber-500" />
+                        <span className="hidden sm:inline">Paragraph Type</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPropertyViewMode('both')}
+                        className={`px-2 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+                          isViewMode('both')
+                            ? 'bg-zinc-950 text-white font-black shadow-xs'
+                            : 'text-zinc-600 hover:text-zinc-950'
+                        }`}
+                        title="Show Both Table & Paragraph"
+                      >
+                        <Layers className="w-3.5 h-3.5 text-amber-500" />
+                        <span className="hidden sm:inline">Both</span>
+                      </button>
+                    </div>
                   </div>
-                )}
-              </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {displayedCardProperties.map((property) => (
+                      <PropertyCard
+                        key={property.id}
+                        property={property}
+                        onInstantEnquiry={handleInstantEnquiry}
+                        onQuickView={(p) => {
+                          setSelectedDetailsProperty(p);
+                          setDetailsModalOpen(true);
+                        }}
+                        onOpenGallery={openPropertyGallery}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Show More / Show Less for Property Cards (Top 2 initially when viewing Both) */}
+                  {propertyViewMode === 'both' && sortedProperties.length > 2 && (
+                    <div className="pt-2 text-center flex items-center justify-center">
+                      <button
+                        type="button"
+                        onClick={() => setShowAllCards(!showAllCards)}
+                        className="inline-flex items-center gap-2 px-8 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 text-sm font-black transition shadow-md hover:shadow-lg cursor-pointer group"
+                      >
+                        <span>
+                          {showAllCards
+                            ? 'Show Less Properties (Show Top 2)'
+                            : `Show All Properties (${sortedProperties.length - 2} More Available)`}
+                        </span>
+                        <ChevronDown
+                          className={`w-4 h-4 text-zinc-950 transition-transform duration-200 ${showAllCards ? 'rotate-180' : ''
+                            }`}
+                        />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : null
             ) : isUserSeller(catalogueSearch || searchQuery) ? (
               <div className="bg-amber-50/70 rounded-3xl border border-amber-300/80 p-8 sm:p-10 text-center space-y-4 shadow-sm w-full max-w-2xl mx-auto my-6">
                 <div className="w-14 h-14 rounded-2xl bg-amber-100 border border-amber-300 text-amber-800 flex items-center justify-center mx-auto shadow-2xs">
