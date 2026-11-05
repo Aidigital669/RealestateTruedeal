@@ -1687,26 +1687,42 @@ export function HomepageSearchablePortal({
     };
 
     return (
-      <div className="w-full sm:w-88 p-3.5 bg-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.18)] border border-zinc-200 ring-1 ring-black/5 animate-in fade-in zoom-in-95 duration-150 font-normal select-none text-left space-y-2 z-[90] text-zinc-900">
+      <>
+        {/* Mobile Backdrop Overlay */}
+        <div
+          className="fixed inset-0 bg-black/60 z-[95] backdrop-blur-2xs transition-opacity sm:hidden"
+          onClick={() => setActiveHeaderDropdown(null)}
+        />
+        <div className="w-full sm:w-88 p-3.5 sm:p-4 bg-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.25)] border border-zinc-200 ring-1 ring-black/5 animate-in fade-in zoom-in-95 duration-150 font-normal select-none text-left space-y-2.5 z-[100] relative text-zinc-900">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-zinc-100 pb-2">
           <div className="text-xs font-black text-zinc-900 uppercase tracking-wider flex items-center gap-1.5">
             <ArrowUpDown className="w-3.5 h-3.5 text-amber-600" />
             <span>Sort Properties</span>
           </div>
-          {sortBy !== 'price_low' && (
+          <div className="flex items-center gap-2">
+            {sortBy !== 'price_low' && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSortBy('price_low');
+                  setExpandedSortCategory(null);
+                  setActiveHeaderDropdown(null);
+                }}
+                className="text-[11px] font-bold text-amber-700 hover:text-amber-800 cursor-pointer"
+              >
+                Reset (Low to High)
+              </button>
+            )}
             <button
               type="button"
-              onClick={() => {
-                setSortBy('price_low');
-                setExpandedSortCategory(null);
-                setActiveHeaderDropdown(null);
-              }}
-              className="text-[11px] font-bold text-amber-700 hover:text-amber-800 cursor-pointer"
+              onClick={() => setActiveHeaderDropdown(null)}
+              className="p-1 -mr-1 text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 rounded-lg transition cursor-pointer"
+              aria-label="Close sort menu"
             >
-              Reset (Low to High)
+              <X className="w-4 h-4" />
             </button>
-          )}
+          </div>
         </div>
 
         {/* 1. Price */}
@@ -1956,7 +1972,8 @@ export function HomepageSearchablePortal({
             </div>
           )}
         </div>
-      </div>
+        </div>
+      </>
     );
   };
 
@@ -2249,7 +2266,7 @@ export function HomepageSearchablePortal({
                       {activeHeaderDropdown === 'sort' && (
                         <div
                           ref={headerDropdownRef}
-                          className="absolute right-0 top-full mt-2 z-[90] w-[calc(100vw-32px)] sm:w-88 max-w-sm"
+                          className="fixed inset-x-3 bottom-4 max-h-[85vh] overflow-y-auto sm:max-h-none sm:overflow-visible z-[100] sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 w-auto sm:w-88 max-w-sm mx-auto sm:mx-0 shadow-2xl"
                         >
                           {renderSortDropdownContent()}
                         </div>
@@ -3509,7 +3526,7 @@ export function HomepageSearchablePortal({
                         {activeHeaderDropdown === 'sort_cards' && (
                           <div
                             ref={headerDropdownRef}
-                            className="absolute right-0 top-full mt-2 z-[90] w-[calc(100vw-32px)] sm:w-88 max-w-sm"
+                            className="fixed inset-x-3 bottom-4 max-h-[85vh] overflow-y-auto sm:max-h-none sm:overflow-visible z-[100] sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 w-auto sm:w-88 max-w-sm mx-auto sm:mx-0 shadow-2xl"
                           >
                             {renderSortDropdownContent()}
                           </div>
