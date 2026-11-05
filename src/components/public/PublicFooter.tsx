@@ -18,7 +18,7 @@ export function PublicFooter() {
 
   // Split categories for clean column layout
   const commercialCats = CATEGORIES_DATA.filter((c) =>
-    ['office-space', 'preleased-properties', 'shop-showroom', 'office-in-it-park', 'coworking-office-space', 'restaurant', 'warehouse'].includes(c.slug)
+    ['office-space', 'preleased-properties', 'shop-showroom', 'restaurant', 'warehouse'].includes(c.slug)
   );
 
   const residentialAndLandCats = CATEGORIES_DATA.filter((c) =>

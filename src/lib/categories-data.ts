@@ -25,41 +25,41 @@ export const CATEGORIES_DATA: CategoryItem[] = [
     title: 'Office Space',
     shortTitle: 'Office Space',
     iconName: 'Building2',
-    tagline: 'Grade-A Commercial Offices & Corporate Headquarters across Pune',
-    metaTitle: 'Office Space for Sale & Rent in Pune | Grade-A Commercial Real Estate | ANV Reealty',
-    metaDescription: 'Explore verified commercial office spaces for sale and lease across Pune. Grade-A bare-shell, warm-shell, and furnished corporate offices with 100% DG backup and zero brokerage.',
+    tagline: 'Grade-A Commercial Offices, IT Park Campuses & Managed Coworking Spaces across Pune',
+    metaTitle: 'Office Space for Sale & Rent in Pune | Grade-A Commercial, IT Parks & Coworking | ANV Reealty',
+    metaDescription: 'Explore verified commercial office spaces for sale and lease across Pune. Grade-A bare-shell, IT tech parks, plug-and-play coworking, and corporate offices with zero brokerage.',
     group: 'commercial',
     groupLabel: 'Commercial Real Estate',
     badge: 'High Demand',
-    overview: 'Pune is one of India\'s most vibrant corporate hubs. ANV Reealty offers institutional-grade office spaces ranging from boutique 1,000 sq.ft. private suites to expansive 1,00,000+ sq.ft. corporate headquarters in Grade-A towers across Baner, Kalyani Nagar, Bund Garden, and Shivaji Nagar.',
+    overview: 'Pune is one of India\'s premier corporate and technology powerhouses. ANV Reealty offers comprehensive institutional-grade office spaces — ranging from agile coworking desks and managed enterprise suites to expansive corporate headquarters and SEZ/non-SEZ IT tech park campuses across Baner, Kalyani Nagar, Hinjewadi, Kharadi, and Shivaji Nagar.',
     detailedContent: [
-      'Institutional advisory for corporates, MNCs, and growing enterprises seeking corporate addresses in Pune.',
-      'Flexible handover specifications including Bare Shell, Warm Shell, and Bespoke Plug-and-Play Fitouts.',
-      'Comprehensive zoning vetting, fire compliance, occupancy certificates (OC), and developer title checks.'
+      'Institutional advisory for corporates, MNCs, IT tech firms, and growing enterprises seeking Grade-A office addresses in Pune.',
+      'Flexible specifications including Bare Shell, Warm Shell, IT Tech Park floor plates, and Bespoke Plug-and-Play Coworking Fitouts.',
+      'Comprehensive zoning vetting, STPI/SEZ compliance, fire NOC, occupancy certificates (OC), and developer title checks.'
     ],
     features: [
-      'IGBC / LEED Certified Green Towers',
-      'Double-Glazed Facades with Acoustic & Thermal Insulation',
-      'High-Speed Smart Destination Elevators with 100% Power Backup',
-      'Dedicated Reserved Parking & Multi-Level Basements',
-      'Grand Double-Height Entrance Lobbies with Concierge'
+      'Grade-A Tech Parks & IGBC / LEED Certified Green Towers',
+      'Plug-and-Play Managed Coworking Suites & Enterprise Bare Shells',
+      'High-Speed Smart Destination Elevators with 100% DG Power Backup',
+      'Dedicated Reserved Parking, Multi-Level Basements & EV Charging Stations',
+      'Grand Double-Height Entrance Lobbies with 24/7 Security & Concierge'
     ],
     investmentBenefits: [
-      'Steady 7.5% - 9% rental yields in prime corporate corridors',
-      'Strong institutional tenant demand and low vacancy rates',
-      'Consistent capital appreciation driven by Pune Metro expansion'
+      'Steady 7.5% - 10.5% rental yields in prime corporate and IT corridors',
+      'Strong institutional tenant demand from Fortune 500 GCCs and IT conglomerates',
+      'Consistent capital appreciation driven by Pune Metro and Ring Road infrastructure'
     ],
-    popularLocalities: ['Baner', 'Kalyani Nagar', 'Bund Garden', 'Shivaji Nagar', 'Balewadi', 'Viman Nagar'],
+    popularLocalities: ['Baner', 'Kalyani Nagar', 'Hinjewadi', 'Kharadi', 'Bund Garden', 'Shivaji Nagar', 'Balewadi', 'Viman Nagar'],
     heroImage: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80',
     propertyTypeFilter: 'commercial',
     faqs: [
       {
         question: 'What types of office spaces are available in Pune through ANV Reealty?',
-        answer: 'We curate bare-shell, warm-shell, fully furnished plug-and-play offices, and entire standalone corporate towers for purchase or lease.'
+        answer: 'We curate bare-shell, warm-shell, IT tech park floor plates, and fully furnished plug-and-play coworking spaces for purchase or lease.'
       },
       {
         question: 'What are the typical commercial rental yields in Pune?',
-        answer: 'Grade-A commercial office assets in prime corridors like Baner and Kalyani Nagar typically yield between 7.5% and 9.0% annually.'
+        answer: 'Grade-A commercial office assets in prime corridors like Baner, Kharadi, and Kalyani Nagar typically yield between 7.5% and 9.5% annually.'
       },
       {
         question: 'Do you assist with commercial lease negotiations and legal vetting?',
@@ -157,92 +157,8 @@ export const CATEGORIES_DATA: CategoryItem[] = [
       }
     ]
   },
-  {
-    slug: 'office-in-it-park',
-    title: 'Office in IT Park',
-    shortTitle: 'IT Park Office',
-    iconName: 'Laptop',
-    tagline: 'SEZ & Non-SEZ Certified IT Tech Parks & Software Development Campuses',
-    metaTitle: 'Office Space in IT Parks Pune | Hinjewadi & Kharadi Software Campuses | ANV Reealty',
-    metaDescription: 'Browse Grade-A IT park office spaces in Hinjewadi, Kharadi, and Viman Nagar, Pune. Certified tech infrastructure, STPI/SEZ compliance, 100% redundancy, and direct leasing.',
-    group: 'commercial',
-    groupLabel: 'Commercial Real Estate',
-    badge: 'Tech Corridors',
-    overview: 'Pune is India\'s premier software powerhouse. We facilitate large-format tech campuses and modular IT suites within world-class tech parks across Hinjewadi Rajiv Gandhi Infotech Park and Kharadi EON IT corridor with full regulatory and STPI compliance.',
-    detailedContent: [
-      'Tailored for IT, ITES, Fintech, SaaS, and Global Capability Centers (GCCs).',
-      'Seamless multi-carrier optical fiber connectivity with carrier-neutral telecommunication risers.',
-      'Campus amenities including multi-cuisine food courts, sporting facilities, and EV charging stations.'
-    ],
-    features: [
-      'STPI & SEZ Certification Options with Fiscal Incentives',
-      'N+1 Power & HVAC Redundancy with 24/7 Uninterrupted Operation',
-      'Large Efficient Floor Plates (20,000 to 50,000+ Sq.Ft.)',
-      'Multi-Tier Campus Security with RFID & Biometric Access Controls',
-      'Last-Mile Connectivity to Metro Corridors & Ring Roads'
-    ],
-    investmentBenefits: [
-      'Long-term tenancy from blue-chip IT conglomerates and global tech firms',
-      'High absorption rates across East and West Pune technology corridors',
-      'Predictable capital appreciation backed by government infrastructure'
-    ],
-    popularLocalities: ['Hinjewadi Phase 1, 2, 3', 'Kharadi', 'Magarpatta City', 'Viman Nagar', 'Talwade'],
-    heroImage: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80',
-    propertyTypeFilter: 'commercial',
-    faqs: [
-      {
-        question: 'Can non-IT companies lease office space in an IT Park in Pune?',
-        answer: 'Under current MIDC and state IT policies, a designated percentage of built-up area in non-SEZ IT parks can be leased to allied business services, subject to state clearances.'
-      },
-      {
-        question: 'What floor plate sizes are available in Hinjewadi and Kharadi IT Parks?',
-        answer: 'Floor plates range from compact 5,000 sq.ft. wings up to contiguous 60,000+ sq.ft. single-floor plates suitable for large teams.'
-      }
-    ]
-  },
-  {
-    slug: 'coworking-office-space',
-    title: 'Co working Office Space',
-    shortTitle: 'Co-working',
-    iconName: 'Users',
-    tagline: 'Managed Enterprise Workspaces, Agile Desks & Plug-and-Play Hubs',
-    metaTitle: 'Coworking Office Space in Pune | Flexible Desks & Managed Suites | ANV Reealty',
-    metaDescription: 'Find fully managed coworking spaces and flexible enterprise suites in Pune. Plug-and-play desks, high-speed fiber, meeting rooms, and zero capex commitments.',
-    group: 'commercial',
-    groupLabel: 'Commercial Real Estate',
-    badge: 'Zero Capex',
-    overview: 'Modern business requires agility. Whether you need a dedicated team cabin for 10 professionals or a custom-branded 200-seat enterprise floor with zero capital expenditure, ANV Reealty connects you with the finest managed spaces across Pune prime corporate micro-markets.',
-    detailedContent: [
-      'Zero upfront fitout capital expenditure (capex) — pay-per-seat monthly operational pricing.',
-      'Access to fully equipped conference rooms, boardrooms with video conferencing, and soundproof phone booths.',
-      'Flexible agreement tenures from 6 months to 3 years with scalable seat options.'
-    ],
-    features: [
-      'Ergonomic Herman Miller / Steelcase Workstations',
-      'High-Speed Enterprise Dual-Band WiFi with Firewall Security',
-      'Unlimited Specialty Coffee, Pantry & Community Breakout Zones',
-      'Professional Front-Desk Reception & Mail Handling Services',
-      '24/7 Biometric Access with CCTV Surveillance'
-    ],
-    investmentBenefits: [
-      'Ideal for real estate landlords seeking managed operator revenue share',
-      'High operator demand for 15,000+ sq.ft. Grade-A bare-shell floors',
-      'Yield expansion up to 10-11% through revenue-share operator partnerships'
-    ],
-    popularLocalities: ['Baner', 'Koregaon Park', 'Kalyani Nagar', 'Shivaji Nagar', 'Balewadi', 'Kharadi'],
-    heroImage: 'https://images.unsplash.com/photo-1527192491265-7e15c55b1ed2?auto=format&fit=crop&w=1200&q=80',
-    propertyTypeFilter: 'commercial',
-    faqs: [
-      {
-        question: 'Can an entire floor be custom-designed for our brand in a managed space?',
-        answer: 'Yes. Enterprise managed space providers offer bespoke built-to-suit fitouts, complete with your company branding, access controls, and server rooms.'
-      },
-      {
-        question: 'How quickly can a team move into a coworking space in Pune?',
-        answer: 'Plug-and-play desks and private cabins can be occupied immediately within 24 to 48 hours of agreement execution.'
-      }
-    ]
-  },
+
+
   {
     slug: 'residential-apartment',
     title: 'Residential Apartment',
@@ -762,6 +678,9 @@ export const CATEGORIES_DATA: CategoryItem[] = [
 ];
 
 export function getCategoryBySlug(slug: string): CategoryItem | undefined {
+  if (slug === 'office-in-it-park' || slug === 'coworking-office-space') {
+    return CATEGORIES_DATA.find((c) => c.slug === 'office-space');
+  }
   return CATEGORIES_DATA.find((c) => c.slug === slug);
 }
 
@@ -769,8 +688,6 @@ export const CATEGORY_OPTIONS = [
   'Office Space',
   'Preleased Properties',
   'Shop/Showroom',
-  'Office in IT Park',
-  'Co working Office Space',
   'Residential Apartment',
   'Residential Bunglow',
   'Pre- Launch Projects',
@@ -786,11 +703,9 @@ export const CATEGORY_OPTIONS = [
 ] as const;
 
 export const CATEGORY_MATCH_PATTERNS: Record<string, string[]> = {
-  'office-space': ['%office space%', '%commercial office%', '%office%'],
+  'office-space': ['%office space%', '%commercial office%', '%office%', '%it park%', '%tech park%', '%cybercity%', '%coworking%', '%co-working%', '%shared office%'],
   'preleased-properties': ['%prelease%', '%pre-lease%', '%pre-rented%', '%prerented%'],
   'shop-showroom': ['%shop%', '%showroom%', '%retail%'],
-  'office-in-it-park': ['%it park%', '%tech park%', '%cybercity%'],
-  'coworking-office-space': ['%coworking%', '%co-working%', '%shared office%'],
   'residential-apartment': ['%residential apartment%', '%apartment%', '%flat%', '%bhk%', '%penthouse%', '%residence%'],
   'residential-bungalow': ['%residential bunglow%', '%bungalow%', '%bunglow%', '%villa%', '%row house%'],
   'pre-launch-projects': ['%pre-launch%', '%pre launch%', '%new launch%'],
@@ -830,10 +745,8 @@ export function findMatchingCategorySlug(queryText: string): string | null {
   const matchedCategories = new Set<string>();
   if (/\b(?:hospital|hospitals|clinic|clinics|medical|healthcare|doctor)\b/i.test(lower)) matchedCategories.add('hospital');
   if (/\b(?:prelease|pre-lease|preleased|pre-leased|pre-rented|prerented|rental yield|high-roi)\b/i.test(lower)) matchedCategories.add('preleased-properties');
-  if (/\b(?:it park|tech park|cybercity)\b/i.test(lower)) matchedCategories.add('office-in-it-park');
-  if (/\b(?:coworking|co-working|shared office)\b/i.test(lower)) matchedCategories.add('coworking-office-space');
+  if (/\b(?:it park|tech park|cybercity|coworking|co-working|shared office|office|offices|commercial office|workspace|office space)\b/i.test(lower)) matchedCategories.add('office-space');
   if (/\b(?:showroom|retail|shop|shops|store)\b/i.test(lower)) matchedCategories.add('shop-showroom');
-  if (/\b(?:office|offices|commercial office|workspace)\b/i.test(lower)) matchedCategories.add('office-space');
   if (/\b(?:restaurant|cafe|dining|pub|f&b|rooftop lounge)\b/i.test(lower)) matchedCategories.add('restaurant');
   if (/\b(?:hotel|resort|hospitality)\b/i.test(lower)) matchedCategories.add('hotel-resort');
   if (/\b(?:farm land|agriculture|agricultural|farmhouse)\b/i.test(lower)) matchedCategories.add('agriculture-farm-land');
@@ -852,8 +765,6 @@ export function findMatchingCategorySlug(queryText: string): string | null {
   // 3. High-priority explicit keyword matches
   if (matchedCategories.has('hospital')) return 'hospital';
   if (matchedCategories.has('preleased-properties')) return 'preleased-properties';
-  if (matchedCategories.has('office-in-it-park')) return 'office-in-it-park';
-  if (matchedCategories.has('coworking-office-space')) return 'coworking-office-space';
   if (matchedCategories.has('shop-showroom')) return 'shop-showroom';
   if (matchedCategories.has('office-space')) return 'office-space';
   if (matchedCategories.has('restaurant')) return 'restaurant';

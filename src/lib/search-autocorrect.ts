@@ -87,7 +87,7 @@ export const PUNE_LOCALITIES_DICTIONARY: string[] = [
 
 // 2. Real Estate Typologies & Configurations
 export const REAL_ESTATE_TYPOLOGIES: string[] = [
-  'Office in IT Park',
+  'Office Space',
   'Commercial Office',
   'Commercial Shop',
   'Commercial Showroom',

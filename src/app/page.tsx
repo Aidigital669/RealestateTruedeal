@@ -121,8 +121,8 @@ export default async function Home(props: {
   ]);
 
   const dynamicTypologiesList = [
-    { value: "Office in IT Park", label: "Office in IT Park" },
-    { value: "Commercial Office", label: "Commercial Office Space" },
+
+    { value: "Commercial Office", label: "Office Space" },
     { value: "Hospital / Healthcare", label: "Hospital / Healthcare" },
     { value: "1 BHK", label: "1 BHK" },
     { value: "2 BHK", label: "2 BHK" },

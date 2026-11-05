@@ -51,6 +51,10 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
 
+  if (slug === 'office-in-it-park' || slug === 'coworking-office-space') {
+    redirect('/office-space');
+  }
+
   // 1. Check if category (e.g. /hospital, /office-space)
   const category = getCategoryBySlug(slug);
   if (category) {
@@ -144,6 +148,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function DirectSlugPage({ params }: PageProps) {
   const { slug } = await params;
+
+  if (slug === 'office-in-it-park' || slug === 'coworking-office-space') {
+    redirect('/office-space');
+  }
 
   // 1. Direct Category Match (e.g. /hospital, /office-space, etc.)
   const category = getCategoryBySlug(slug);

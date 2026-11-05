@@ -13,15 +13,13 @@ interface CategoryHeroSEOHeaderProps {
 export function getCategorySeoHeading(category: CategoryItem): string {
   switch (category.slug) {
     case 'office-space':
+    case 'office-in-it-park':
+    case 'coworking-office-space':
       return 'Office Space for Buy & Lease / Rent in Pune';
     case 'preleased-properties':
       return 'Preleased Commercial Properties for Sale & Investment in Pune';
     case 'shop-showroom':
       return 'Commercial Shops & Showrooms for Sale & Lease in Pune';
-    case 'office-in-it-park':
-      return 'IT Park Offices & Tech Workspaces for Buy & Lease in Pune';
-    case 'coworking-office-space':
-      return 'Coworking & Managed Flexible Workspaces in Pune';
     case 'restaurant':
       return 'Commercial Restaurant & F&B Retail Spaces for Lease / Sale in Pune';
     case 'warehouse':

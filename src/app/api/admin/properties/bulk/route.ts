@@ -90,8 +90,7 @@ function normalizeCategory(raw: any): string {
   if (!raw) return 'Commercial Office';
   const s = String(raw).trim();
   if (/medical|hospital|clinic|healthcare/i.test(s)) return 'Hospital';
-  if (/office\s*in\s*it\s*park|it park|tech park|cyber/i.test(s)) return 'Office in IT Park';
-  if (/office|space|corporate|building/i.test(s)) return 'Office Space';
+  if (/office\s*in\s*it\s*park|it park|tech park|cyber|coworking|co-working|office|space|corporate|building/i.test(s)) return 'Office Space';
   if (/showroom|shop|retail|boutique/i.test(s)) return 'Shop/Showroom';
   if (/restaurant|cafe|dining|bar|lounge|f&b/i.test(s)) return 'Restaurant';
   if (/hotel|resort|hospitality/i.test(s)) return 'Hotel / Resort';

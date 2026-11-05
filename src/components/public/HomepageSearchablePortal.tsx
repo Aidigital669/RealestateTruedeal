@@ -522,8 +522,7 @@ export function HomepageSearchablePortal({
           'Viman Nagar'
         ],
         typologies: [
-          { value: 'Office in IT Park', label: 'Office in IT Park' },
-          { value: 'Commercial Office', label: 'Commercial Office Space' },
+          { value: 'Commercial Office', label: 'Office Space' },
           { value: 'Hospital / Healthcare', label: 'Hospital / Healthcare' },
           { value: '1 BHK', label: '1 BHK' },
           { value: '2 BHK', label: '2 BHK' },
@@ -906,8 +905,7 @@ export function HomepageSearchablePortal({
       { label: '4.5+ BHK Penthouse', value: '4.5+ BHK Penthouse', group: 'Residential' },
       { label: 'Residential Apartment', value: 'Residential Apartment', group: 'Residential' },
       { label: 'Residential Bungalow / Villa', value: 'Residential Bunglow', group: 'Residential' },
-      { label: 'Office in IT Park', value: 'Office in IT Park', group: 'Commercial' },
-      { label: 'Commercial Office Space', value: 'Commercial Office', group: 'Commercial' },
+      { label: 'Office Space', value: 'Commercial Office', group: 'Commercial' },
       { label: 'Shop / Showroom', value: 'Shop/Showroom', group: 'Commercial' },
       { label: 'Preleased Properties', value: 'Preleased Properties', group: 'Commercial' },
       { label: 'Restaurant / F&B', value: 'Restaurant', group: 'Commercial' },
