@@ -234,7 +234,7 @@ export function CrmLeadsTab({
 
         {/* View Switchers & Export & Add Lead */}
         <div className="flex flex-wrap items-center gap-2.5">
-          <div className="flex items-center bg-white border border-zinc-200 rounded-lg p-0.5 shadow-2xs text-xs">
+          <div className="flex items-center bg-white border border-zinc-200 rounded-lg p-0.5 shadow-2xs text-xs overflow-x-auto max-w-full scrollbar-none">
             <button
               onClick={() => setViewMode('table')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium transition cursor-pointer ${

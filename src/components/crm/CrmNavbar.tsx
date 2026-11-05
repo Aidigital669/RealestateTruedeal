@@ -19,6 +19,7 @@ interface CrmNavbarProps {
   onOpenAddAction: () => void;
   searchTerm: string;
   onSearchChange: (val: string) => void;
+  onOpenMobileSidebar?: () => void;
 }
 
 export function CrmNavbar({
@@ -27,7 +28,8 @@ export function CrmNavbar({
   onNavTabChange,
   onOpenAddAction,
   searchTerm,
-  onSearchChange
+  onSearchChange,
+  onOpenMobileSidebar
 }: CrmNavbarProps) {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [userInitials, setUserInitials] = useState('SE');
@@ -43,6 +45,7 @@ export function CrmNavbar({
       }
     }
   }, []);
+
   const navLinks = [
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'pipeline', label: 'Pipeline' },
@@ -50,35 +53,42 @@ export function CrmNavbar({
     { id: 'reports', label: 'Reports' },
   ];
 
-  // Specific Navbar for Calls (Screenshot 1)
+  // Specific Navbar for Calls
   if (currentTab === 'calls') {
     return (
-      <header className="bg-white border-b border-zinc-200 sticky top-0 z-20 px-6 py-2.5 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4 flex-1 min-w-0">
+      <header className="bg-white border-b border-zinc-200 sticky top-0 z-20 px-3 sm:px-6 py-2 sm:py-2.5 flex items-center justify-between gap-2 sm:gap-4">
+        <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
+          <button
+            type="button"
+            onClick={onOpenMobileSidebar}
+            className="lg:hidden p-1.5 -ml-1 text-zinc-700 hover:text-zinc-950 hover:bg-zinc-100 rounded-lg transition cursor-pointer shrink-0"
+            aria-label="Open sidebar"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+
           {/* Search Box */}
-          <div className="relative w-full max-w-md shrink-0">
+          <div className="relative flex-1 max-w-xs sm:max-w-md">
             <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Search calls, customers, leads, recordings..."
+              placeholder="Search calls, leads..."
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="w-full pl-8 pr-12 py-1.5 bg-zinc-50/70 border border-zinc-200 rounded-lg text-xs text-zinc-800 placeholder:text-zinc-400 focus:outline-hidden focus:border-zinc-400 transition"
+              className="w-full pl-8 pr-8 sm:pr-12 py-1.5 bg-zinc-50/70 border border-zinc-200 rounded-lg text-xs text-zinc-800 placeholder:text-zinc-400 focus:outline-hidden focus:border-zinc-400 transition"
             />
-            <kbd className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-mono text-zinc-400 bg-zinc-100 px-1.5 py-0.5 rounded border border-zinc-200">
+            <kbd className="hidden sm:inline-block absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-mono text-zinc-400 bg-zinc-100 px-1.5 py-0.5 rounded border border-zinc-200">
               ⌘K
             </kbd>
           </div>
         </div>
 
         {/* Right Section: Date, Notifications, + Log Call */}
-        <div className="flex items-center gap-4 shrink-0">
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-zinc-50 border border-zinc-200 rounded-lg text-xs text-zinc-700 font-medium">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-zinc-50 border border-zinc-200 rounded-lg text-xs text-zinc-700 font-medium">
             <Calendar className="w-3.5 h-3.5 text-zinc-500" />
             <span>Thursday, 24 Oct 2024</span>
           </div>
-
-          <div className="h-4 w-px bg-zinc-200" />
 
           <button
             onClick={() => setNotificationsOpen(!notificationsOpen)}
@@ -90,7 +100,7 @@ export function CrmNavbar({
 
           <button
             onClick={onOpenAddAction}
-            className="px-3.5 py-1.5 bg-black hover:bg-zinc-800 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+            className="px-2.5 sm:px-3.5 py-1.5 bg-black hover:bg-zinc-800 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5 text-white" />
             <span>+ Log Call</span>
@@ -100,30 +110,39 @@ export function CrmNavbar({
     );
   }
 
-  // Specific Navbar for Employees (Screenshot 2)
+  // Specific Navbar for Employees
   if (currentTab === 'employees') {
     return (
-      <header className="bg-white border-b border-zinc-200 sticky top-0 z-20 px-6 py-2.5 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4 flex-1 min-w-0">
+      <header className="bg-white border-b border-zinc-200 sticky top-0 z-20 px-3 sm:px-6 py-2 sm:py-2.5 flex items-center justify-between gap-2 sm:gap-4">
+        <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
+          <button
+            type="button"
+            onClick={onOpenMobileSidebar}
+            className="lg:hidden p-1.5 -ml-1 text-zinc-700 hover:text-zinc-950 hover:bg-zinc-100 rounded-lg transition cursor-pointer shrink-0"
+            aria-label="Open sidebar"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+
           {/* Search Box */}
-          <div className="relative w-full max-w-md shrink-0">
+          <div className="relative flex-1 max-w-xs sm:max-w-md">
             <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Search leads, site visits, personnel..."
+              placeholder="Search personnel..."
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="w-full pl-8 pr-12 py-1.5 bg-zinc-50/70 border border-zinc-200 rounded-lg text-xs text-zinc-800 placeholder:text-zinc-400 focus:outline-hidden focus:border-zinc-400 transition"
+              className="w-full pl-8 pr-8 sm:pr-12 py-1.5 bg-zinc-50/70 border border-zinc-200 rounded-lg text-xs text-zinc-800 placeholder:text-zinc-400 focus:outline-hidden focus:border-zinc-400 transition"
             />
-            <kbd className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-mono text-zinc-400 bg-zinc-100 px-1.5 py-0.5 rounded border border-zinc-200">
+            <kbd className="hidden sm:inline-block absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-mono text-zinc-400 bg-zinc-100 px-1.5 py-0.5 rounded border border-zinc-200">
               ⌘K
             </kbd>
           </div>
         </div>
 
         {/* Right Section: Date, Notifications, + Add Employee */}
-        <div className="flex items-center gap-4 shrink-0">
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-zinc-50 border border-zinc-200 rounded-lg text-xs text-zinc-700 font-medium">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-zinc-50 border border-zinc-200 rounded-lg text-xs text-zinc-700 font-medium">
             <Calendar className="w-3.5 h-3.5 text-zinc-500" />
             <span>Thursday, 24 Oct 2024</span>
           </div>
@@ -138,7 +157,7 @@ export function CrmNavbar({
 
           <button
             onClick={onOpenAddAction}
-            className="px-3.5 py-1.5 bg-black hover:bg-zinc-800 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+            className="px-2.5 sm:px-3.5 py-1.5 bg-black hover:bg-zinc-800 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
           >
             <UserPlus className="w-3.5 h-3.5 text-white" />
             <span>+ Add Employee</span>
@@ -148,28 +167,30 @@ export function CrmNavbar({
     );
   }
 
-  // Specific Navbar for Customers (Screenshot 2)
+  // Specific Navbar for Customers
   if (currentTab === 'customers') {
     return (
-      <header className="bg-white border-b border-zinc-200 sticky top-0 z-20 px-6 py-2.5 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4 flex-1 min-w-0">
-          <button className="text-zinc-600 hover:text-zinc-950 p-1">
+      <header className="bg-white border-b border-zinc-200 sticky top-0 z-20 px-3 sm:px-6 py-2 sm:py-2.5 flex items-center justify-between gap-2 sm:gap-4">
+        <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
+          <button
+            type="button"
+            onClick={onOpenMobileSidebar}
+            className="lg:hidden p-1.5 -ml-1 text-zinc-700 hover:text-zinc-950 hover:bg-zinc-100 rounded-lg transition cursor-pointer shrink-0"
+            aria-label="Open sidebar"
+          >
             <Menu className="w-5 h-5" />
           </button>
 
           {/* Search Box */}
-          <div className="relative w-full max-w-xs shrink-0">
+          <div className="relative flex-1 max-w-[160px] sm:max-w-xs">
             <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Search cu..."
+              placeholder="Search customers..."
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="w-full pl-8 pr-10 py-1.5 bg-zinc-50/70 border border-zinc-200 rounded-lg text-xs text-zinc-800 placeholder:text-zinc-400 focus:outline-hidden focus:border-zinc-400 transition"
+              className="w-full pl-8 pr-2 sm:pr-10 py-1.5 bg-zinc-50/70 border border-zinc-200 rounded-lg text-xs text-zinc-800 placeholder:text-zinc-400 focus:outline-hidden focus:border-zinc-400 transition"
             />
-            <kbd className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-mono text-zinc-400 bg-zinc-100 px-1.5 py-0.5 rounded border border-zinc-200">
-              ⌘K
-            </kbd>
           </div>
 
           {/* Customer Pipeline Status */}
@@ -182,20 +203,21 @@ export function CrmNavbar({
         </div>
 
         {/* Right Controls */}
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           <button
             onClick={onOpenAddAction}
-            className="px-3.5 py-1.5 bg-black hover:bg-zinc-800 text-white rounded-full text-xs font-semibold transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+            className="px-2.5 sm:px-3.5 py-1.5 bg-black hover:bg-zinc-800 text-white rounded-full text-xs font-semibold transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
           >
             <UserPlus className="w-3.5 h-3.5 text-white" />
-            <span>+ Add Customer</span>
+            <span className="hidden sm:inline">+ Add Customer</span>
+            <span className="sm:hidden">+ Add</span>
           </button>
 
-          <button className="p-1.5 text-zinc-600 hover:text-zinc-900 rounded-lg">
+          <button className="hidden sm:flex p-1.5 text-zinc-600 hover:text-zinc-900 rounded-lg">
             <Calendar className="w-4 h-4" />
           </button>
 
-          <button className="p-1.5 text-zinc-600 hover:text-zinc-900 rounded-lg relative">
+          <button className="hidden sm:flex p-1.5 text-zinc-600 hover:text-zinc-900 rounded-lg relative">
             <MessageSquare className="w-4 h-4" />
             <span className="absolute top-1 right-1 w-2 h-2 bg-amber-500 rounded-full" />
           </button>
@@ -205,8 +227,8 @@ export function CrmNavbar({
             <span className="absolute top-1 right-1 w-2 h-2 bg-rose-500 rounded-full" />
           </button>
 
-          {/* Profile: RS Rajesh Sharma */}
-          <div className="flex items-center gap-2.5 pl-2 border-l border-zinc-200">
+          {/* Profile Initials */}
+          <div className="flex items-center gap-2 sm:pl-2 border-l border-zinc-200">
             <div className="w-7 h-7 rounded-full bg-[#7a5424] text-white font-bold text-[11px] flex items-center justify-center select-none shadow-2xs">
               RS
             </div>
@@ -220,28 +242,30 @@ export function CrmNavbar({
     );
   }
 
-  // Specific Navbar for Site Visits (Screenshot 1)
+  // Specific Navbar for Site Visits
   if (currentTab === 'site_visits') {
     return (
-      <header className="bg-white border-b border-zinc-200 sticky top-0 z-20 px-6 py-2.5 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4 flex-1 min-w-0">
-          <button className="text-zinc-600 hover:text-zinc-950 p-1">
+      <header className="bg-white border-b border-zinc-200 sticky top-0 z-20 px-3 sm:px-6 py-2 sm:py-2.5 flex items-center justify-between gap-2 sm:gap-4">
+        <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
+          <button
+            type="button"
+            onClick={onOpenMobileSidebar}
+            className="lg:hidden p-1.5 -ml-1 text-zinc-700 hover:text-zinc-950 hover:bg-zinc-100 rounded-lg transition cursor-pointer shrink-0"
+            aria-label="Open sidebar"
+          >
             <Menu className="w-5 h-5" />
           </button>
 
           {/* Search Box */}
-          <div className="relative w-full max-w-sm shrink-0">
+          <div className="relative flex-1 max-w-[160px] sm:max-w-sm">
             <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Search customer, property..."
+              placeholder="Search visits, property..."
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="w-full pl-8 pr-10 py-1.5 bg-zinc-50/70 border border-zinc-200 rounded-lg text-xs text-zinc-800 placeholder:text-zinc-400 focus:outline-hidden focus:border-zinc-400 transition"
+              className="w-full pl-8 pr-2 sm:pr-10 py-1.5 bg-zinc-50/70 border border-zinc-200 rounded-lg text-xs text-zinc-800 placeholder:text-zinc-400 focus:outline-hidden focus:border-zinc-400 transition"
             />
-            <kbd className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-mono text-zinc-400 bg-zinc-100 px-1.5 py-0.5 rounded border border-zinc-200">
-              ⌘K
-            </kbd>
           </div>
 
           {/* Site Visits Metrics */}
@@ -253,16 +277,17 @@ export function CrmNavbar({
         </div>
 
         {/* Right Controls */}
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           <button
             onClick={onOpenAddAction}
-            className="px-3.5 py-1.5 bg-black hover:bg-zinc-800 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+            className="px-2.5 sm:px-3.5 py-1.5 bg-black hover:bg-zinc-800 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5 text-white" />
-            <span>+ Schedule Site Visit</span>
+            <span className="hidden sm:inline">+ Schedule Site Visit</span>
+            <span className="sm:hidden">+ Visit</span>
           </button>
 
-          <button className="p-1.5 text-zinc-600 hover:text-zinc-900 rounded-lg">
+          <button className="hidden sm:flex p-1.5 text-zinc-600 hover:text-zinc-900 rounded-lg">
             <Calendar className="w-4 h-4" />
           </button>
 
@@ -279,25 +304,34 @@ export function CrmNavbar({
     );
   }
 
-  // Default Navbar (Leads / Dashboard - Screenshot from first request)
+  // Default Navbar (Leads / Dashboard)
   return (
-    <header className="bg-white border-b border-zinc-200 sticky top-0 z-20 px-6 py-2.5 flex items-center justify-between gap-4">
-      {/* Left Section: Brand title, Search Bar, Main Nav Links */}
-      <div className="flex items-center gap-6 flex-1 min-w-0">
-        <div className="font-bold text-base text-zinc-900 tracking-tight shrink-0 whitespace-nowrap">
+    <header className="bg-white border-b border-zinc-200 sticky top-0 z-20 px-3 sm:px-6 py-2 sm:py-2.5 flex items-center justify-between gap-2 sm:gap-4">
+      {/* Left Section: Mobile Menu, Brand title, Search Bar, Main Nav Links */}
+      <div className="flex items-center gap-2 sm:gap-6 flex-1 min-w-0">
+        <button
+          type="button"
+          onClick={onOpenMobileSidebar}
+          className="lg:hidden p-1.5 -ml-1 text-zinc-700 hover:text-zinc-950 hover:bg-zinc-100 rounded-lg transition cursor-pointer shrink-0"
+          aria-label="Open sidebar"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+
+        <div className="font-bold text-sm sm:text-base text-zinc-900 tracking-tight shrink-0 whitespace-nowrap">
           Anv Reealty CRM
         </div>
 
-        <div className="relative w-full max-w-[160px] md:max-w-[200px] xl:max-w-xs">
+        <div className="relative flex-1 max-w-[140px] md:max-w-[200px] xl:max-w-xs">
           <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Search leads, inve..."
+            placeholder="Search leads..."
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full pl-8 pr-10 py-1.5 bg-zinc-50/60 border border-zinc-200 rounded-lg text-xs text-zinc-800 placeholder:text-zinc-400 focus:outline-hidden focus:border-zinc-400 focus:bg-white transition"
+            className="w-full pl-8 pr-2 sm:pr-10 py-1.5 bg-zinc-50/60 border border-zinc-200 rounded-lg text-xs text-zinc-800 placeholder:text-zinc-400 focus:outline-hidden focus:border-zinc-400 focus:bg-white transition"
           />
-          <kbd className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-mono text-zinc-400 bg-zinc-100 px-1.5 py-0.5 rounded border border-zinc-200">
+          <kbd className="hidden sm:inline-block absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-mono text-zinc-400 bg-zinc-100 px-1.5 py-0.5 rounded border border-zinc-200">
             ⌘F
           </kbd>
         </div>
@@ -322,20 +356,21 @@ export function CrmNavbar({
         </nav>
       </div>
 
-      <div className="flex items-center gap-3 shrink-0">
+      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
         <button
           onClick={onOpenAddAction}
-          className="px-3.5 py-1.5 bg-black hover:bg-zinc-800 text-white rounded-full text-xs font-semibold transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+          className="px-2.5 sm:px-3.5 py-1.5 bg-black hover:bg-zinc-800 text-white rounded-full text-xs font-semibold transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
         >
           <PlusCircle className="w-3.5 h-3.5 text-white" />
-          <span>+ New Action</span>
+          <span className="hidden sm:inline">+ New Action</span>
+          <span className="sm:hidden">+ Action</span>
         </button>
 
-        <button className="p-1.5 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition cursor-pointer">
+        <button className="hidden sm:flex p-1.5 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition cursor-pointer">
           <Calendar className="w-4 h-4" />
         </button>
 
-        <div className="relative">
+        <div className="relative hidden sm:block">
           <button className="p-1.5 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition relative cursor-pointer">
             <MessageSquare className="w-4 h-4" />
             <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-zinc-100 border border-zinc-300 text-zinc-600 text-[9px] font-bold rounded-full flex items-center justify-center">

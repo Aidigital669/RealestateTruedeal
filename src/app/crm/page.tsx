@@ -30,6 +30,7 @@ export default function CrmPage() {
   const [selectedLead, setSelectedLead] = useState<CrmLead | null>(null);
   const [isDossierOpen, setIsDossierOpen] = useState(false);
   const [isAddLeadOpen, setIsAddLeadOpen] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   const fetchLeads = async () => {
     try {
@@ -245,6 +246,8 @@ export default function CrmPage() {
         onTabChange={handleSidebarTabChange}
         onOpenAddLead={() => setIsAddLeadOpen(true)}
         onLogout={handleLogout}
+        mobileOpen={mobileSidebarOpen}
+        onMobileClose={() => setMobileSidebarOpen(false)}
       />
 
       {/* 2. Main Content View Area */}
@@ -257,10 +260,11 @@ export default function CrmPage() {
           onOpenAddAction={() => setIsAddLeadOpen(true)}
           searchTerm={searchTerm}
           onSearchChange={(val) => setSearchTerm(val)}
+          onOpenMobileSidebar={() => setMobileSidebarOpen(true)}
         />
 
         {/* Scrollable CRM Body */}
-        <main className="p-4 sm:p-6 space-y-5 max-w-7xl w-full mx-auto overflow-y-auto">
+        <main className="p-3 sm:p-6 space-y-4 sm:space-y-5 max-w-7xl w-full mx-auto overflow-y-auto">
           {/* Tab 2: Leads (Screenshot 1 of first prompt) */}
           {sidebarTab === 'leads' && (
             <CrmLeadsTab
