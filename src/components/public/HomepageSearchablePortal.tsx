@@ -2158,45 +2158,47 @@ export function HomepageSearchablePortal({
                 </span>
               </div>
 
-              {/* View Switcher: Table Type vs Paragraph Type */}
+              {/* View Switcher: Table Type vs Paragraph Type vs Both */}
               <div className="flex items-center gap-1 p-1 bg-zinc-100 rounded-xl border border-zinc-200/90 shadow-2xs">
                 <button
                   type="button"
                   onClick={() => setPropertyViewMode('table')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                  className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                     propertyViewMode === 'table'
                       ? 'bg-zinc-950 text-white shadow-xs font-black'
                       : 'text-zinc-600 hover:text-zinc-950 hover:bg-white/80'
                   }`}
                   title="View data as Table Type"
                 >
-                  <Table className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Table Type</span>
+                  <Table className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <span className="hidden sm:inline">Table Type</span>
+                  <span className="sm:hidden">Table</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setPropertyViewMode('paragraph')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                  className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                     propertyViewMode === 'paragraph'
                       ? 'bg-zinc-950 text-white shadow-xs font-black'
                       : 'text-zinc-600 hover:text-zinc-950 hover:bg-white/80'
                   }`}
                   title="View data as Paragraph / Card Type"
                 >
-                  <FileText className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Paragraph Type</span>
+                  <FileText className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <span className="hidden sm:inline">Paragraph Type</span>
+                  <span className="sm:hidden">Cards</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setPropertyViewMode('both')}
-                  className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer hidden sm:flex ${
+                  className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                     propertyViewMode === 'both'
                       ? 'bg-zinc-950 text-white shadow-xs font-black'
                       : 'text-zinc-600 hover:text-zinc-950 hover:bg-white/80'
                   }`}
                   title="View Both Table and Paragraph Type"
                 >
-                  <Layers className="w-3.5 h-3.5 text-amber-400" />
+                  <Layers className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                   <span>Both</span>
                 </button>
               </div>
@@ -2225,49 +2227,6 @@ export function HomepageSearchablePortal({
                     </h3>
                   </div>
                   <div className="flex items-center gap-1.5 sm:gap-2.5 flex-wrap ml-auto sm:ml-0">
-                    {/* View Mode Switcher Pill in Table Header */}
-                    <div className="inline-flex items-center p-0.5 bg-zinc-900 rounded-xl border border-zinc-800">
-                      <button
-                        type="button"
-                        onClick={() => setPropertyViewMode('table')}
-                        className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
-                          isViewMode('table')
-                            ? 'bg-amber-400 text-zinc-950 font-black shadow-xs'
-                            : 'text-zinc-300 hover:text-white hover:bg-zinc-800'
-                        }`}
-                        title="View data as Table Type"
-                      >
-                        <Table className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline">Table Type</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPropertyViewMode('paragraph')}
-                        className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
-                          isViewMode('paragraph')
-                            ? 'bg-amber-400 text-zinc-950 font-black shadow-xs'
-                            : 'text-zinc-300 hover:text-white hover:bg-zinc-800'
-                        }`}
-                        title="View data as Paragraph / Card Type"
-                      >
-                        <FileText className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline">Paragraph Type</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPropertyViewMode('both')}
-                        className={`px-2 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
-                          isViewMode('both')
-                            ? 'bg-amber-400 text-zinc-950 font-black shadow-xs'
-                            : 'text-zinc-300 hover:text-white hover:bg-zinc-800'
-                        }`}
-                        title="View Both Table and Paragraph Type"
-                      >
-                        <Layers className="w-3.5 h-3.5" />
-                        <span className="hidden md:inline">Both</span>
-                      </button>
-                    </div>
-
                     {/* Dedicated Single Sort By Dropdown - MOBILE ONLY (hidden on laptop and big screens) */}
                     <div className="relative sm:hidden">
                       <button
@@ -3555,49 +3514,6 @@ export function HomepageSearchablePortal({
                             {renderSortDropdownContent()}
                           </div>
                         )}
-                      </div>
-
-                      {/* View Switcher Pill in Cards Header */}
-                      <div className="inline-flex items-center p-0.5 bg-zinc-100 rounded-xl border border-zinc-200">
-                        <button
-                          type="button"
-                          onClick={() => setPropertyViewMode('table')}
-                          className={`px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
-                            isViewMode('table')
-                              ? 'bg-zinc-950 text-white font-black shadow-xs'
-                              : 'text-zinc-600 hover:text-zinc-950'
-                          }`}
-                          title="Switch to Table Type"
-                        >
-                          <Table className="w-3.5 h-3.5 text-amber-500" />
-                          <span className="hidden sm:inline">Table Type</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setPropertyViewMode('paragraph')}
-                          className={`px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
-                            isViewMode('paragraph')
-                              ? 'bg-zinc-950 text-white font-black shadow-xs'
-                              : 'text-zinc-600 hover:text-zinc-950'
-                          }`}
-                          title="Switch to Paragraph Type"
-                        >
-                          <FileText className="w-3.5 h-3.5 text-amber-500" />
-                          <span className="hidden sm:inline">Paragraph Type</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setPropertyViewMode('both')}
-                          className={`px-2 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
-                            isViewMode('both')
-                              ? 'bg-zinc-950 text-white font-black shadow-xs'
-                              : 'text-zinc-600 hover:text-zinc-950'
-                          }`}
-                          title="Show Both Table & Paragraph"
-                        >
-                          <Layers className="w-3.5 h-3.5 text-amber-500" />
-                          <span className="hidden sm:inline">Both</span>
-                        </button>
                       </div>
                     </div>
                   </div>
