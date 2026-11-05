@@ -167,7 +167,7 @@ export function upgradeImageUrl(url: string, baseUrl?: string): string {
   return fullUrl;
 }
 
-// Junk keywords that indicate non-product graphics, tracking pixels, badges, UI elements
+// Junk keywords that indicate non-product graphics, tracking pixels, badges, UI elements, or unrelated audio accessories
 const JUNK_IMAGE_KEYWORDS = [
   "1x1", "pixel", "blank.gif", "spacer", "tracking", "transparent",
   "data:image/gif;base64,R0lGOD", "data:image/svg+xml",
@@ -179,7 +179,8 @@ const JUNK_IMAGE_KEYWORDS = [
   "testi-def", "testi-", "testimonial-avatar", "avatar-def", "user-def", "author-def", "dummy-user",
   "no-image", "noimage", "no_image", "notfound", "not-found", "sample-logo",
   "badge-", "icon-", "icon_", "-icon.", "_icon.",
-  "/logo.", "-logo.", "_logo.", "logo-", "logo_", "brand-logo", "header-logo", "footer-logo"
+  "/logo.", "-logo.", "_logo.", "logo-", "logo_", "brand-logo", "header-logo", "footer-logo",
+  "headphone", "headphones", "headset", "microphone", "mic-", "earphone", "earphones", "airpod", "call-center", "support-agent", "podcast"
 ];
 
 /**
@@ -213,7 +214,15 @@ export function isValidProductImage(url: string): boolean {
     clean.endsWith("/logo.jpeg") ||
     clean.endsWith("/logo.jpg") ||
     clean.endsWith("/logo.webp") ||
-    clean.endsWith("/logo.avif")
+    clean.endsWith("/logo.avif") ||
+    // Strict ban on headphone, headset, microphone or audio accessory images in real estate listings
+    clean.includes("505740420928") ||
+    clean.includes("headphone") ||
+    clean.includes("headset") ||
+    clean.includes("microphone") ||
+    clean.includes("earphone") ||
+    clean.includes("earbuds") ||
+    clean.includes("airpod")
   ) {
     return false;
   }
@@ -640,11 +649,12 @@ export function getCategoryFallbackImage(category: string, title: string): strin
     return "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=1400&q=85";
   }
 
-  if (text.includes("laptop") || text.includes("computer") || text.includes("phone") || text.includes("gadget") || text.includes("electronics") || text.includes("headphone") || text.includes("audio")) {
+  if (text.includes("laptop") || text.includes("computer") || text.includes("phone") || text.includes("gadget") || text.includes("electronics")) {
     return "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=1400&q=85";
   }
 
-  return "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=1400&q=85";
+  // Real estate default fallback (Grade-A Commercial Architecture)
+  return "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1400&q=85";
 }
 
 /**

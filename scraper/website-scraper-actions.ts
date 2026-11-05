@@ -433,17 +433,17 @@ export async function scrapeAndImportWebsite(targetUrl: string): Promise<Scrapin
           aiVisibility: 96
         },
         {
-          title: "SonicPulse Studio Wireless Noise-Cancelling Headphones",
+          title: `${company.name} Smart Office IoT Sensor & Automation Hub`,
           price: 14999,
           originalPrice: 19999,
-          description: "Hybrid Dual-Chamber 45mm Neodymium drivers, 42dB Active Noise Cancellation, LDAC Hi-Res Audio, 55 hours playtime, memory foam earcups.",
-          category: "Audio & Accessories",
-          image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&q=80",
-          brand: "SonicPulse",
-          sku: "SP-ANC-PRO55",
+          description: "Enterprise IoT climate and occupancy monitor, smart energy conservation, automated workspace lighting control.",
+          category: "Smart Facilities",
+          image: "https://images.unsplash.com/photo-1558002038-1055907df827?w=600&q=80",
+          brand: company.name,
+          sku: "IOT-SMART-FACILITY-01",
           inventory: 25,
           inStock: true,
-          aiKeywords: ["ANC Headphones", "Hi-Res Audio Headset", "Studio Over-Ear Headphones"],
+          aiKeywords: ["Smart office automation", "Commercial IoT hub", "Building management sensor"],
           aiVisibility: 94
         },
         {

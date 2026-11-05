@@ -214,7 +214,7 @@ def get_fallback_image(category, title):
         return "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80"
     if any(k in t for k in ["office", "commercial", "space", "retail"]):
         return "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80"
-    return "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=1200&q=80"
+    return "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80"
 
 def scrape_single_product_python(target_url):
     if not target_url.startswith(('http://', 'https://')):
