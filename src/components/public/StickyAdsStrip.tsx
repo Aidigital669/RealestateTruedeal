@@ -172,10 +172,10 @@ export function StickyAdsStrip() {
 
   return (
     <>
-      {/* ================= STICKY ADS STRIP (BOTTOM-RIGHT AREA) ================= */}
+      {/* ================= STICKY ADS STRIP (CENTERED BOTTOM AREA) ================= */}
       <aside
         aria-label="Sponsored Partners and Ads"
-        className="fixed bottom-2.5 sm:bottom-5 right-2 sm:right-6 z-40 select-none animate-in fade-in slide-in-from-bottom-3 duration-300"
+        className="fixed bottom-2.5 sm:bottom-5 left-1/2 -translate-x-1/2 z-40 select-none animate-in fade-in slide-in-from-bottom-3 duration-300"
       >
         {isMinimized ? (
           /* Minimized Pill to restore */
