@@ -3154,11 +3154,11 @@ export function HomepageSearchablePortal({
                                 setSelectedPropertyForSiteVisit(row);
                                 setSiteVisitModalOpen(true);
                               }}
-                              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-extrabold text-xs shadow-xs hover:shadow-md transition-all cursor-pointer active:scale-95 group"
+                              className="inline-flex items-center justify-center p-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 shadow-xs hover:shadow-md transition-all cursor-pointer active:scale-95 group"
                               title={`Book VIP Site Visit for ${row.name}`}
+                              aria-label={`Book VIP Site Visit for ${row.name}`}
                             >
-                              <Calendar className="w-3.5 h-3.5 text-zinc-950 stroke-[2.5]" />
-                              <span>Site Visit</span>
+                              <Calendar className="w-4 h-4 text-zinc-950 stroke-[2.5]" />
                             </button>
                           </td>
                         </tr>
@@ -3281,7 +3281,7 @@ export function HomepageSearchablePortal({
                           </div>
                         </div>
 
-                        {/* 3. Site Visit icon & button */}
+                        {/* 3. Site Visit icon & Explore button */}
                         <div className="flex items-center gap-2 pt-0.5">
                           <button
                             type="button"
@@ -3289,20 +3289,20 @@ export function HomepageSearchablePortal({
                               setSelectedPropertyForSiteVisit(row);
                               setSiteVisitModalOpen(true);
                             }}
-                            className="flex-1 inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 text-zinc-950 font-black text-xs shadow-xs transition-all cursor-pointer"
+                            className="inline-flex items-center justify-center p-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 text-zinc-950 shadow-xs transition-all cursor-pointer shrink-0"
                             title={`Book VIP Site Visit for ${row.name}`}
+                            aria-label={`Book VIP Site Visit for ${row.name}`}
                           >
-                            <Calendar className="w-3.5 h-3.5 text-zinc-950 stroke-[2.5]" />
-                            <span>Site Visit</span>
+                            <Calendar className="w-4 h-4 text-zinc-950 stroke-[2.5]" />
                           </button>
 
                           <Link
                             href={getPropertyUrl(row)}
-                            className="inline-flex items-center justify-center gap-1 px-4 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 active:scale-95 text-zinc-800 font-bold text-xs transition-all cursor-pointer"
+                            className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 active:scale-95 text-zinc-900 font-bold text-xs transition-all cursor-pointer"
                             title="Explore property"
                           >
                             <span>Explore</span>
-                            <ArrowRight className="w-3 h-3 text-zinc-600" />
+                            <ArrowRight className="w-3.5 h-3.5 text-zinc-700" />
                           </Link>
                         </div>
                       </div>
