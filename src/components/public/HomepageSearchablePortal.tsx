@@ -30,7 +30,6 @@ import {
   Phone,
   PhoneCall,
   Sparkles,
-  Eye,
   X,
   Briefcase,
   Store,
@@ -3439,26 +3438,14 @@ export function HomepageSearchablePortal({
                         {hoveredTableProperty.property.description}
                       </p>
 
-                      {/* Quick Action Buttons */}
-                      <div className="flex items-center gap-2 pt-1 border-t border-zinc-100 shrink-0 mt-auto">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedDetailsProperty(hoveredTableProperty.property);
-                            setDetailsModalOpen(true);
-                            setHoveredTableProperty(null);
-                          }}
-                          className="flex-1 py-1.5 px-2.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
-                        >
-                          <Eye className="w-3.5 h-3.5 text-amber-400" />
-                          <span>Quick Specs</span>
-                        </button>
+                      {/* Action Button: Explore */}
+                      <div className="pt-1.5 border-t border-zinc-100 shrink-0 mt-auto">
                         <Link
                           href={getPropertyUrl(hoveredTableProperty.property)}
-                          className="py-1.5 px-3 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-black transition flex items-center justify-center gap-1 shadow-xs active:scale-95"
+                          className="w-full py-2 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-black transition flex items-center justify-center gap-1.5 shadow-xs active:scale-95 cursor-pointer"
                         >
                           <span>Explore</span>
-                          <ArrowRight className="w-3 h-3" />
+                          <ArrowRight className="w-3.5 h-3.5" />
                         </Link>
                       </div>
                     </div>
