@@ -2169,7 +2169,7 @@ export function HomepageSearchablePortal({
                 </span>
               </div>
 
-              {/* View Switcher: List view vs Cards */}
+              {/* View Switcher: List vs Cards */}
               <div className="flex items-center gap-1 p-1 bg-zinc-100 rounded-xl border border-zinc-200/90 shadow-2xs">
                 <button
                   type="button"
@@ -2179,10 +2179,10 @@ export function HomepageSearchablePortal({
                       ? 'bg-zinc-950 text-white shadow-xs font-black'
                       : 'text-zinc-600 hover:text-zinc-950 hover:bg-white/80'
                   }`}
-                  title="View as List view"
+                  title="View as List"
                 >
                   <List className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                  <span>List view</span>
+                  <span>List</span>
                 </button>
                 <button
                   type="button"
