@@ -3246,32 +3246,16 @@ export function HomepageSearchablePortal({
                           </div>
                         </div>
 
-                        {/* 2. Directly down to Property & Developer: Locality, Typography, Price & Status */}
+                        {/* 2. Price & Status */}
                         <div className="grid grid-cols-2 gap-2 bg-zinc-50/90 p-2.5 rounded-xl border border-zinc-100 text-xs">
-                          {/* Locality */}
-                          <div>
-                            <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider block">Locality</span>
-                            <div className="flex items-center gap-1 font-semibold text-zinc-800 mt-0.5">
-                              <MapPin className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                              <span className="truncate">{row.locality || 'Pune'}</span>
-                            </div>
-                          </div>
-
-                          {/* Typology */}
-                          <div>
-                            <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider block">Typology</span>
-                            <div className="font-bold text-zinc-900 truncate mt-0.5">{row.configuration || row.bhk}</div>
-                            {row.sqft && <div className="text-[10px] text-zinc-400 font-medium">{cleanSqft(row.sqft)}</div>}
-                          </div>
-
                           {/* Price */}
-                          <div className="pt-1.5 border-t border-zinc-200/60">
+                          <div>
                             <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider block">Price</span>
                             <div className="font-black text-zinc-950 text-sm mt-0.5">{formatPriceDisplay(row.price)}</div>
                           </div>
 
                           {/* Status */}
-                          <div className="pt-1.5 border-t border-zinc-200/60">
+                          <div>
                             <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider block">Status</span>
                             <div className="mt-0.5">
                               <span className="inline-block text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200/60">
