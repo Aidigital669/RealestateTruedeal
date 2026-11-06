@@ -24,7 +24,6 @@ import {
   Calendar,
   FileText,
   Table,
-  Layers,
   Check,
   Lock,
   Phone,
@@ -1434,11 +1433,10 @@ export function HomepageSearchablePortal({
     return list;
   }, [initialProperties, properties, deferredQuery, selectedLocality, selectedBhk, selectedPriceRange, selectedStatus, selectedPurpose, selectedTransactionType, selectedDeveloper, sortBy]);
 
-  // Initial State Display Limits: 4 for Comparison Table, 2 for Property Cards
+  // Initial State Display Limits: 4 for Comparison Table
   const [showAllComparison, setShowAllComparison] = useState(false);
-  const [showAllCards, setShowAllCards] = useState(false);
-  const [propertyViewMode, setPropertyViewMode] = useState<'both' | 'table' | 'paragraph'>('both');
-  const isViewMode = (mode: 'both' | 'table' | 'paragraph') => propertyViewMode === mode;
+  const [propertyViewMode, setPropertyViewMode] = useState<'table' | 'paragraph'>('table');
+  const isViewMode = (mode: 'table' | 'paragraph') => propertyViewMode === mode;
 
   const displayedComparisonProperties = useMemo(() => {
     if (showAllComparison) return sortedProperties;
@@ -1446,9 +1444,8 @@ export function HomepageSearchablePortal({
   }, [sortedProperties, showAllComparison]);
 
   const displayedCardProperties = useMemo(() => {
-    if (showAllCards || propertyViewMode === 'paragraph') return sortedProperties;
-    return sortedProperties.slice(0, 2);
-  }, [sortedProperties, showAllCards, propertyViewMode]);
+    return sortedProperties;
+  }, [sortedProperties]);
 
   const handleShareWhatsApp = () => {
     const currentUrl = typeof window !== 'undefined' ? window.location.href : 'https://anvreeality.com';
@@ -2172,48 +2169,33 @@ export function HomepageSearchablePortal({
                 </span>
               </div>
 
-              {/* View Switcher: Table Type vs Paragraph Type vs Both */}
+              {/* View Switcher: Table vs Cards */}
               <div className="flex items-center gap-1 p-1 bg-zinc-100 rounded-xl border border-zinc-200/90 shadow-2xs">
                 <button
                   type="button"
                   onClick={() => setPropertyViewMode('table')}
-                  className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                     propertyViewMode === 'table'
                       ? 'bg-zinc-950 text-white shadow-xs font-black'
                       : 'text-zinc-600 hover:text-zinc-950 hover:bg-white/80'
                   }`}
-                  title="View data as Table Type"
+                  title="View as Table"
                 >
                   <Table className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                  <span className="hidden sm:inline">Table Type</span>
-                  <span className="sm:hidden">Table</span>
+                  <span>Table</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setPropertyViewMode('paragraph')}
-                  className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                     propertyViewMode === 'paragraph'
                       ? 'bg-zinc-950 text-white shadow-xs font-black'
                       : 'text-zinc-600 hover:text-zinc-950 hover:bg-white/80'
                   }`}
-                  title="View data as Paragraph / Card Type"
+                  title="View as Cards"
                 >
                   <FileText className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                  <span className="hidden sm:inline">Paragraph Type</span>
-                  <span className="sm:hidden">Cards</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPropertyViewMode('both')}
-                  className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
-                    propertyViewMode === 'both'
-                      ? 'bg-zinc-950 text-white shadow-xs font-black'
-                      : 'text-zinc-600 hover:text-zinc-950 hover:bg-white/80'
-                  }`}
-                  title="View Both Table and Paragraph Type"
-                >
-                  <Layers className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                  <span>Both</span>
+                  <span>Cards</span>
                 </button>
               </div>
 
@@ -2229,7 +2211,7 @@ export function HomepageSearchablePortal({
           {/* ================= SECTION 1: VERIFIED PROPERTIES ================= */}
           <div id="properties-section" className="space-y-6">
             {/* ================= 1. INSTITUTIONAL COMPARISON TABLE (SEEN FIRST) ================= */}
-            {(propertyViewMode === 'table' || propertyViewMode === 'both') && sortedProperties.length > 0 && (
+            {propertyViewMode === 'table' && sortedProperties.length > 0 && (
               <div id="properties-table-container" className="mb-4 sm:mb-8 bg-white rounded-2xl sm:rounded-3xl shadow-sm border border-zinc-200 overflow-hidden w-full max-w-full">
                 <div className="bg-zinc-950 p-2.5 sm:p-5 text-white flex items-center justify-between gap-2">
                   <div className="hidden sm:block">
@@ -3459,14 +3441,14 @@ export function HomepageSearchablePortal({
               </div>
             )}
 
-            {/* ================= 2. PROPERTY PREVIEW CARDS (SEEN SECOND, 2 INITIALLY + SHOW MORE) ================= */}
+            {/* ================= 2. PROPERTY PREVIEW CARDS ================= */}
             {sortedProperties.length > 0 ? (
-              (propertyViewMode === 'paragraph' || propertyViewMode === 'both') ? (
+              propertyViewMode === 'paragraph' ? (
                 <div id="properties-showcase-container" className="space-y-6">
                   <div className="flex items-center justify-between pb-1 border-b border-zinc-200/80">
                     <h3 className="text-sm sm:text-base font-extrabold text-zinc-950 tracking-tight flex items-center gap-2">
                       <Building2 className="w-4 h-4 text-amber-500" />
-                      <span>Property Showcase {propertyViewMode === 'paragraph' ? '(Paragraph Type)' : ''}</span>
+                      <span>Property Showcase (Cards)</span>
                       <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
                         {sortedProperties.length} Available
                       </span>
@@ -3518,27 +3500,6 @@ export function HomepageSearchablePortal({
                       />
                     ))}
                   </div>
-
-                  {/* Show More / Show Less for Property Cards (Top 2 initially when viewing Both) */}
-                  {propertyViewMode === 'both' && sortedProperties.length > 2 && (
-                    <div className="pt-2 text-center flex items-center justify-center">
-                      <button
-                        type="button"
-                        onClick={() => setShowAllCards(!showAllCards)}
-                        className="inline-flex items-center gap-2 px-8 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 text-sm font-black transition shadow-md hover:shadow-lg cursor-pointer group"
-                      >
-                        <span>
-                          {showAllCards
-                            ? 'Show Less Properties (Show Top 2)'
-                            : `Show All Properties (${sortedProperties.length - 2} More Available)`}
-                        </span>
-                        <ChevronDown
-                          className={`w-4 h-4 text-zinc-950 transition-transform duration-200 ${showAllCards ? 'rotate-180' : ''
-                            }`}
-                        />
-                      </button>
-                    </div>
-                  )}
                 </div>
               ) : null
             ) : isUserSeller(catalogueSearch || searchQuery) ? (
