@@ -130,7 +130,7 @@ export function PublicHeader() {
         </div>
       )}
 
-      <header className={`fixed top-0 inset-x-0 w-full ${mobileMenuOpen ? 'z-[110]' : 'z-50'} px-3.5 sm:px-8 py-3 sm:py-3.5 flex items-center justify-between text-zinc-950 border-b border-zinc-200 backdrop-blur-md bg-white/95 shadow-2xs`}>
+      <header className={`${mobileMenuOpen ? 'fixed top-0 inset-x-0 z-[110]' : 'relative z-30'} w-full px-3.5 sm:px-8 py-3 sm:py-3.5 flex items-center justify-between text-zinc-950 border-b border-zinc-200 backdrop-blur-md bg-white shadow-2xs`}>
         {/* Brand & Back Button */}
         <div className="flex items-center gap-2 sm:gap-3.5 shrink-0">
           {pathname !== '/' && (
@@ -322,8 +322,6 @@ export function PublicHeader() {
           </button>
         </div>
       </header>
-      {/* Layout Spacer to preserve natural flow under the fixed navbar */}
-      <div className="h-[58px] sm:h-[73px] w-full shrink-0" aria-hidden="true" />
 
       {/* Mobile Drawer Navigation Menu */}
       {mobileMenuOpen && (

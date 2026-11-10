@@ -757,7 +757,7 @@ export function HomepageSearchablePortal({
     const estimatedCardHeight = 410;
     const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 800;
     const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
-    const topMargin = 75; // Stay safely below sticky navbar and header
+    const topMargin = 20; // Safe clearance above viewport top edge
     const bottomMargin = 20; // Safe clearance above viewport bottom edge
 
     // Anchor card directly next to the Property & Developer cell (first column)
@@ -1994,7 +1994,7 @@ export function HomepageSearchablePortal({
           {/* ================= SEARCH BAR ONLY ================= */}
           <div
             id="properties-search-bar"
-            className="sticky top-[58px] sm:top-[73px] scroll-mt-20 sm:scroll-mt-24 z-35 w-full bg-white/95 backdrop-blur-md rounded-2xl shadow-md hover:shadow-lg border border-zinc-200/90 p-3 sm:p-4 mb-8 transition-all"
+            className="sticky top-0 sm:top-2 scroll-mt-4 sm:scroll-mt-6 z-35 w-full bg-white/95 backdrop-blur-md rounded-2xl shadow-md hover:shadow-lg border border-zinc-200/90 p-3 sm:p-4 mb-8 transition-all"
           >
             <div className="flex items-center gap-2.5 sm:gap-3">
               <div ref={searchContainerRef} className="relative flex-1 min-w-0">
