@@ -875,12 +875,36 @@ export function PropertyDetailPageClient({
                 <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">
                   All-Inclusive Quoted Valuation
                 </span>
-                <div className="text-2xl sm:text-4xl font-black text-zinc-950 mt-1">
-                  {property.price}
-                </div>
-                <div className="text-xs text-zinc-500 font-semibold mt-1 flex items-center">
-                  <span>{property.priceSuffix || 'All Inclusive'}</span>
-                </div>
+                {property.hidePrice || !property.price || property.price.toLowerCase().includes('request') || property.price === '₹0' ? (
+                  <div className="mt-2 space-y-2.5">
+                    <div className="text-xl sm:text-2xl font-black text-zinc-900 flex items-center gap-2">
+                      <ShieldCheck className="w-5 h-5 text-amber-600" />
+                      <span>Price on Request</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const target = document.getElementById('enquiry-form-section');
+                        if (target) {
+                          target.scrollIntoView({ behavior: 'smooth' });
+                        }
+                      }}
+                      className="w-full py-2.5 px-4 bg-amber-500 hover:bg-amber-400 text-zinc-950 font-black text-xs rounded-xl flex items-center justify-center gap-2 transition shadow-xs cursor-pointer"
+                    >
+                      <span>Request Official Price &amp; Brochure</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-2xl sm:text-4xl font-black text-zinc-950 mt-1">
+                      {property.price}
+                    </div>
+                    <div className="text-xs text-zinc-500 font-semibold mt-1 flex items-center">
+                      <span>{property.priceSuffix || 'All Inclusive'}</span>
+                    </div>
+                  </>
+                )}
 
                 <div className="mt-4 pt-4 border-t border-zinc-100 flex items-center justify-between text-xs">
                   <span className="text-zinc-500">Estimated Rate:</span>

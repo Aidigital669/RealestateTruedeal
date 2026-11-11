@@ -344,12 +344,29 @@ const PropertyCard = React.memo(function PropertyCard({
 
             {/* Prominent Price Box */}
             <div className="text-left sm:text-right shrink-0 bg-amber-50/50 sm:bg-transparent p-2.5 sm:p-0 rounded-xl">
-              <div className="text-2xl font-black text-zinc-950 tracking-tight">
-                {formatPriceDisplay(property.price)}
-              </div>
-              <div className="text-[10px] text-zinc-500 font-semibold mt-0.5 flex items-center sm:justify-end">
-                <span>{property.priceSuffix || 'All Inclusive'}</span>
-              </div>
+              {formatPriceDisplay(property.price) === 'Price on Request' || property.hidePrice ? (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onInstantEnquiry(property);
+                  }}
+                  className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 font-black text-xs transition shadow-2xs flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Lock className="w-3.5 h-3.5 text-zinc-950" />
+                  <span>Request Price</span>
+                </button>
+              ) : (
+                <>
+                  <div className="text-2xl font-black text-zinc-950 tracking-tight">
+                    {formatPriceDisplay(property.price)}
+                  </div>
+                  <div className="text-[10px] text-zinc-500 font-semibold mt-0.5 flex items-center sm:justify-end">
+                    <span>{property.priceSuffix || 'All Inclusive'}</span>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
@@ -3127,8 +3144,21 @@ export function HomepageSearchablePortal({
                             })()}
                           </td>
                           <td className="px-5 py-3.5" onMouseEnter={handleTablePropertyLeave}>
-                            <div className="font-black text-zinc-950">{formatPriceDisplay(row.price)}</div>
-                            <div className="text-[10px] text-zinc-400">{row.status}</div>
+                            {formatPriceDisplay(row.price) === 'Price on Request' || row.hidePrice ? (
+                              <button
+                                type="button"
+                                onClick={() => handleInstantEnquiry(row)}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs transition cursor-pointer shadow-2xs"
+                              >
+                                <Lock className="w-3 h-3 text-zinc-950" />
+                                <span>Request Price</span>
+                              </button>
+                            ) : (
+                              <>
+                                <div className="font-black text-zinc-950">{formatPriceDisplay(row.price)}</div>
+                                <div className="text-[10px] text-zinc-400">{row.status}</div>
+                              </>
+                            )}
                           </td>
                           <td className="px-5 py-3.5 text-right whitespace-nowrap" onMouseEnter={handleTablePropertyLeave}>
                             <button
@@ -3234,7 +3264,18 @@ export function HomepageSearchablePortal({
                           {/* Price */}
                           <div>
                             <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider block">Price</span>
-                            <div className="font-black text-zinc-950 text-sm mt-0.5">{formatPriceDisplay(row.price)}</div>
+                            {formatPriceDisplay(row.price) === 'Price on Request' || row.hidePrice ? (
+                              <button
+                                type="button"
+                                onClick={() => handleInstantEnquiry(row)}
+                                className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-[11px] transition cursor-pointer"
+                              >
+                                <Lock className="w-2.5 h-2.5 text-zinc-950" />
+                                <span>Request Price</span>
+                              </button>
+                            ) : (
+                              <div className="font-black text-zinc-950 text-sm mt-0.5">{formatPriceDisplay(row.price)}</div>
+                            )}
                           </div>
 
                           {/* Status */}
