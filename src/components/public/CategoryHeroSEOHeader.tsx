@@ -13,23 +13,23 @@ interface CategoryHeroSEOHeaderProps {
 export function getCategorySeoHeading(category: CategoryItem): string {
   switch (category.slug) {
     case 'hospital':
-      return 'Hospital Properties for Buy & Rent in Pune';
+      return 'Hospital Properties for Buy & Hospital Properties for Rent in Pune';
     case 'office-space':
     case 'office-in-it-park':
     case 'coworking-office-space':
-      return 'Office Space Properties for Buy & Rent in Pune';
+      return 'Office Space Properties for Buy & Office Space Properties for Rent in Pune';
     case 'shop-showroom':
-      return 'Commercial Shop & Showroom Properties for Buy & Rent in Pune';
+      return 'Shop & Showroom Properties for Buy & Shop & Showroom Properties for Rent in Pune';
     case 'restaurant':
-      return 'Commercial Restaurant & F&B Properties for Buy & Rent in Pune';
+      return 'Restaurant Properties for Buy & Restaurant Properties for Rent in Pune';
     case 'warehouse':
-      return 'Industrial Warehouse & Logistics Properties for Buy & Rent in Pune';
+      return 'Warehouse Properties for Buy & Warehouse Properties for Rent in Pune';
     case 'residential-apartment':
-      return 'Residential Apartment Properties for Buy & Rent in Pune';
+      return 'Residential Apartment Properties for Buy & Residential Apartment Properties for Rent in Pune';
     case 'residential-bungalow':
-      return 'Luxury Bungalow & Villa Properties for Buy & Rent in Pune';
+      return 'Bungalow & Villa Properties for Buy & Bungalow & Villa Properties for Rent in Pune';
     case 'hotel-resort':
-      return 'Commercial Hotel & Resort Properties for Buy & Rent in Pune';
+      return 'Hotel & Resort Properties for Buy & Hotel & Resort Properties for Rent in Pune';
     case 'preleased-properties':
       return 'Preleased Commercial Properties for Buy & Investment in Pune';
     case 'pre-launch-projects':
@@ -45,7 +45,7 @@ export function getCategorySeoHeading(category: CategoryItem): string {
     case 'group-booking':
       return 'Bulk Property Purchases & Group Booking in Pune';
     default:
-      return `${category.title} Properties for Buy & Rent in Pune`;
+      return `${category.title} Properties for Buy & ${category.title} Properties for Rent in Pune`;
   }
 }
 

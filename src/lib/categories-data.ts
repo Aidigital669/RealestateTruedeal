@@ -337,7 +337,7 @@ export const CATEGORIES_DATA: CategoryItem[] = [
     shortTitle: 'Hospital & Healthcare',
     iconName: 'HeartPulse',
     tagline: 'Healthcare-Compliant Medical Centers, Clinics & Multi-Specialty Facilities',
-    metaTitle: 'Hospital Properties for Buy & Rent in Pune | Medical Centers & Clinics | ANV Reealty',
+    metaTitle: 'Hospital Properties for Buy & Hospital Properties for Rent in Pune | ANV Reealty',
     metaDescription: 'Browse healthcare compliant commercial buildings, diagnostic centers, and multi-specialty hospitals for sale and lease in Pune. Pre-fitted for NABH, medical gas, and bed lifts.',
     group: 'specialized',
     groupLabel: 'Specialized Real Estate',
