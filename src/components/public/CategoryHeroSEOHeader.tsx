@@ -12,40 +12,40 @@ interface CategoryHeroSEOHeaderProps {
 
 export function getCategorySeoHeading(category: CategoryItem): string {
   switch (category.slug) {
+    case 'hospital':
+      return 'Hospital Properties for Buy & Rent in Pune';
     case 'office-space':
     case 'office-in-it-park':
     case 'coworking-office-space':
-      return 'Office Space for Buy & Lease / Rent in Pune';
-    case 'preleased-properties':
-      return 'Preleased Commercial Properties for Sale & Investment in Pune';
+      return 'Office Space Properties for Buy & Rent in Pune';
     case 'shop-showroom':
-      return 'Commercial Shops & Showrooms for Sale & Lease in Pune';
+      return 'Commercial Shop & Showroom Properties for Buy & Rent in Pune';
     case 'restaurant':
-      return 'Commercial Restaurant & F&B Retail Spaces for Lease / Sale in Pune';
+      return 'Commercial Restaurant & F&B Properties for Buy & Rent in Pune';
     case 'warehouse':
-      return 'Industrial Warehouses & Logistics Hubs in Pune';
+      return 'Industrial Warehouse & Logistics Properties for Buy & Rent in Pune';
     case 'residential-apartment':
-      return 'Luxury Residential Apartments & Flats for Sale in Pune';
+      return 'Residential Apartment Properties for Buy & Rent in Pune';
     case 'residential-bungalow':
-      return 'Luxury Bungalows, Independent Villas & Row Houses for Sale in Pune';
-    case 'pre-launch-projects':
-      return 'Pre-Launch Projects & New Launches in Pune';
-    case 'residential-commercial-land-plot':
-      return 'Residential & Commercial NA Land & Plots for Sale in Pune';
-    case 'agriculture-farm-land':
-      return 'Agricultural Land & Managed Farm Plots for Sale near Pune';
-    case 'industrial-land':
-      return 'MIDC & Industrial Land / Factory Plots for Sale in Pune';
-    case 'hospital':
-      return 'Hospital & Healthcare Commercial Properties for Buy & Lease in Pune';
+      return 'Luxury Bungalow & Villa Properties for Buy & Rent in Pune';
     case 'hotel-resort':
-      return 'Commercial Hotels & Luxury Resorts for Sale & Lease in Pune';
+      return 'Commercial Hotel & Resort Properties for Buy & Rent in Pune';
+    case 'preleased-properties':
+      return 'Preleased Commercial Properties for Buy & Investment in Pune';
+    case 'pre-launch-projects':
+      return 'Pre-Launch Projects & New Property Launches for Buy in Pune';
+    case 'residential-commercial-land-plot':
+      return 'Residential & Commercial Land & Plot Properties for Buy in Pune';
+    case 'agriculture-farm-land':
+      return 'Agricultural Land & Farm Plot Properties for Buy near Pune';
+    case 'industrial-land':
+      return 'MIDC & Industrial Land Plot Properties for Buy in Pune';
     case 'tdr':
       return 'Transferable Development Rights (TDR) & FSI in Pune & PCMC';
     case 'group-booking':
       return 'Bulk Property Purchases & Group Booking in Pune';
     default:
-      return `${category.title} for Buy & Lease in Pune`;
+      return `${category.title} Properties for Buy & Rent in Pune`;
   }
 }
 
