@@ -13,7 +13,7 @@ interface CategoryHeroSEOHeaderProps {
 export function getCategorySeoHeading(category: CategoryItem): string {
   switch (category.slug) {
     case 'hospital':
-      return 'Hospital Properties for Buy & Hospital Properties for Rent in Pune';
+      return 'Hospital Properties for sell | Hospital Properties for Rent in Pune | Medical Properties for sell | Medical Properties for Rent in Pune';
     case 'office-space':
     case 'office-in-it-park':
     case 'coworking-office-space':
