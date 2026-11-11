@@ -27,7 +27,6 @@ import { usePropertyComparison } from '@/context/PropertyComparisonContext';
 import { InstantEnquiryModal } from '@/components/public/InstantEnquiryModal';
 import { getClientSession } from '@/lib/user-auth';
 import { AuthInquiryModal } from '@/components/auth/AuthInquiryModal';
-import { PropertyDescriptionFormatter } from '@/components/public/PropertyDescriptionFormatter';
 
 interface PropertyDetailsModalProps {
   isOpen: boolean;
@@ -319,12 +318,10 @@ export function PropertyDetailsModal({
             {activeTab === 'overview' && (
               <div className="space-y-4 text-xs">
                 <div>
-                  <h4 className="font-bold text-sm text-zinc-900 mb-2">Property Narrative</h4>
-                  <PropertyDescriptionFormatter
-                    description={property.description}
-                    defaultView="list"
-                    showViewToggle={true}
-                  />
+                  <h4 className="font-bold text-sm text-zinc-900 mb-1.5">Property Narrative</h4>
+                  <p className="text-zinc-600 leading-relaxed text-sm">
+                    {property.description}
+                  </p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
