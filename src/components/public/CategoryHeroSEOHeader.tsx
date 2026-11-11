@@ -17,7 +17,7 @@ export function getCategorySeoHeading(category: CategoryItem): string {
     case 'office-space':
     case 'office-in-it-park':
     case 'coworking-office-space':
-      return 'Office Space Properties for Buy & Office Space Properties for Rent in Pune';
+      return 'Office for sell | Office for Rent in Pune | Corporate Office Properties for sell | Corporate Office Properties for Rent in Pune | IT Park offices for sell | IT Park offices for Rent in Pune';
     case 'shop-showroom':
       return 'Shop & Showroom Properties for Buy & Shop & Showroom Properties for Rent in Pune';
     case 'restaurant':

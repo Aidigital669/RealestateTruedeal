@@ -26,7 +26,7 @@ export const CATEGORIES_DATA: CategoryItem[] = [
     shortTitle: 'Office Space',
     iconName: 'Building2',
     tagline: 'Grade-A Commercial Offices, IT Park Campuses & Managed Coworking Spaces across Pune',
-    metaTitle: 'Office Space for Sale & Rent in Pune | Grade-A Commercial, IT Parks & Coworking | ANV Reealty',
+    metaTitle: 'Office for sell | Office for Rent in Pune | Corporate Office Properties for sell | Corporate Office Properties for Rent in Pune | IT Park offices for sell | IT Park offices for Rent in Pune | ANV Reealty',
     metaDescription: 'Explore verified commercial office spaces for sale and lease across Pune. Grade-A bare-shell, IT tech parks, plug-and-play coworking, and corporate offices with zero brokerage.',
     group: 'commercial',
     groupLabel: 'Commercial Real Estate',
