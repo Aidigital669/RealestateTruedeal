@@ -27,6 +27,7 @@ import { usePropertyComparison } from '@/context/PropertyComparisonContext';
 import { InstantEnquiryModal } from '@/components/public/InstantEnquiryModal';
 import { getClientSession } from '@/lib/user-auth';
 import { AuthInquiryModal } from '@/components/auth/AuthInquiryModal';
+import { formatPropertyDescription } from '@/lib/dossier-parser';
 
 interface PropertyDetailsModalProps {
   isOpen: boolean;
@@ -319,8 +320,8 @@ export function PropertyDetailsModal({
               <div className="space-y-4 text-xs">
                 <div>
                   <h4 className="font-bold text-sm text-zinc-900 mb-1.5">Property Narrative</h4>
-                  <p className="text-zinc-600 leading-relaxed text-sm">
-                    {property.description}
+                  <p className="text-zinc-600 leading-relaxed text-sm whitespace-pre-line">
+                    {formatPropertyDescription(property.description)}
                   </p>
                 </div>
 

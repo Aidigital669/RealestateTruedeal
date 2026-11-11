@@ -43,6 +43,7 @@ import { SharePropertyModal } from '@/components/public/SharePropertyModal';
 import { getClientSession } from '@/lib/user-auth';
 import { AuthInquiryModal } from '@/components/auth/AuthInquiryModal';
 import { findNearestLandmarks, LandmarkCategory } from '@/lib/geo-landmarks';
+import { formatPropertyDescription } from '@/lib/dossier-parser';
 
 interface PropertyDetailPageClientProps {
   initialProperty?: PropertyItem | null;
@@ -748,8 +749,8 @@ export function PropertyDetailPageClient({
                 <div className="bg-white rounded-2xl sm:rounded-3xl border border-zinc-200 p-5 sm:p-8 space-y-6 shadow-xs">
                   <div>
                     <h3 className="text-base sm:text-lg font-black text-zinc-950 mb-2">Architectural Narrative & Orientation</h3>
-                    <p className="text-xs sm:text-sm text-zinc-600 leading-relaxed">
-                      {property.description}
+                    <p className="text-xs sm:text-sm text-zinc-600 leading-relaxed whitespace-pre-line">
+                      {formatPropertyDescription(property.description)}
                     </p>
                   </div>
 

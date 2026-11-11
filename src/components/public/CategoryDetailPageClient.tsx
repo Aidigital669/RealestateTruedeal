@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import { CategoryItem, CATEGORIES_DATA } from '@/lib/categories-data';
 import { InstantEnquiryModal } from '@/components/public/InstantEnquiryModal';
+import { formatPropertyDescription } from '@/lib/dossier-parser';
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Building2,
@@ -298,8 +299,8 @@ export function CategoryDetailPageClient({
                         <MapPin className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                         <span>{prop.locality || prop.location || 'Pune'}</span>
                       </p>
-                      <p className="text-xs text-zinc-600 line-clamp-2 mt-2 font-light">
-                        {prop.description}
+                      <p className="text-xs text-zinc-600 line-clamp-2 mt-2 font-light whitespace-pre-line">
+                        {formatPropertyDescription(prop.description)}
                       </p>
                     </div>
 
