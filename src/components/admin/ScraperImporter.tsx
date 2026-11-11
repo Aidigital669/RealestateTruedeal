@@ -149,27 +149,65 @@ export function ScraperImporter({ onImportComplete, showToast }: ScraperImporter
       }
     }
 
-    const applyUpdates = (prevItem: any) => ({
-      ...prevItem,
-      name: updatedData.name || prevItem.name,
-      developer: updatedData.developer || prevItem.developer,
-      location: updatedData.location || prevItem.location,
-      price: updatedData.price || prevItem.price,
-      bhk: updatedData.bhk || prevItem.bhk,
-      configuration: updatedData.configuration || updatedData.bhk || prevItem.configuration,
-      sqft: updatedData.sqft || prevItem.sqft,
-      status: updatedData.possession || updatedData.status || prevItem.status,
-      possession: updatedData.possession || prevItem.possession,
-      reraNumber: updatedData.reraNumber || prevItem.reraNumber,
-      rpsStatus: updatedData.rpsStatus || prevItem.rpsStatus,
-      highlights: updatedData.highlights || prevItem.highlights,
-      connectivity: updatedData.connectivity || prevItem.connectivity,
-      amenitiesList: updatedData.amenitiesList || prevItem.amenitiesList,
-      description: updatedData.description || prevItem.description,
-      image: updatedData.imageUrl || updatedData.image || prevItem.image,
-      images: updatedData.images || prevItem.images,
-      videoUrl: updatedData.videoUrl !== undefined ? updatedData.videoUrl : prevItem.videoUrl
-    });
+    const applyUpdates = (prevItem: any) => {
+      const newBhk = updatedData.bhk || updatedData.configuration || prevItem.bhk;
+      const tagMatch = typeof newBhk === 'string' ? newBhk.match(/\(([^)]+)\)/) : null;
+      const activeTag = tagMatch ? tagMatch[1] : (prevItem.tags?.[0] || 'New');
+      const cleanCategory = typeof newBhk === 'string' ? newBhk.replace(/\s*\([^)]*\)/, '').trim() : newBhk;
+
+      // Dynamically sync specs (Property Type, Configuration, Property Tag)
+      const nextSpecs = Array.isArray(prevItem.specs)
+        ? prevItem.specs.map((s: any) => {
+            if (/property\s*type/i.test(s.key)) {
+              return { ...s, value: cleanCategory };
+            }
+            if (/configuration/i.test(s.key)) {
+              return { ...s, value: newBhk };
+            }
+            if (/property\s*tag/i.test(s.key)) {
+              return { ...s, value: activeTag };
+            }
+            return s;
+          })
+        : [
+            { key: 'Property Type', value: cleanCategory },
+            { key: 'Configuration', value: newBhk },
+            { key: 'Property Tag', value: activeTag }
+          ];
+
+      // Dynamically sync tags
+      const nextTags = Array.from(new Set([
+        activeTag,
+        cleanCategory,
+        ...(Array.isArray(prevItem.tags)
+          ? prevItem.tags.filter((t: string) => !/office|shop|showroom|residential|flat|apartment|commercial/i.test(t))
+          : [])
+      ])).filter(Boolean);
+
+      return {
+        ...prevItem,
+        name: updatedData.name || prevItem.name,
+        developer: updatedData.developer || prevItem.developer,
+        location: updatedData.location || prevItem.location,
+        price: updatedData.price || prevItem.price,
+        bhk: newBhk,
+        configuration: newBhk,
+        sqft: updatedData.sqft || prevItem.sqft,
+        status: updatedData.possession || updatedData.status || prevItem.status,
+        possession: updatedData.possession || prevItem.possession,
+        reraNumber: updatedData.reraNumber || prevItem.reraNumber,
+        rpsStatus: updatedData.rpsStatus || prevItem.rpsStatus,
+        highlights: updatedData.highlights || prevItem.highlights,
+        connectivity: updatedData.connectivity || prevItem.connectivity,
+        amenitiesList: updatedData.amenitiesList || prevItem.amenitiesList,
+        description: updatedData.description || prevItem.description,
+        image: updatedData.imageUrl || updatedData.image || prevItem.image,
+        images: updatedData.images || prevItem.images,
+        videoUrl: updatedData.videoUrl !== undefined ? updatedData.videoUrl : prevItem.videoUrl,
+        specs: nextSpecs,
+        tags: nextTags
+      };
+    };
 
     // Update single scraped preview if matching
     if (scrapedSingle && (scrapedSingle.id === id || String(scrapedSingle.id) === String(id))) {

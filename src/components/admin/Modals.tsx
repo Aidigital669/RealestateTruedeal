@@ -384,6 +384,8 @@ export function AddPropertyModal({
                 placeholder="-- Choose Category / Configuration --"
                 onChange={(val) => {
                   setBhk(val);
+                  setCustomConfig(val);
+                  setIsCustomConfig(false);
                 }}
                 onTagSelected={(tag) => {
                   if (tag === 'PreLaunch') {
@@ -605,7 +607,7 @@ export function AddPropertyModal({
             onClick={() => {
               if (!name.trim()) return alert('Please enter property name');
               const cleanImages = images.map((u) => u.trim()).filter(Boolean);
-              const finalConfig = (isCustomConfig ? customConfig : bhk).trim() || 'Commercial';
+              const finalConfig = (bhk || customConfig).trim() || 'Commercial';
               onAdd({ 
                 title: name, 
                 name, 
@@ -902,7 +904,7 @@ export function EditPropertyModal({
     try {
       const cleanImages = images.map((u) => u.trim()).filter(Boolean);
       const cleanVideo = videoUrl.trim();
-      const finalConfig = (isCustomConfig ? customConfig : bhk).trim() || 'Commercial';
+      const finalConfig = (bhk || customConfig).trim() || 'Commercial';
 
       const finalDescription = embedDossierData(formatPropertyDescription(description.trim()), {
         highlights: highlights.filter(Boolean),
@@ -1158,6 +1160,8 @@ export function EditPropertyModal({
                   placeholder="-- Choose Category / Configuration --"
                   onChange={(val) => {
                     setBhk(val);
+                    setCustomConfig(val);
+                    setIsCustomConfig(false);
                   }}
                   onTagSelected={(tag) => {
                     if (tag === 'PreLaunch') {
