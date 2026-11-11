@@ -565,13 +565,27 @@ export function AddPropertyModal({
           </div>
 
           <div>
-            <label className="block font-medium text-zinc-700 mb-1">Description Overview</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block font-medium text-zinc-700">Description Overview</label>
+              {description.includes('#') && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const lines = description.split(/(?:^|\s+)#/).map((s) => s.replace(/^#+/, '').trim()).filter(Boolean);
+                    setDescription(lines.join('\n'));
+                  }}
+                  className="text-[11px] font-bold text-amber-800 hover:text-amber-950 bg-amber-50 hover:bg-amber-100 px-2 py-0.5 rounded border border-amber-300 transition cursor-pointer"
+                >
+                  🪄 Format # to New Lines
+                </button>
+              )}
+            </div>
             <textarea
-              rows={2}
+              rows={3}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="e.g. Exclusive luxury property curated by Anv Reealty..."
-              className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-zinc-400 resize-none"
+              className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-zinc-400"
             />
           </div>
 
@@ -1211,12 +1225,26 @@ export function EditPropertyModal({
             </div>
 
             <div>
-              <label className="block font-semibold text-zinc-800 mb-1">Architectural Narrative &amp; Orientation (Description)</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block font-semibold text-zinc-800">Architectural Narrative &amp; Orientation (Description)</label>
+                {description.includes('#') && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const lines = description.split(/(?:^|\s+)#/).map((s) => s.replace(/^#+/, '').trim()).filter(Boolean);
+                      setDescription(lines.join('\n'));
+                    }}
+                    className="text-[11px] font-bold text-amber-800 hover:text-amber-950 bg-amber-50 hover:bg-amber-100 px-2 py-0.5 rounded border border-amber-300 transition cursor-pointer"
+                  >
+                    🪄 Format # to New Lines
+                  </button>
+                )}
+              </div>
               <textarea
-                rows={3}
+                rows={4}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600 resize-none transition"
+                className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600 transition"
                 placeholder="Overview of layout, architecture, amenities, and connectivity..."
               />
             </div>

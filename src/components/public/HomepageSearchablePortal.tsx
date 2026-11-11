@@ -53,6 +53,7 @@ import { parseQueryCriteria, getPropertyRawPrice, scorePropertyMatch } from '@/l
 import { findMatchingCategorySlug } from '@/lib/categories-data';
 import { isUserSeller } from '@/lib/seller-intent';
 import { generateSearchSuggestions, detectQueryAutocorrect, SearchSuggestion } from '@/lib/search-autocorrect';
+import { formatCompactDescription } from '@/components/public/PropertyDescriptionFormatter';
 
 export interface BuyerDemandItem {
   id: string;
@@ -396,7 +397,7 @@ const PropertyCard = React.memo(function PropertyCard({
               About This Property:
             </span>
             <p className="text-xs text-zinc-600 leading-relaxed line-clamp-2">
-              {property.description}
+              {formatCompactDescription(property.description, 3) || property.description}
             </p>
           </div>
 
@@ -3401,7 +3402,7 @@ export function HomepageSearchablePortal({
 
                       {/* Short Description */}
                       <p className="text-[11px] text-zinc-600 line-clamp-2 leading-relaxed">
-                        {hoveredTableProperty.property.description}
+                        {formatCompactDescription(hoveredTableProperty.property.description, 2) || hoveredTableProperty.property.description}
                       </p>
 
                       {/* Action Button: Explore */}

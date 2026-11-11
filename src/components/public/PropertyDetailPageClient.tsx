@@ -39,6 +39,7 @@ import { useSavedProperties } from '@/context/SavedPropertiesContext';
 import { PropertyItem, ALL_FALLBACK_PROPERTIES } from '@/lib/property-types';
 import { getPropertySlug, getPropertyUrl, matchesProperty } from '@/lib/slug';
 import { PublicHeader } from '@/components/public/PublicHeader';
+import { PropertyDescriptionFormatter } from '@/components/public/PropertyDescriptionFormatter';
 import { SharePropertyModal } from '@/components/public/SharePropertyModal';
 import { getClientSession } from '@/lib/user-auth';
 import { AuthInquiryModal } from '@/components/auth/AuthInquiryModal';
@@ -747,10 +748,12 @@ export function PropertyDetailPageClient({
               {activeTab === 'overview' && (
                 <div className="bg-white rounded-2xl sm:rounded-3xl border border-zinc-200 p-5 sm:p-8 space-y-6 shadow-xs">
                   <div>
-                    <h3 className="text-base sm:text-lg font-black text-zinc-950 mb-2">Architectural Narrative & Orientation</h3>
-                    <p className="text-xs sm:text-sm text-zinc-600 leading-relaxed">
-                      {property.description}
-                    </p>
+                    <h3 className="text-base sm:text-lg font-black text-zinc-950 mb-3">Architectural Narrative & Orientation</h3>
+                    <PropertyDescriptionFormatter
+                      description={property.description}
+                      defaultView="list"
+                      showViewToggle={true}
+                    />
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
