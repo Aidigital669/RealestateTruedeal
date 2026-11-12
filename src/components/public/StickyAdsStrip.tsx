@@ -182,36 +182,44 @@ export function StickyAdsStrip() {
           <button
             type="button"
             onClick={() => setIsMinimized(false)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-950/95 hover:bg-zinc-900 text-white border border-amber-500/30 shadow-xl backdrop-blur-md transition-all hover:scale-105 cursor-pointer"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-zinc-950 via-[#2e050f] to-zinc-950 hover:from-zinc-900 hover:to-[#420816] text-white border border-amber-500/50 shadow-xl backdrop-blur-md transition-all hover:scale-105 cursor-pointer shadow-[0_0_14px_rgba(245,158,11,0.3)]"
             title="Expand Premium"
           >
-            <div className="relative w-8 h-4 rounded overflow-hidden shrink-0 border border-amber-500/40">
+            <div className="relative w-7 h-4 shrink-0">
               <Image
-                src="/premium-badge.jpg"
+                src="/premium-crown.png"
                 alt="Premium"
                 fill
                 unoptimized
-                className="object-cover"
+                className="object-contain drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]"
               />
             </div>
-            <span className="text-[10px] text-zinc-400 font-semibold bg-zinc-800 px-1.5 py-0.2 rounded-full">
+            <span className="text-[10px] text-amber-300 font-bold bg-amber-950/80 border border-amber-500/40 px-1.5 py-0.2 rounded-full">
               {AD_ITEMS.length}
             </span>
           </button>
         ) : (
           /* Full Sticky Strip */
           <div className="relative bg-zinc-950/95 backdrop-blur-xl border border-zinc-800/90 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.6)] p-2 sm:p-2.5 flex items-center gap-2 sm:gap-2.5 transition-all max-w-[calc(100vw-24px)]">
-            {/* Left Header Image Badge: Gold Crown */}
+            {/* Left Header Image Badge: Gold Crown with Premium Royal Background */}
             <div className="flex items-center justify-center shrink-0 pr-1.5 border-r border-zinc-800/80">
-              <div className="relative w-16 h-7 sm:w-20 sm:h-8 rounded-lg overflow-hidden shadow-xs border border-amber-500/40 shrink-0">
-                <Image
-                  src="/premium-badge.jpg"
-                  alt="Premium"
-                  fill
-                  unoptimized
-                  priority
-                  className="object-cover"
-                />
+              <div
+                className="relative px-2 py-1 rounded-xl bg-gradient-to-b from-[#2e050f] via-[#420816] to-[#1f030a] border border-amber-400/70 shadow-[0_0_16px_rgba(245,158,11,0.35)] flex items-center justify-center shrink-0 group/crown"
+                title="Premium Collection"
+              >
+                {/* Subtle Amber Glow Behind the Crown */}
+                <div className="absolute inset-0 rounded-xl bg-[radial-gradient(ellipse_at_center,_rgba(245,158,11,0.25)_0%,_transparent_70%)] pointer-events-none" />
+
+                <div className="relative w-14 h-7 sm:w-16 sm:h-8 shrink-0">
+                  <Image
+                    src="/premium-crown.png"
+                    alt="Premium"
+                    fill
+                    unoptimized
+                    priority
+                    className="object-contain drop-shadow-[0_2px_6px_rgba(0,0,0,0.8)] group-hover/crown:scale-105 transition-transform duration-200"
+                  />
+                </div>
               </div>
             </div>
 
