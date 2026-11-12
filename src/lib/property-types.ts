@@ -34,6 +34,21 @@ export interface PropertyItem {
   connectivity?: string[];
   amenitiesList?: (string | { title: string; desc: string })[];
   possession?: string;
+  legalVettingText?: string;
+  hideRera?: boolean;
+  hideComplianceTab?: boolean;
+  hideCostSheet?: boolean;
+  hideAmenities?: boolean;
+  hideHighlights?: boolean;
+  hideConnectivity?: boolean;
+  customCostSheet?: {
+    baseAgreementValue?: string;
+    stampDuty?: string;
+    registrationCharges?: string;
+    gst?: string;
+    brokerage?: string;
+    totalLandedOutlay?: string;
+  };
 }
 
 export const ALL_FALLBACK_PROPERTIES: PropertyItem[] = [];

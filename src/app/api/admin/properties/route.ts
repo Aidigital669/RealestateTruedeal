@@ -73,6 +73,14 @@ export async function GET(req: NextRequest) {
           ...p,
           hideName: Boolean(dossier.hideName),
           hidePrice: Boolean(dossier.hidePrice),
+          hideRera: Boolean(dossier.hideRera),
+          hideComplianceTab: Boolean(dossier.hideComplianceTab),
+          hideCostSheet: Boolean(dossier.hideCostSheet),
+          hideAmenities: Boolean(dossier.hideAmenities),
+          hideHighlights: Boolean(dossier.hideHighlights),
+          hideConnectivity: Boolean(dossier.hideConnectivity),
+          customCostSheet: dossier.customCostSheet,
+          legalVettingText: dossier.legalVettingText || '',
           isSafe: Boolean(dossier.isSafe),
           description: cleanDescription || p.description || '',
           highlights: dossier.highlights || [],
@@ -109,7 +117,8 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const {
       title, location, developer, price, bhk, configuration, sqft, status, publishStatus, description, imageUrl, images, videoUrl, propertyType, listingType, businessPurposeIds, businessPurposes,
-      hideName, hidePrice, highlights, connectivity, amenitiesList, reraNumber, possession, rpsStatus
+      hideName, hidePrice, hideRera, hideComplianceTab, hideCostSheet, hideAmenities, hideHighlights, hideConnectivity, customCostSheet, legalVettingText,
+      highlights, connectivity, amenitiesList, reraNumber, possession, rpsStatus
     } = body;
 
     const rawListingType = String(listingType || '').toLowerCase();
@@ -246,8 +255,16 @@ export async function POST(req: NextRequest) {
         reraNumber: reraNumber ? String(reraNumber).trim() : undefined,
         possession: possession ? String(possession).trim() : undefined,
         rpsStatus: rpsStatus ? String(rpsStatus).trim() : undefined,
+        legalVettingText: legalVettingText ? String(legalVettingText).trim() : undefined,
         hideName: Boolean(hideName),
         hidePrice: Boolean(hidePrice),
+        hideRera: Boolean(hideRera),
+        hideComplianceTab: Boolean(hideComplianceTab),
+        hideCostSheet: Boolean(hideCostSheet),
+        hideAmenities: Boolean(hideAmenities),
+        hideHighlights: Boolean(hideHighlights),
+        hideConnectivity: Boolean(hideConnectivity),
+        customCostSheet: customCostSheet && typeof customCostSheet === 'object' ? customCostSheet : undefined,
       }
     );
 

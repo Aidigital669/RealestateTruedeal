@@ -33,7 +33,7 @@ import { PublicHeader } from '@/components/public/PublicHeader';
 import { SharePropertyModal } from '@/components/public/SharePropertyModal';
 import { getClientSession } from '@/lib/user-auth';
 import { AuthInquiryModal } from '@/components/auth/AuthInquiryModal';
-import { formatPropertyDescription } from '@/lib/dossier-parser';
+import { formatPropertyDescription, parseDossierData } from '@/lib/dossier-parser';
 
 interface PropertyDetailPageClientProps {
   initialProperty?: PropertyItem | null;
@@ -319,19 +319,85 @@ export function PropertyDetailPageClient({
     );
   }
 
+  // Structured Dossier Parsing & Privacy Settings
+  const { cleanDescription, dossier } = useMemo(() => {
+    return parseDossierData(property?.description || '');
+  }, [property?.description]);
+
+  const hideName = Boolean(property?.hideName ?? dossier.hideName);
+  const hidePrice = Boolean(property?.hidePrice ?? dossier.hidePrice);
+  const hideRera = Boolean(property?.hideRera ?? dossier.hideRera);
+  const hideComplianceTab = Boolean(property?.hideComplianceTab ?? dossier.hideComplianceTab);
+  const hideCostSheet = Boolean(property?.hideCostSheet ?? dossier.hideCostSheet);
+  const hideAmenities = Boolean(property?.hideAmenities ?? dossier.hideAmenities);
+  const hideHighlights = Boolean(property?.hideHighlights ?? dossier.hideHighlights);
+  const hideConnectivity = Boolean(property?.hideConnectivity ?? dossier.hideConnectivity);
+
+  const highlights: string[] = (property?.highlights && property.highlights.length > 0)
+    ? property.highlights
+    : (dossier.highlights && dossier.highlights.length > 0)
+    ? dossier.highlights
+    : [];
+
+  const connectivity: string[] = (property?.connectivity && property.connectivity.length > 0)
+    ? property.connectivity
+    : (dossier.connectivity && dossier.connectivity.length > 0)
+    ? dossier.connectivity
+    : [];
+
+  const amenitiesList = (property?.amenitiesList && property.amenitiesList.length > 0)
+    ? property.amenitiesList
+    : (dossier.amenitiesList && dossier.amenitiesList.length > 0)
+    ? dossier.amenitiesList
+    : [];
+
+  const rawRera = (property?.reraNumber || dossier.reraNumber || '').trim();
+  const displayRera = (rawRera === 'PRM/PUN/RERA/2026/0491' || rawRera === 'PRM/PUN/COM/2026/0882') ? '' : rawRera;
+  const rpsStatus = property?.rpsStatus || dossier.rpsStatus || '100% Clear Title • Zero Encumbrances';
+  const legalVettingText = property?.legalVettingText || dossier.legalVettingText || 'This property has completed 100% title deed investigation, environmental clearance, and commencement certification as registered under Government of Maharashtra MahaRERA.';
+  const customCostSheet = property?.customCostSheet || dossier.customCostSheet;
+
   // Cost estimates
-  const priceRaw = property.priceRaw || 15000000;
+  const priceRaw = property?.priceRaw || 0;
   const stampDuty = Math.round(priceRaw * 0.07);
   const registrationFee = 30000;
-  const isReady = property.status.toLowerCase().includes('ready');
+  const isReady = (property?.status || '').toLowerCase().includes('ready');
   const gstRate = isReady ? 0 : 0.05;
   const gstAmount = Math.round(priceRaw * gstRate);
-  const totalCost = priceRaw + stampDuty + registrationFee + gstAmount;
+  const totalCost = priceRaw > 0 ? (priceRaw + stampDuty + registrationFee + gstAmount) : 0;
 
   const formatCurrency = (val: number) => {
+    if (!val || val <= 0) return '₹0';
     if (val >= 10000000) return `₹${(val / 10000000).toFixed(2)} Cr`;
     return `₹${(val / 100000).toFixed(2)} Lakh`;
   };
+
+  // Dynamic Tabs Available
+  const availableTabs = useMemo(() => {
+    const tabs: { id: 'overview' | 'financials' | 'amenities' | 'compliance'; label: string }[] = [
+      { id: 'overview', label: 'Executive Dossier' }
+    ];
+
+    if (!hideCostSheet && (customCostSheet?.baseAgreementValue || (priceRaw > 0 && !hidePrice))) {
+      tabs.push({ id: 'financials', label: 'Financial Cost Sheet' });
+    }
+
+    if (!hideAmenities && amenitiesList.length > 0) {
+      tabs.push({ id: 'amenities', label: property?.isCommercial ? 'Commercial Infrastructure' : 'Lifestyle Amenities' });
+    }
+
+    if (!hideComplianceTab) {
+      tabs.push({ id: 'compliance', label: 'RERA & Legal Clearance' });
+    }
+
+    return tabs;
+  }, [hideCostSheet, hidePrice, customCostSheet, priceRaw, hideAmenities, amenitiesList.length, property?.isCommercial, hideComplianceTab]);
+
+  useEffect(() => {
+    if (!availableTabs.some((t) => t.id === activeTab)) {
+      setActiveTab(availableTabs[0]?.id || 'overview');
+    }
+  }, [availableTabs, activeTab]);
 
   const isCompared = isInCompare(property.id);
 
@@ -686,12 +752,7 @@ export function PropertyDetailPageClient({
 
               {/* TABS NAVIGATION */}
               <div className="bg-white rounded-2xl border border-zinc-200 p-1.5 sm:p-2 flex items-center gap-1.5 sm:gap-2 overflow-x-auto shadow-xs">
-                {[
-                  { id: 'overview', label: 'Executive Dossier' },
-                  { id: 'financials', label: 'Financial Cost Sheet' },
-                  { id: 'amenities', label: 'Lifestyle Amenities' },
-                  { id: 'compliance', label: 'RERA & Legal Clearance' }
-                ].map((tab) => (
+                {availableTabs.map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id as any)}
@@ -712,39 +773,39 @@ export function PropertyDetailPageClient({
                   <div>
                     <h3 className="text-base sm:text-lg font-black text-zinc-950 mb-2">Architectural Narrative & Orientation</h3>
                     <p className="text-xs sm:text-sm text-zinc-600 leading-relaxed whitespace-pre-line">
-                      {formatPropertyDescription(property.description)}
+                      {cleanDescription || formatPropertyDescription(property.description)}
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                    <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-200">
-                      <span className="text-xs font-bold text-zinc-900 block mb-2">Engineering &amp; Architectural Highlights</span>
-                      <ul className="space-y-1.5 text-xs text-zinc-600 list-disc list-inside">
-                        {(property.highlights && property.highlights.length > 0 ? property.highlights : [
-                          'East/West vastu layout optimizing cross-ventilation',
-                          'Double-glazed soundproof glass with acoustic barrier',
-                          'High ceilings with expansive 8ft entryway',
-                          'Dedicated utility deck separate from private sit-out'
-                        ]).map((hl, idx) => (
-                          <li key={idx}>{hl}</li>
-                        ))}
-                      </ul>
-                    </div>
+                  {((!hideHighlights && highlights.length > 0) || (!hideConnectivity && connectivity.length > 0)) && (
+                    <div className={`grid gap-4 pt-2 ${
+                      (!hideHighlights && highlights.length > 0) && (!hideConnectivity && connectivity.length > 0)
+                        ? 'grid-cols-1 sm:grid-cols-2'
+                        : 'grid-cols-1'
+                    }`}>
+                      {!hideHighlights && highlights.length > 0 && (
+                        <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-200">
+                          <span className="text-xs font-bold text-zinc-900 block mb-2">Engineering &amp; Architectural Highlights</span>
+                          <ul className="space-y-1.5 text-xs text-zinc-600 list-disc list-inside">
+                            {highlights.map((hl, idx) => (
+                              <li key={idx}>{hl}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
 
-                    <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-200">
-                      <span className="text-xs font-bold text-zinc-900 block mb-2">Location Connectivity Advantage</span>
-                      <ul className="space-y-1.5 text-xs text-zinc-600 list-disc list-inside">
-                        {(property.connectivity && property.connectivity.length > 0 ? property.connectivity : [
-                          'Direct arterial access to Pune-Mumbai Expressway',
-                          'Within 7 minutes of Metro Line 3 station',
-                          '5-10 mins from top business parks and IT corridors',
-                          'Proximity to reputed hospitals & international schools'
-                        ]).map((cn, idx) => (
-                          <li key={idx}>{cn}</li>
-                        ))}
-                      </ul>
+                      {!hideConnectivity && connectivity.length > 0 && (
+                        <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-200">
+                          <span className="text-xs font-bold text-zinc-900 block mb-2">Location Connectivity Advantage</span>
+                          <ul className="space-y-1.5 text-xs text-zinc-600 list-disc list-inside">
+                            {connectivity.map((cn, idx) => (
+                              <li key={idx}>{cn}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                     </div>
-                  </div>
+                  )}
                 </div>
               )}
 
@@ -760,27 +821,39 @@ export function PropertyDetailPageClient({
                   <div className="border border-zinc-200 rounded-2xl overflow-hidden divide-y divide-zinc-200 text-xs">
                     <div className="flex justify-between items-center p-3.5 sm:p-4 bg-zinc-50">
                       <span className="font-bold text-zinc-800">Base Agreement Value</span>
-                      <span className="font-black text-zinc-950 text-sm">{formatCurrency(priceRaw)}</span>
+                      <span className="font-black text-zinc-950 text-sm">
+                        {customCostSheet?.baseAgreementValue || (priceRaw > 0 ? formatCurrency(priceRaw) : (property.price || 'Price on Request'))}
+                      </span>
                     </div>
                     <div className="flex justify-between items-center p-3.5 sm:p-4">
                       <span className="text-zinc-600">MahaRERA Stamp Duty (7%)</span>
-                      <span className="font-semibold text-zinc-900">{formatCurrency(stampDuty)}</span>
+                      <span className="font-semibold text-zinc-900">
+                        {customCostSheet?.stampDuty || (priceRaw > 0 ? formatCurrency(stampDuty) : 'Calculated at 7% on Agreement')}
+                      </span>
                     </div>
                     <div className="flex justify-between items-center p-3.5 sm:p-4">
                       <span className="text-zinc-600">Statutory Registration Charges</span>
-                      <span className="font-semibold text-zinc-900">₹30,000</span>
+                      <span className="font-semibold text-zinc-900">
+                        {customCostSheet?.registrationCharges || '₹30,000'}
+                      </span>
                     </div>
                     <div className="flex justify-between items-center p-3.5 sm:p-4">
                       <span className="text-zinc-600">Goods &amp; Services Tax (GST {isReady ? '0% - OC Issued' : '5%'})</span>
-                      <span className="font-semibold text-zinc-900">{isReady ? '₹0 (OC Received)' : formatCurrency(gstAmount)}</span>
+                      <span className="font-semibold text-zinc-900">
+                        {customCostSheet?.gst || (isReady ? '₹0 (OC Received)' : (priceRaw > 0 ? formatCurrency(gstAmount) : 'Subject to Project Stage'))}
+                      </span>
                     </div>
                     <div className="flex justify-between items-center p-3.5 sm:p-4">
                       <span className="text-zinc-600">Brokerage &amp; Advisory Fee</span>
-                      <span className="font-bold text-emerald-700">₹0 (Zero Brokerage Mandate)</span>
+                      <span className="font-bold text-emerald-700">
+                        {customCostSheet?.brokerage || '₹0 (Zero Brokerage Mandate)'}
+                      </span>
                     </div>
                     <div className="flex justify-between items-center p-4 sm:p-5 bg-zinc-950 text-white font-bold">
                       <span className="text-xs sm:text-sm">Estimated Total Landed Outlay</span>
-                      <span className="text-amber-400 text-base sm:text-lg font-black">{formatCurrency(totalCost)}</span>
+                      <span className="text-amber-400 text-base sm:text-lg font-black">
+                        {customCostSheet?.totalLandedOutlay || (priceRaw > 0 ? formatCurrency(totalCost) : 'Available on Custom Quote')}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -798,32 +871,19 @@ export function PropertyDetailPageClient({
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                    {(property.amenitiesList && property.amenitiesList.length > 0
-                      ? property.amenitiesList.map((item) =>
-                          typeof item === 'string'
-                            ? { title: item, desc: 'Verified on-site infrastructure & service amenity' }
-                            : item
-                        )
-                      : [
-                          { title: 'Infinity Rooftop Pool', desc: 'Temperature-controlled with sundeck' },
-                          { title: 'Grand Clubhouse', desc: 'Private banquet & business lounge' },
-                          { title: 'Biometric 3-Tier Security', desc: 'Face recognition & RFID vehicle access' },
-                          { title: 'Dedicated EV Charging', desc: 'Fast DC charging for electric vehicles' },
-                          { title: 'Fitness Sanctuary & Yoga', desc: 'Imported equipment, steam and sauna' },
-                          { title: 'Squash & Badminton Courts', desc: 'Indoor air-conditioned sports arena' },
-                          { title: 'Landscaped Forest Podium', desc: '400+ native trees with reflexology trail' },
-                          { title: 'Children’s Discovery Zone', desc: 'Dedicated safe indoor & outdoor play park' },
-                          { title: '100% Power Backup', desc: 'Uninterrupted power support for entire unit' }
-                        ]
-                    ).map((item, idx) => (
-                      <div key={idx} className="p-3.5 bg-zinc-50 border border-zinc-200 rounded-2xl">
-                        <div className="flex items-center gap-1.5 font-bold text-xs text-zinc-900 mb-1">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                          <span>{item.title}</span>
+                    {amenitiesList.map((item, idx) => {
+                      const title = typeof item === 'string' ? item : item.title;
+                      const desc = typeof item === 'string' ? 'Verified on-site infrastructure & service amenity' : (item.desc || 'Verified on-site infrastructure & service amenity');
+                      return (
+                        <div key={idx} className="p-3.5 bg-zinc-50 border border-zinc-200 rounded-2xl">
+                          <div className="flex items-center gap-1.5 font-bold text-xs text-zinc-900 mb-1">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                            <span>{title}</span>
+                          </div>
+                          <p className="text-[11px] text-zinc-500 leading-snug">{desc}</p>
                         </div>
-                        <p className="text-[11px] text-zinc-500 leading-snug">{item.desc}</p>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -833,34 +893,45 @@ export function PropertyDetailPageClient({
                   <div className="p-4 sm:p-5 bg-emerald-50/80 border border-emerald-200 rounded-2xl flex items-start gap-3">
                     <ShieldCheck className="w-6 h-6 text-emerald-600 shrink-0 mt-0.5" />
                     <div>
-                      <h4 className="font-bold text-sm text-emerald-950">MahaRERA & RPS Legal Title Vetting</h4>
+                      <h4 className="font-bold text-sm text-emerald-950">MahaRERA &amp; RPS Legal Title Vetting</h4>
                       <p className="text-xs text-emerald-800 mt-1 leading-relaxed">
-                        This property has completed 100% title deed investigation, environmental clearance, and commencement certification as registered under Government of Maharashtra MahaRERA.
+                        {legalVettingText}
                       </p>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                    <div className="p-4 bg-zinc-50 border border-zinc-200 rounded-2xl flex items-center justify-between">
-                      <div>
-                        <span className="text-[10px] text-zinc-400 font-bold uppercase block">MahaRERA Registration ID</span>
-                        <span className="font-mono font-bold text-zinc-900 text-sm block mt-0.5">
-                          {property.reraNumber || 'PRM/PUN/RERA/2026/0491'}
+                    {!hideRera ? (
+                      <div className="p-4 bg-zinc-50 border border-zinc-200 rounded-2xl flex items-center justify-between">
+                        <div>
+                          <span className="text-[10px] text-zinc-400 font-bold uppercase block">MahaRERA Registration ID</span>
+                          <span className="font-mono font-bold text-zinc-900 text-sm block mt-0.5">
+                            {displayRera || 'Available on Request / In Process'}
+                          </span>
+                        </div>
+                        {displayRera && (
+                          <button
+                            onClick={handleCopyRera}
+                            className="p-2 hover:bg-zinc-200 rounded-lg text-zinc-600 transition cursor-pointer"
+                            title="Copy RERA ID"
+                          >
+                            {copiedRera ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="p-4 bg-zinc-50 border border-zinc-200 rounded-2xl">
+                        <span className="text-[10px] text-zinc-400 font-bold uppercase block">MahaRERA Registration</span>
+                        <span className="font-semibold text-zinc-700 text-xs block mt-0.5">
+                          Verified Mandate &bull; Private Clearance On Request
                         </span>
                       </div>
-                      <button
-                        onClick={handleCopyRera}
-                        className="p-2 hover:bg-zinc-200 rounded-lg text-zinc-600 transition"
-                        title="Copy RERA ID"
-                      >
-                        {copiedRera ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
-                      </button>
-                    </div>
+                    )}
 
                     <div className="p-4 bg-zinc-50 border border-zinc-200 rounded-2xl">
                       <span className="text-[10px] text-zinc-400 font-bold uppercase block">Title Clearance Status</span>
                       <span className="font-bold text-emerald-700 text-sm block mt-0.5">
-                        100% Clear Title &bull; Zero Encumbrances
+                        {rpsStatus}
                       </span>
                     </div>
                   </div>

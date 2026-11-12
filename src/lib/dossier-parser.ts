@@ -9,6 +9,15 @@
  * - Possession Status & Timeline
  */
 
+export interface CustomCostSheet {
+  baseAgreementValue?: string;
+  stampDuty?: string;
+  registrationCharges?: string;
+  gst?: string;
+  brokerage?: string;
+  totalLandedOutlay?: string;
+}
+
 export interface DossierData {
   highlights?: string[];
   connectivity?: string[];
@@ -16,8 +25,21 @@ export interface DossierData {
   reraNumber?: string;
   possession?: string;
   rpsStatus?: string;
+  legalVettingText?: string;
+
+  // Visibility & privacy toggles
   hideName?: boolean;
   hidePrice?: boolean;
+  hideRera?: boolean;
+  hideComplianceTab?: boolean;
+  hideCostSheet?: boolean;
+  hideAmenities?: boolean;
+  hideHighlights?: boolean;
+  hideConnectivity?: boolean;
+
+  // Custom cost sheet values (optional manual override)
+  customCostSheet?: CustomCostSheet;
+
   isSafe?: boolean;
 }
 
@@ -78,8 +100,16 @@ export function parseDossierData(rawDescription: string = ''): ParsedDossier {
         reraNumber: typeof parsed.reraNumber === 'string' && parsed.reraNumber.trim() ? parsed.reraNumber.trim() : undefined,
         possession: typeof parsed.possession === 'string' && parsed.possession.trim() ? parsed.possession.trim() : undefined,
         rpsStatus: typeof parsed.rpsStatus === 'string' && parsed.rpsStatus.trim() ? parsed.rpsStatus.trim() : undefined,
+        legalVettingText: typeof parsed.legalVettingText === 'string' && parsed.legalVettingText.trim() ? parsed.legalVettingText.trim() : undefined,
         hideName: Boolean(parsed.hideName),
         hidePrice: Boolean(parsed.hidePrice),
+        hideRera: Boolean(parsed.hideRera),
+        hideComplianceTab: Boolean(parsed.hideComplianceTab),
+        hideCostSheet: Boolean(parsed.hideCostSheet),
+        hideAmenities: Boolean(parsed.hideAmenities),
+        hideHighlights: Boolean(parsed.hideHighlights),
+        hideConnectivity: Boolean(parsed.hideConnectivity),
+        customCostSheet: parsed.customCostSheet && typeof parsed.customCostSheet === 'object' ? parsed.customCostSheet : undefined,
         isSafe: Boolean(parsed.isSafe)
       }
     };
@@ -116,11 +146,35 @@ export function embedDossierData(cleanNarrative: string, dossier: DossierData): 
   if (dossier.rpsStatus) {
     payload.rpsStatus = dossier.rpsStatus.trim();
   }
+  if (dossier.legalVettingText) {
+    payload.legalVettingText = dossier.legalVettingText.trim();
+  }
   if (dossier.hideName !== undefined) {
     payload.hideName = Boolean(dossier.hideName);
   }
   if (dossier.hidePrice !== undefined) {
     payload.hidePrice = Boolean(dossier.hidePrice);
+  }
+  if (dossier.hideRera !== undefined) {
+    payload.hideRera = Boolean(dossier.hideRera);
+  }
+  if (dossier.hideComplianceTab !== undefined) {
+    payload.hideComplianceTab = Boolean(dossier.hideComplianceTab);
+  }
+  if (dossier.hideCostSheet !== undefined) {
+    payload.hideCostSheet = Boolean(dossier.hideCostSheet);
+  }
+  if (dossier.hideAmenities !== undefined) {
+    payload.hideAmenities = Boolean(dossier.hideAmenities);
+  }
+  if (dossier.hideHighlights !== undefined) {
+    payload.hideHighlights = Boolean(dossier.hideHighlights);
+  }
+  if (dossier.hideConnectivity !== undefined) {
+    payload.hideConnectivity = Boolean(dossier.hideConnectivity);
+  }
+  if (dossier.customCostSheet && typeof dossier.customCostSheet === 'object') {
+    payload.customCostSheet = dossier.customCostSheet;
   }
   if (dossier.isSafe !== undefined) {
     payload.isSafe = Boolean(dossier.isSafe);

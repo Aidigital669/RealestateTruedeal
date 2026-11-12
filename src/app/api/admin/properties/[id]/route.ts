@@ -147,8 +147,16 @@ export async function PATCH(
       body.reraNumber !== undefined ||
       body.possession !== undefined ||
       body.rpsStatus !== undefined ||
+      body.legalVettingText !== undefined ||
       body.hideName !== undefined ||
       body.hidePrice !== undefined ||
+      body.hideRera !== undefined ||
+      body.hideComplianceTab !== undefined ||
+      body.hideCostSheet !== undefined ||
+      body.hideAmenities !== undefined ||
+      body.hideHighlights !== undefined ||
+      body.hideConnectivity !== undefined ||
+      body.customCostSheet !== undefined ||
       body.isSafe !== undefined;
 
     if (hasDossierUpdates || body.description !== undefined) {
@@ -164,8 +172,16 @@ export async function PATCH(
         reraNumber: body.reraNumber !== undefined ? body.reraNumber : existingDossier.reraNumber,
         possession: body.possession !== undefined ? body.possession : (body.status !== undefined ? body.status : existingDossier.possession),
         rpsStatus: body.rpsStatus !== undefined ? body.rpsStatus : existingDossier.rpsStatus,
+        legalVettingText: body.legalVettingText !== undefined ? body.legalVettingText : existingDossier.legalVettingText,
         hideName: body.hideName !== undefined ? Boolean(body.hideName) : existingDossier.hideName,
         hidePrice: body.hidePrice !== undefined ? Boolean(body.hidePrice) : existingDossier.hidePrice,
+        hideRera: body.hideRera !== undefined ? Boolean(body.hideRera) : existingDossier.hideRera,
+        hideComplianceTab: body.hideComplianceTab !== undefined ? Boolean(body.hideComplianceTab) : existingDossier.hideComplianceTab,
+        hideCostSheet: body.hideCostSheet !== undefined ? Boolean(body.hideCostSheet) : existingDossier.hideCostSheet,
+        hideAmenities: body.hideAmenities !== undefined ? Boolean(body.hideAmenities) : existingDossier.hideAmenities,
+        hideHighlights: body.hideHighlights !== undefined ? Boolean(body.hideHighlights) : existingDossier.hideHighlights,
+        hideConnectivity: body.hideConnectivity !== undefined ? Boolean(body.hideConnectivity) : existingDossier.hideConnectivity,
+        customCostSheet: body.customCostSheet !== undefined ? body.customCostSheet : existingDossier.customCostSheet,
         isSafe: body.isSafe !== undefined ? Boolean(body.isSafe) : existingDossier.isSafe,
       };
 
@@ -380,8 +396,16 @@ export async function PATCH(
             reraNumber: dossier.reraNumber || '',
             possession: dossier.possession || updatedFull?.status || '',
             rpsStatus: dossier.rpsStatus || '',
+            legalVettingText: dossier.legalVettingText || '',
             hideName: Boolean(dossier.hideName),
             hidePrice: Boolean(dossier.hidePrice),
+            hideRera: Boolean(dossier.hideRera),
+            hideComplianceTab: Boolean(dossier.hideComplianceTab),
+            hideCostSheet: Boolean(dossier.hideCostSheet),
+            hideAmenities: Boolean(dossier.hideAmenities),
+            hideHighlights: Boolean(dossier.hideHighlights),
+            hideConnectivity: Boolean(dossier.hideConnectivity),
+            customCostSheet: dossier.customCostSheet,
             isSafe: Boolean(dossier.isSafe)
           };
         })()

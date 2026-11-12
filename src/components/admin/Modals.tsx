@@ -29,7 +29,8 @@ import {
   FileText,
   RotateCcw,
   Eye,
-  EyeOff
+  EyeOff,
+  Calculator
 } from 'lucide-react';
 import { HomepageSectionItem } from './types';
 import { CATEGORY_OPTIONS } from '@/lib/categories-data';
@@ -195,6 +196,12 @@ export function AddPropertyModal({
   const [selectedPurposes, setSelectedPurposes] = useState<number[]>([]);
   const [hideName, setHideName] = useState(false);
   const [hidePrice, setHidePrice] = useState(false);
+  const [hideRera, setHideRera] = useState(false);
+  const [hideComplianceTab, setHideComplianceTab] = useState(false);
+  const [hideCostSheet, setHideCostSheet] = useState(false);
+  const [hideAmenities, setHideAmenities] = useState(false);
+  const [reraNumber, setReraNumber] = useState('');
+  const [rpsStatus, setRpsStatus] = useState('100% Clear Title • Zero Encumbrances');
   const [isAiStructuring, setIsAiStructuring] = useState(false);
 
   const handleAiStandardize = async () => {
@@ -462,6 +469,134 @@ export function AddPropertyModal({
             </select>
           </div>
 
+          {/* MahaRERA & Title Clearance (Add) */}
+          <div className="grid grid-cols-2 gap-3 p-3 bg-zinc-50 rounded-xl border border-zinc-200">
+            <div>
+              <label className="block font-semibold text-zinc-700 mb-1 text-[11px]">
+                MahaRERA Registration ID (leave blank if unassigned)
+              </label>
+              <input
+                type="text"
+                value={reraNumber}
+                onChange={(e) => setReraNumber(e.target.value)}
+                placeholder="e.g. PRM/PUN/... (or leave blank)"
+                className="w-full px-3 py-1.5 bg-white border border-zinc-200 rounded-lg font-mono text-xs"
+              />
+            </div>
+            <div>
+              <label className="block font-semibold text-zinc-700 mb-1 text-[11px]">Title Clearance Status</label>
+              <input
+                type="text"
+                value={rpsStatus}
+                onChange={(e) => setRpsStatus(e.target.value)}
+                placeholder="e.g. 100% Clear Title • Zero Encumbrances"
+                className="w-full px-3 py-1.5 bg-white border border-zinc-200 rounded-lg text-xs text-emerald-800 font-semibold"
+              />
+            </div>
+          </div>
+
+          {/* Public Visibility & Privacy Controls Card */}
+          <div className="p-3.5 bg-amber-50/70 rounded-xl border border-amber-200/90 space-y-2.5">
+            <div className="flex items-center gap-1.5 font-bold text-zinc-950 text-xs">
+              <Eye className="w-4 h-4 text-amber-700 shrink-0" />
+              <span>Public Visibility &amp; Display Controls</span>
+            </div>
+            <p className="text-[11px] text-zinc-600 leading-tight">
+              Control which sections and sensitive information will be visible to public visitors.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-0.5">
+              <button
+                type="button"
+                onClick={() => setHideName(!hideName)}
+                className={`flex items-center justify-between p-2 rounded-lg border text-left cursor-pointer transition ${
+                  hideName
+                    ? 'bg-amber-100 border-amber-400 text-amber-950 font-bold'
+                    : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50'
+                }`}
+              >
+                <span className="text-[11px]">Hide Property Name</span>
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/80 border border-zinc-200">
+                  {hideName ? '🔒 Hidden' : '👁️ Visible'}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setHidePrice(!hidePrice)}
+                className={`flex items-center justify-between p-2 rounded-lg border text-left cursor-pointer transition ${
+                  hidePrice
+                    ? 'bg-amber-100 border-amber-400 text-amber-950 font-bold'
+                    : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50'
+                }`}
+              >
+                <span className="text-[11px]">Hide Price (On Request)</span>
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/80 border border-zinc-200">
+                  {hidePrice ? '🔒 Hidden' : '👁️ Visible'}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setHideCostSheet(!hideCostSheet)}
+                className={`flex items-center justify-between p-2 rounded-lg border text-left cursor-pointer transition ${
+                  hideCostSheet
+                    ? 'bg-amber-100 border-amber-400 text-amber-950 font-bold'
+                    : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50'
+                }`}
+              >
+                <span className="text-[11px]">Hide Cost Sheet Tab</span>
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/80 border border-zinc-200">
+                  {hideCostSheet ? '🔒 Tab Hidden' : '👁️ Tab Visible'}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setHideAmenities(!hideAmenities)}
+                className={`flex items-center justify-between p-2 rounded-lg border text-left cursor-pointer transition ${
+                  hideAmenities
+                    ? 'bg-amber-100 border-amber-400 text-amber-950 font-bold'
+                    : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50'
+                }`}
+              >
+                <span className="text-[11px]">Hide Amenities Tab</span>
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/80 border border-zinc-200">
+                  {hideAmenities ? '🔒 Tab Hidden' : '👁️ Tab Visible'}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setHideRera(!hideRera)}
+                className={`flex items-center justify-between p-2 rounded-lg border text-left cursor-pointer transition ${
+                  hideRera
+                    ? 'bg-amber-100 border-amber-400 text-amber-950 font-bold'
+                    : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50'
+                }`}
+              >
+                <span className="text-[11px]">Hide MahaRERA ID</span>
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/80 border border-zinc-200">
+                  {hideRera ? '🔒 ID Hidden' : '👁️ ID Visible'}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setHideComplianceTab(!hideComplianceTab)}
+                className={`flex items-center justify-between p-2 rounded-lg border text-left cursor-pointer transition ${
+                  hideComplianceTab
+                    ? 'bg-amber-100 border-amber-400 text-amber-950 font-bold'
+                    : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50'
+                }`}
+              >
+                <span className="text-[11px]">Hide Legal Clearance Tab</span>
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/80 border border-zinc-200">
+                  {hideComplianceTab ? '🔒 Tab Hidden' : '👁️ Tab Visible'}
+                </span>
+              </button>
+            </div>
+          </div>
+
           {/* Suitable Business Purposes (Multi-Select) */}
           <BusinessPurposesMultiSelect
             selectedIds={selectedPurposes}
@@ -667,11 +802,28 @@ export function AddPropertyModal({
               if (!name.trim()) return alert('Please enter property name');
               const cleanImages = images.map((u) => u.trim()).filter(Boolean);
               const finalConfig = (bhk || customConfig).trim() || 'Commercial';
+              const finalDesc = embedDossierData(formatPropertyDescription(description.trim()), {
+                reraNumber: reraNumber.trim(),
+                rpsStatus: rpsStatus.trim(),
+                hideName,
+                hidePrice,
+                hideRera,
+                hideComplianceTab,
+                hideCostSheet,
+                hideAmenities
+              });
+
               onAdd({ 
                 title: name, 
                 name, 
                 hideName,
                 hidePrice,
+                hideRera,
+                hideComplianceTab,
+                hideCostSheet,
+                hideAmenities,
+                reraNumber: reraNumber.trim(),
+                rpsStatus: rpsStatus.trim(),
                 developer, 
                 location, 
                 price, 
@@ -683,7 +835,7 @@ export function AddPropertyModal({
                 listingType: listingType === 'Rent' ? 'Rent' : 'Sale',
                 businessPurposeIds: selectedPurposes,
                 businessPurposes: selectedPurposes,
-                description: formatPropertyDescription(description.trim()), 
+                description: finalDesc, 
                 imageUrl: cleanImages[0] || '',
                 image: cleanImages[0] || '',
                 images: cleanImages,
@@ -735,7 +887,7 @@ export function EditPropertyModal({
   const [isSaving, setIsSaving] = useState(false);
 
   // Screenshot Dossier & Full Specifications States
-  const [activeTab, setActiveTab] = useState<'overview' | 'dossier' | 'amenities' | 'media'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'dossier' | 'financials' | 'amenities' | 'compliance' | 'media'>('overview');
   const [highlights, setHighlights] = useState<string[]>([]);
   const [newHighlight, setNewHighlight] = useState('');
   const [connectivity, setConnectivity] = useState<string[]>([]);
@@ -744,9 +896,29 @@ export function EditPropertyModal({
   const [newAmenity, setNewAmenity] = useState('');
   const [reraNumber, setReraNumber] = useState('');
   const [rpsStatus, setRpsStatus] = useState('100% Clear Title • Zero Encumbrances');
+  const [legalVettingText, setLegalVettingText] = useState('This property has completed 100% title deed investigation, environmental clearance, and commencement certification as registered under Government of Maharashtra MahaRERA.');
   const [possession, setPossession] = useState('Ready to Move');
+
+  // Privacy & Granular Hide/Unhide Toggles
   const [hideName, setHideName] = useState(false);
   const [hidePrice, setHidePrice] = useState(false);
+  const [hideRera, setHideRera] = useState(false);
+  const [hideComplianceTab, setHideComplianceTab] = useState(false);
+  const [hideCostSheet, setHideCostSheet] = useState(false);
+  const [hideAmenities, setHideAmenities] = useState(false);
+  const [hideHighlights, setHideHighlights] = useState(false);
+  const [hideConnectivity, setHideConnectivity] = useState(false);
+
+  // Financial Cost Sheet Manual Override States
+  const [costSheetMode, setCostSheetMode] = useState<'auto' | 'custom'>('auto');
+  const [customCostSheet, setCustomCostSheet] = useState<{
+    baseAgreementValue?: string;
+    stampDuty?: string;
+    registrationCharges?: string;
+    gst?: string;
+    brokerage?: string;
+    totalLandedOutlay?: string;
+  }>({});
   const [isAiStructuring, setIsAiStructuring] = useState(false);
 
   const handleAiStandardize = async () => {
@@ -817,6 +989,12 @@ export function EditPropertyModal({
       setDescription(formatPropertyDescription(cleanDescription || property.description || ''));
       setHideName(Boolean(property.hideName ?? dossier.hideName));
       setHidePrice(Boolean(property.hidePrice ?? dossier.hidePrice));
+      setHideRera(Boolean(property.hideRera ?? dossier.hideRera));
+      setHideComplianceTab(Boolean(property.hideComplianceTab ?? dossier.hideComplianceTab));
+      setHideCostSheet(Boolean(property.hideCostSheet ?? dossier.hideCostSheet));
+      setHideAmenities(Boolean(property.hideAmenities ?? dossier.hideAmenities));
+      setHideHighlights(Boolean(property.hideHighlights ?? dossier.hideHighlights));
+      setHideConnectivity(Boolean(property.hideConnectivity ?? dossier.hideConnectivity));
 
       // Highlights
       let initHl: string[] = [];
@@ -861,12 +1039,23 @@ export function EditPropertyModal({
       }
       setAmenitiesList(initAm.filter(Boolean));
 
-      // RERA
-      setReraNumber(property.reraNumber || dossier.reraNumber || (property.specs?.find((s: any) => s.key.toLowerCase().includes('rera'))?.value) || 'PRM/PUN/RERA/2026/0491');
+      // RERA: Never default to mock PRM/PUN/RERA/2026/0491
+      const rawRera = property.reraNumber || dossier.reraNumber || (property.specs?.find((s: any) => s.key.toLowerCase().includes('rera'))?.value) || '';
+      setReraNumber((rawRera === 'PRM/PUN/RERA/2026/0491' || rawRera === 'PRM/PUN/COM/2026/0882') ? '' : rawRera);
 
-      // Title & Possession
+      // Title & Possession & Legal Vetting
       setRpsStatus(property.rpsStatus || dossier.rpsStatus || '100% Clear Title • Zero Encumbrances');
+      setLegalVettingText(property.legalVettingText || dossier.legalVettingText || 'This property has completed 100% title deed investigation, environmental clearance, and commencement certification as registered under Government of Maharashtra MahaRERA.');
       setPossession(property.possession || dossier.possession || property.status || 'Ready to Move');
+
+      // Custom Cost Sheet Override
+      const sheet = property.customCostSheet || dossier.customCostSheet || {};
+      setCustomCostSheet(sheet);
+      if (sheet.baseAgreementValue || sheet.stampDuty || sheet.totalLandedOutlay) {
+        setCostSheetMode('custom');
+      } else {
+        setCostSheetMode('auto');
+      }
 
       // Extract existing images
       let propImages: string[] = [];
@@ -1009,8 +1198,16 @@ export function EditPropertyModal({
         reraNumber: reraNumber.trim(),
         possession: possession.trim(),
         rpsStatus: rpsStatus.trim(),
+        legalVettingText: legalVettingText.trim(),
         hideName: Boolean(hideName),
-        hidePrice: Boolean(hidePrice)
+        hidePrice: Boolean(hidePrice),
+        hideRera: Boolean(hideRera),
+        hideComplianceTab: Boolean(hideComplianceTab),
+        hideCostSheet: Boolean(hideCostSheet),
+        hideAmenities: Boolean(hideAmenities),
+        hideHighlights: Boolean(hideHighlights),
+        hideConnectivity: Boolean(hideConnectivity),
+        customCostSheet: costSheetMode === 'custom' ? customCostSheet : undefined
       });
 
       await onSave(property.id, {
@@ -1018,6 +1215,13 @@ export function EditPropertyModal({
         title: name.trim(),
         hideName: Boolean(hideName),
         hidePrice: Boolean(hidePrice),
+        hideRera: Boolean(hideRera),
+        hideComplianceTab: Boolean(hideComplianceTab),
+        hideCostSheet: Boolean(hideCostSheet),
+        hideAmenities: Boolean(hideAmenities),
+        hideHighlights: Boolean(hideHighlights),
+        hideConnectivity: Boolean(hideConnectivity),
+        customCostSheet: costSheetMode === 'custom' ? customCostSheet : undefined,
         developer: developer.trim(),
         location: location.trim(),
         address: location.trim(),
@@ -1038,6 +1242,7 @@ export function EditPropertyModal({
         amenitiesList: amenitiesList.filter(Boolean),
         reraNumber: reraNumber.trim(),
         rpsStatus: rpsStatus.trim(),
+        legalVettingText: legalVettingText.trim(),
         imageUrl: cleanImages[0] || '',
         image: cleanImages[0] || '',
         images: cleanImages,
@@ -1071,54 +1276,78 @@ export function EditPropertyModal({
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex items-center gap-1.5 p-1 bg-zinc-100 rounded-xl border border-zinc-200 shrink-0 text-xs font-bold">
+        <div className="flex items-center gap-1.5 p-1 bg-zinc-100 rounded-xl border border-zinc-200 shrink-0 text-xs font-bold overflow-x-auto scrollbar-none">
           <button
             type="button"
             onClick={() => setActiveTab('overview')}
-            className={`flex-1 py-1.5 px-2.5 rounded-lg transition flex items-center justify-center gap-1.5 cursor-pointer ${
+            className={`py-1.5 px-3 rounded-lg transition flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer ${
               activeTab === 'overview'
                 ? 'bg-white text-zinc-950 shadow-xs font-black'
                 : 'text-zinc-600 hover:text-zinc-900'
             }`}
           >
-            <Building2 className="w-3.5 h-3.5 text-amber-600" />
-            <span>Overview &amp; Typology</span>
+            <Building2 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+            <span>Overview &amp; Display</span>
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('dossier')}
-            className={`flex-1 py-1.5 px-2.5 rounded-lg transition flex items-center justify-center gap-1.5 cursor-pointer ${
+            className={`py-1.5 px-3 rounded-lg transition flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer ${
               activeTab === 'dossier'
                 ? 'bg-white text-zinc-950 shadow-xs font-black'
                 : 'text-zinc-600 hover:text-zinc-900'
             }`}
           >
-            <Compass className="w-3.5 h-3.5 text-amber-600" />
+            <Compass className="w-3.5 h-3.5 text-amber-600 shrink-0" />
             <span>Executive Dossier</span>
           </button>
           <button
             type="button"
+            onClick={() => setActiveTab('financials')}
+            className={`py-1.5 px-3 rounded-lg transition flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer ${
+              activeTab === 'financials'
+                ? 'bg-white text-zinc-950 shadow-xs font-black'
+                : 'text-zinc-600 hover:text-zinc-900'
+            }`}
+          >
+            <Calculator className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+            <span>Cost Sheet {hideCostSheet ? '(Hidden)' : ''}</span>
+          </button>
+          <button
+            type="button"
             onClick={() => setActiveTab('amenities')}
-            className={`flex-1 py-1.5 px-2.5 rounded-lg transition flex items-center justify-center gap-1.5 cursor-pointer ${
+            className={`py-1.5 px-3 rounded-lg transition flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer ${
               activeTab === 'amenities'
                 ? 'bg-white text-zinc-950 shadow-xs font-black'
                 : 'text-zinc-600 hover:text-zinc-900'
             }`}
           >
-            <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-            <span>Amenities &amp; Purposes</span>
+            <Sparkles className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+            <span>Amenities {hideAmenities ? '(Hidden)' : ''}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('compliance')}
+            className={`py-1.5 px-3 rounded-lg transition flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer ${
+              activeTab === 'compliance'
+                ? 'bg-white text-zinc-950 shadow-xs font-black'
+                : 'text-zinc-600 hover:text-zinc-900'
+            }`}
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+            <span>RERA &amp; Legal {hideComplianceTab ? '(Hidden)' : ''}</span>
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('media')}
-            className={`flex-1 py-1.5 px-2.5 rounded-lg transition flex items-center justify-center gap-1.5 cursor-pointer ${
+            className={`py-1.5 px-3 rounded-lg transition flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer ${
               activeTab === 'media'
                 ? 'bg-white text-zinc-950 shadow-xs font-black'
                 : 'text-zinc-600 hover:text-zinc-900'
             }`}
           >
-            <ImageIcon className="w-3.5 h-3.5 text-amber-600" />
-            <span>Media (${images.filter(Boolean).length})</span>
+            <ImageIcon className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+            <span>Media ({images.filter(Boolean).length})</span>
           </button>
         </div>
 
@@ -1311,6 +1540,98 @@ export function EditPropertyModal({
               </div>
             </div>
 
+            {/* Public Visibility & Privacy Controls Card */}
+            <div className="p-3.5 bg-amber-50/70 rounded-xl border border-amber-200/90 space-y-2.5">
+              <div className="flex items-center gap-1.5 font-bold text-zinc-950 text-xs">
+                <Eye className="w-4 h-4 text-amber-700 shrink-0" />
+                <span>Public Visibility &amp; Display Controls</span>
+              </div>
+              <p className="text-[11px] text-zinc-600 leading-tight">
+                Control which tabs and sensitive pricing/registration sections are visible to visitors on the website.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-0.5">
+                {/* Toggle 1: Hide Name */}
+                <button
+                  type="button"
+                  onClick={() => setHideName(!hideName)}
+                  className={`flex items-center justify-between p-2 rounded-lg border text-left cursor-pointer transition ${
+                    hideName
+                      ? 'bg-amber-100 border-amber-400 text-amber-950 font-bold'
+                      : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50'
+                  }`}
+                >
+                  <span className="text-[11px]">Hide Property Name</span>
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/80 border border-zinc-200">
+                    {hideName ? '🔒 Hidden' : '👁️ Visible'}
+                  </span>
+                </button>
+
+                {/* Toggle 2: Hide Price */}
+                <button
+                  type="button"
+                  onClick={() => setHidePrice(!hidePrice)}
+                  className={`flex items-center justify-between p-2 rounded-lg border text-left cursor-pointer transition ${
+                    hidePrice
+                      ? 'bg-amber-100 border-amber-400 text-amber-950 font-bold'
+                      : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50'
+                  }`}
+                >
+                  <span className="text-[11px]">Hide Price (On Request)</span>
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/80 border border-zinc-200">
+                    {hidePrice ? '🔒 Hidden' : '👁️ Visible'}
+                  </span>
+                </button>
+
+                {/* Toggle 3: Hide Cost Sheet Tab */}
+                <button
+                  type="button"
+                  onClick={() => setHideCostSheet(!hideCostSheet)}
+                  className={`flex items-center justify-between p-2 rounded-lg border text-left cursor-pointer transition ${
+                    hideCostSheet
+                      ? 'bg-amber-100 border-amber-400 text-amber-950 font-bold'
+                      : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50'
+                  }`}
+                >
+                  <span className="text-[11px]">Hide Cost Sheet Tab</span>
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/80 border border-zinc-200">
+                    {hideCostSheet ? '🔒 Tab Hidden' : '👁️ Tab Visible'}
+                  </span>
+                </button>
+
+                {/* Toggle 4: Hide Amenities Tab */}
+                <button
+                  type="button"
+                  onClick={() => setHideAmenities(!hideAmenities)}
+                  className={`flex items-center justify-between p-2 rounded-lg border text-left cursor-pointer transition ${
+                    hideAmenities
+                      ? 'bg-amber-100 border-amber-400 text-amber-950 font-bold'
+                      : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50'
+                  }`}
+                >
+                  <span className="text-[11px]">Hide Amenities Tab</span>
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/80 border border-zinc-200">
+                    {hideAmenities ? '🔒 Tab Hidden' : '👁️ Tab Visible'}
+                  </span>
+                </button>
+
+                {/* Toggle 5: Hide Compliance Tab */}
+                <button
+                  type="button"
+                  onClick={() => setHideComplianceTab(!hideComplianceTab)}
+                  className={`flex items-center justify-between p-2 rounded-lg border text-left cursor-pointer transition sm:col-span-2 ${
+                    hideComplianceTab
+                      ? 'bg-amber-100 border-amber-400 text-amber-950 font-bold'
+                      : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50'
+                  }`}
+                >
+                  <span className="text-[11px]">Hide MahaRERA &amp; Legal Clearance Tab</span>
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/80 border border-zinc-200">
+                    {hideComplianceTab ? '🔒 Tab Hidden' : '👁️ Tab Visible'}
+                  </span>
+                </button>
+              </div>
+            </div>
+
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="block font-semibold text-zinc-800 text-xs">
@@ -1361,14 +1682,28 @@ export function EditPropertyModal({
                   </h4>
                   <p className="text-[11px] text-zinc-500">Displays in the executive dossier on the property page</p>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleResetHighlights}
-                  className="text-[10px] font-semibold text-amber-800 hover:underline flex items-center gap-1 cursor-pointer"
-                >
-                  <RotateCcw className="w-3 h-3" />
-                  <span>Reset Typology Defaults</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setHideHighlights(!hideHighlights)}
+                    className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border flex items-center gap-1.5 cursor-pointer transition ${
+                      hideHighlights
+                        ? 'bg-amber-100 text-amber-950 border-amber-400 font-black'
+                        : 'bg-white text-zinc-700 border-zinc-300 hover:bg-zinc-100'
+                    }`}
+                  >
+                    {hideHighlights ? <EyeOff className="w-3 h-3 text-amber-700" /> : <Eye className="w-3 h-3 text-zinc-500" />}
+                    <span>{hideHighlights ? 'Section Hidden' : 'Hide Section'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleResetHighlights}
+                    className="text-[10px] font-semibold text-amber-800 hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span>Reset Defaults</span>
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -1428,17 +1763,31 @@ export function EditPropertyModal({
                     <MapPin className="w-3.5 h-3.5 text-amber-600" />
                     <span>Location Connectivity Advantage</span>
                   </h4>
-                  <p className="text-[11px] text-zinc-500">Commute corridors, expressways, airports &amp; transit proximity</p>
+                  <p className="text-[11px] text-zinc-500">Commute corridors, expressways, transit &amp; airport proximity</p>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleResetConnectivity}
-                  className="text-[11px] font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 px-2.5 py-1 rounded-lg flex items-center gap-1.5 cursor-pointer transition shadow-2xs"
-                  title="Auto-detect nearest metro, expressways, IT hubs & healthcare within 5 km"
-                >
-                  <Compass className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Auto-Detect (&lt; 5 km)</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setHideConnectivity(!hideConnectivity)}
+                    className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border flex items-center gap-1.5 cursor-pointer transition ${
+                      hideConnectivity
+                        ? 'bg-amber-100 text-amber-950 border-amber-400 font-black'
+                        : 'bg-white text-zinc-700 border-zinc-300 hover:bg-zinc-100'
+                    }`}
+                  >
+                    {hideConnectivity ? <EyeOff className="w-3 h-3 text-amber-700" /> : <Eye className="w-3 h-3 text-zinc-500" />}
+                    <span>{hideConnectivity ? 'Section Hidden' : 'Hide Section'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleResetConnectivity}
+                    className="text-[11px] font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 px-2.5 py-1 rounded-lg flex items-center gap-1.5 cursor-pointer transition shadow-2xs"
+                    title="Auto-detect nearest metro, expressways, IT hubs & healthcare within 5 km"
+                  >
+                    <Compass className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Auto-Detect</span>
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -1489,40 +1838,148 @@ export function EditPropertyModal({
                 </button>
               </div>
             </div>
+          </div>
+        )}
 
-            {/* MahaRERA & Title Clearance */}
-            <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-200 space-y-3">
-              <h4 className="font-bold text-zinc-950 text-xs flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                <span>MahaRERA &amp; Legal Clearance</span>
-              </h4>
-              <div className="grid grid-cols-2 gap-3">
+        {/* Tab 3: Financial Cost Sheet */}
+        {activeTab === 'financials' && (
+          <div className="space-y-4 text-xs overflow-y-auto pr-1 flex-1 animate-in fade-in">
+            <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-200 space-y-3.5">
+              <div className="flex items-center justify-between">
                 <div>
-                  <label className="block font-semibold text-zinc-700 mb-1 text-[11px]">MahaRERA Registration ID</label>
-                  <input
-                    type="text"
-                    value={reraNumber}
-                    onChange={(e) => setReraNumber(e.target.value)}
-                    className="w-full px-3 py-1.5 bg-white border border-zinc-200 rounded-lg font-mono text-xs"
-                    placeholder="e.g. PRM/PUN/RERA/2026/0491"
-                  />
+                  <h4 className="font-bold text-zinc-950 text-xs flex items-center gap-1.5">
+                    <Calculator className="w-3.5 h-3.5 text-amber-600" />
+                    <span>Statutory Landed Cost Sheet</span>
+                  </h4>
+                  <p className="text-[11px] text-zinc-500">Configure public breakdown of taxes, stamp duties, and landed outlay</p>
                 </div>
-                <div>
-                  <label className="block font-semibold text-zinc-700 mb-1 text-[11px]">Title Clearance Summary</label>
-                  <input
-                    type="text"
-                    value={rpsStatus}
-                    onChange={(e) => setRpsStatus(e.target.value)}
-                    className="w-full px-3 py-1.5 bg-white border border-zinc-200 rounded-lg text-xs text-emerald-800 font-semibold"
-                    placeholder="e.g. 100% Clear Title • Zero Encumbrances"
-                  />
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setHideCostSheet(!hideCostSheet)}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1.5 border cursor-pointer ${
+                    hideCostSheet
+                      ? 'bg-amber-100 text-amber-950 border-amber-400 font-black'
+                      : 'bg-white text-zinc-700 border-zinc-300 hover:bg-zinc-100'
+                  }`}
+                >
+                  {hideCostSheet ? <EyeOff className="w-3.5 h-3.5 text-amber-700" /> : <Eye className="w-3.5 h-3.5 text-zinc-500" />}
+                  <span>{hideCostSheet ? 'Cost Sheet Hidden' : 'Hide Cost Sheet Tab'}</span>
+                </button>
               </div>
+
+              {/* Mode Selector */}
+              <div className="flex items-center gap-2 p-1 bg-zinc-200/80 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => setCostSheetMode('auto')}
+                  className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition cursor-pointer ${
+                    costSheetMode === 'auto'
+                      ? 'bg-white text-zinc-950 shadow-xs font-black'
+                      : 'text-zinc-600 hover:text-zinc-900'
+                  }`}
+                >
+                  ⚡ Auto-Calculate (7% Stamp Duty + ₹30k Reg + GST)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCostSheetMode('custom')}
+                  className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition cursor-pointer ${
+                    costSheetMode === 'custom'
+                      ? 'bg-white text-zinc-950 shadow-xs font-black'
+                      : 'text-zinc-600 hover:text-zinc-900'
+                  }`}
+                >
+                  ✏️ Custom / Manual Override
+                </button>
+              </div>
+
+              {costSheetMode === 'auto' ? (
+                <div className="p-3 bg-white rounded-xl border border-zinc-200 space-y-1.5 text-[11px]">
+                  <p className="font-semibold text-zinc-800">
+                    Active Mode: <strong>Dynamic Statutory Calculator</strong>
+                  </p>
+                  <p className="text-zinc-500 leading-relaxed">
+                    Values will be automatically computed based on the Quoted Price (<span className="font-bold text-zinc-800">{price || 'Price on Request'}</span>):
+                  </p>
+                  <ul className="list-disc list-inside text-zinc-600 space-y-0.5 pt-0.5">
+                    <li>Base Agreement Value = Quoted Property Price</li>
+                    <li>MahaRERA Stamp Duty = 7% of Base Value</li>
+                    <li>Statutory Registration Charges = ₹30,000</li>
+                    <li>GST = 0% (Ready to Move / OC) or 5% (Under-Construction)</li>
+                    <li>Brokerage &amp; Advisory Fee = ₹0 (Zero Brokerage Mandate)</li>
+                  </ul>
+                </div>
+              ) : (
+                <div className="space-y-3 pt-1">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block font-semibold text-zinc-700 mb-1 text-[11px]">Base Agreement Value</label>
+                      <input
+                        type="text"
+                        value={customCostSheet.baseAgreementValue || ''}
+                        onChange={(e) => setCustomCostSheet({ ...customCostSheet, baseAgreementValue: e.target.value })}
+                        placeholder="e.g. ₹1.85 Cr"
+                        className="w-full px-3 py-1.5 bg-white border border-zinc-200 rounded-lg text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-semibold text-zinc-700 mb-1 text-[11px]">MahaRERA Stamp Duty (7%)</label>
+                      <input
+                        type="text"
+                        value={customCostSheet.stampDuty || ''}
+                        onChange={(e) => setCustomCostSheet({ ...customCostSheet, stampDuty: e.target.value })}
+                        placeholder="e.g. ₹12.95 Lakh (7%)"
+                        className="w-full px-3 py-1.5 bg-white border border-zinc-200 rounded-lg text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-semibold text-zinc-700 mb-1 text-[11px]">Statutory Registration Charges</label>
+                      <input
+                        type="text"
+                        value={customCostSheet.registrationCharges || ''}
+                        onChange={(e) => setCustomCostSheet({ ...customCostSheet, registrationCharges: e.target.value })}
+                        placeholder="e.g. ₹30,000"
+                        className="w-full px-3 py-1.5 bg-white border border-zinc-200 rounded-lg text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-semibold text-zinc-700 mb-1 text-[11px]">Goods &amp; Services Tax (GST)</label>
+                      <input
+                        type="text"
+                        value={customCostSheet.gst || ''}
+                        onChange={(e) => setCustomCostSheet({ ...customCostSheet, gst: e.target.value })}
+                        placeholder="e.g. ₹0 (OC Received) or ₹9.25 Lakh (5%)"
+                        className="w-full px-3 py-1.5 bg-white border border-zinc-200 rounded-lg text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-semibold text-zinc-700 mb-1 text-[11px]">Brokerage &amp; Advisory Fee</label>
+                      <input
+                        type="text"
+                        value={customCostSheet.brokerage || ''}
+                        onChange={(e) => setCustomCostSheet({ ...customCostSheet, brokerage: e.target.value })}
+                        placeholder="e.g. ₹0 (Zero Brokerage Mandate)"
+                        className="w-full px-3 py-1.5 bg-white border border-zinc-200 rounded-lg text-xs font-semibold text-emerald-700"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-semibold text-zinc-700 mb-1 text-[11px]">Estimated Total Landed Outlay</label>
+                      <input
+                        type="text"
+                        value={customCostSheet.totalLandedOutlay || ''}
+                        onChange={(e) => setCustomCostSheet({ ...customCostSheet, totalLandedOutlay: e.target.value })}
+                        placeholder="e.g. ₹1.98 Cr"
+                        className="w-full px-3 py-1.5 bg-white border border-amber-300 rounded-lg text-xs font-bold text-amber-900 bg-amber-50/50"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
 
-        {/* Tab 3: Amenities & Purposes */}
+        {/* Tab 4: Amenities & Purposes */}
         {activeTab === 'amenities' && (
           <div className="space-y-4 text-xs overflow-y-auto pr-1 flex-1 animate-in fade-in">
             {/* Lifestyle Amenities Manager */}
@@ -1535,6 +1992,18 @@ export function EditPropertyModal({
                   </h4>
                   <p className="text-[11px] text-zinc-500">Pick from presets or add custom property amenities</p>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setHideAmenities(!hideAmenities)}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1.5 border cursor-pointer ${
+                    hideAmenities
+                      ? 'bg-amber-100 text-amber-950 border-amber-400 font-black'
+                      : 'bg-white text-zinc-700 border-zinc-300 hover:bg-zinc-100'
+                  }`}
+                >
+                  {hideAmenities ? <EyeOff className="w-3.5 h-3.5 text-amber-700" /> : <Eye className="w-3.5 h-3.5 text-zinc-500" />}
+                  <span>{hideAmenities ? 'Amenities Hidden' : 'Hide Amenities Tab'}</span>
+                </button>
               </div>
 
               {/* Active Amenities Chips */}
@@ -1623,6 +2092,102 @@ export function EditPropertyModal({
                 selectedIds={selectedPurposes}
                 onChange={setSelectedPurposes}
               />
+            </div>
+          </div>
+        )}
+
+        {/* Tab 5: MahaRERA & Legal Title Clearance */}
+        {activeTab === 'compliance' && (
+          <div className="space-y-4 text-xs overflow-y-auto pr-1 flex-1 animate-in fade-in">
+            <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-200 space-y-3.5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="font-bold text-zinc-950 text-xs flex items-center gap-1.5">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>MahaRERA &amp; Legal Title Clearance</span>
+                  </h4>
+                  <p className="text-[11px] text-zinc-500">Manage statutory RERA registration ID and legal clearance vetting status</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setHideComplianceTab(!hideComplianceTab)}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1.5 border cursor-pointer ${
+                    hideComplianceTab
+                      ? 'bg-amber-100 text-amber-950 border-amber-400 font-black'
+                      : 'bg-white text-zinc-700 border-zinc-300 hover:bg-zinc-100'
+                  }`}
+                >
+                  {hideComplianceTab ? <EyeOff className="w-3.5 h-3.5 text-amber-700" /> : <Eye className="w-3.5 h-3.5 text-zinc-500" />}
+                  <span>{hideComplianceTab ? 'Legal Tab Hidden' : 'Hide Legal Tab'}</span>
+                </button>
+              </div>
+
+              {/* RERA ID Public Display Toggle */}
+              <div className="p-3 bg-white rounded-xl border border-zinc-200 flex items-center justify-between">
+                <div>
+                  <span className="font-bold text-zinc-800 text-[11px] block">MahaRERA Registration ID Public Display</span>
+                  <span className="text-[10px] text-zinc-500">
+                    {hideRera ? 'RERA ID is hidden from public customers. Verification note will be displayed.' : 'RERA ID will be publicly displayed with copy button.'}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setHideRera(!hideRera)}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1.5 border cursor-pointer ${
+                    hideRera
+                      ? 'bg-amber-100 text-amber-950 border-amber-400'
+                      : 'bg-zinc-100 text-zinc-700 border-zinc-200 hover:bg-zinc-200'
+                  }`}
+                >
+                  {hideRera ? <EyeOff className="w-3.5 h-3.5 text-amber-700" /> : <Eye className="w-3.5 h-3.5 text-zinc-500" />}
+                  <span>{hideRera ? 'RERA ID Hidden' : 'Hide RERA ID'}</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-zinc-700 mb-1 text-[11px]">
+                    MahaRERA Registration ID (leave blank if unassigned)
+                  </label>
+                  <input
+                    type="text"
+                    value={reraNumber}
+                    onChange={(e) => setReraNumber(e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-zinc-200 rounded-lg font-mono text-xs"
+                    placeholder="e.g. PRM/PUN/2026/... (or leave blank)"
+                  />
+                  {reraNumber ? (
+                    <button
+                      type="button"
+                      onClick={() => setReraNumber('')}
+                      className="mt-1 text-[10px] text-rose-600 hover:underline cursor-pointer"
+                    >
+                      Clear ID
+                    </button>
+                  ) : null}
+                </div>
+                <div>
+                  <label className="block font-semibold text-zinc-700 mb-1 text-[11px]">Title Clearance Status Badge</label>
+                  <input
+                    type="text"
+                    value={rpsStatus}
+                    onChange={(e) => setRpsStatus(e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-zinc-200 rounded-lg text-xs text-emerald-800 font-semibold"
+                    placeholder="e.g. 100% Clear Title • Zero Encumbrances"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-zinc-700 mb-1 text-[11px]">Legal Vetting &amp; Certification Statement</label>
+                <textarea
+                  rows={3}
+                  value={legalVettingText}
+                  onChange={(e) => setLegalVettingText(e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-zinc-200 rounded-lg text-xs leading-relaxed"
+                  placeholder="Statement regarding title investigation, environmental clearance, and commencement certification..."
+                />
+              </div>
             </div>
           </div>
         )}

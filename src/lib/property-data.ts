@@ -69,19 +69,21 @@ export async function fetchAllProperties(): Promise<PropertyItem[]> {
 
         const highlights = dossier.highlights && dossier.highlights.length > 0
           ? dossier.highlights
-          : getDefaultHighlights(isCommercial, bhkStr);
+          : (dossier.hideHighlights ? [] : getDefaultHighlights(isCommercial, bhkStr));
 
         const connectivity = dossier.connectivity && dossier.connectivity.length > 0
           ? dossier.connectivity
-          : getDefaultConnectivity(p.location || '', p.locality || '');
+          : (dossier.hideConnectivity ? [] : getDefaultConnectivity(p.location || '', p.locality || ''));
 
         const amenitiesList = dossier.amenitiesList && dossier.amenitiesList.length > 0
           ? dossier.amenitiesList
           : undefined;
 
-        const reraNumber = dossier.reraNumber || p.rera_number || (isCommercial ? "PRM/PUN/COM/2026/0882" : "PRM/PUN/RERA/2026/0491");
+        const rawRera = dossier.reraNumber || p.rera_number || "";
+        const reraNumber = (rawRera === "PRM/PUN/RERA/2026/0491" || rawRera === "PRM/PUN/COM/2026/0882") ? "" : rawRera;
         const possession = dossier.possession || p.status || "Ready to Move";
-        const rpsStatus = dossier.rpsStatus || (isCommercial ? "Verified Commercial" : "Verified Project");
+        const rpsStatus = dossier.rpsStatus || (isCommercial ? "Verified Commercial Title" : "100% Clear Title • Zero Encumbrances");
+        const legalVettingText = dossier.legalVettingText || "This property has completed 100% title deed investigation, environmental clearance, and commencement certification as registered under Government of Maharashtra MahaRERA.";
 
         // Strictly return only images actually uploaded for this property
         const rawImages: string[] = (p.all_images && Array.isArray(p.all_images))
@@ -123,6 +125,14 @@ export async function fetchAllProperties(): Promise<PropertyItem[]> {
           realName: p.name,
           hideName: isNameHidden,
           hidePrice: isPriceHidden,
+          hideRera: Boolean(dossier.hideRera),
+          hideComplianceTab: Boolean(dossier.hideComplianceTab),
+          hideCostSheet: Boolean(dossier.hideCostSheet),
+          hideAmenities: Boolean(dossier.hideAmenities),
+          hideHighlights: Boolean(dossier.hideHighlights),
+          hideConnectivity: Boolean(dossier.hideConnectivity),
+          customCostSheet: dossier.customCostSheet,
+          legalVettingText,
           developer: p.developer,
           locality: p.locality,
           location: p.location || `${p.locality}, Pune, Maharashtra`,
