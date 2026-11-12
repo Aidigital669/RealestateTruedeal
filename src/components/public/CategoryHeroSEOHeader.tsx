@@ -13,39 +13,39 @@ interface CategoryHeroSEOHeaderProps {
 export function getCategorySeoHeading(category: CategoryItem): string {
   switch (category.slug) {
     case 'hospital':
-      return 'Hospital Properties for sell | Hospital Properties for Rent in Pune | Medical Properties for sell | Medical Properties for Rent in Pune';
+      return 'Hospital Properties for Sell | Hospital Properties for Rent in Pune | Medical Properties for Sell | Medical Properties for Rent in Pune';
     case 'office-space':
     case 'office-in-it-park':
     case 'coworking-office-space':
-      return 'Office for sell | Office for Rent in Pune | Corporate Office Properties for sell | Corporate Office Properties for Rent in Pune | IT Park offices for sell | IT Park offices for Rent in Pune';
+      return 'Office for Sell | Office for Rent in Pune | Corporate Office Properties for Sell | Corporate Office Properties for Rent in Pune | IT Park offices for Sell | IT Park offices for Rent in Pune';
     case 'shop-showroom':
-      return 'Shop & Showroom Properties for Buy & Shop & Showroom Properties for Rent in Pune';
+      return 'Shop Properties for Sell | Shop Properties for Rent | Showroom Properties for Sell | Showroom Properties for Rent in Pune';
     case 'restaurant':
-      return 'Restaurant Properties for Buy & Restaurant Properties for Rent in Pune';
+      return 'Restaurant Properties for Sell | Restaurant Properties for Rent in Pune';
     case 'warehouse':
-      return 'Warehouse Properties for Buy & Warehouse Properties for Rent in Pune';
+      return 'Warehouse Properties for Sell | Warehouse Properties for Rent in Pune';
     case 'residential-apartment':
-      return 'Residential Apartment Properties for Buy & Residential Apartment Properties for Rent in Pune';
+      return 'Residential Apartment Properties for Sell | Residential Apartment Properties for Rent in Pune';
     case 'residential-bungalow':
-      return 'Bungalow & Villa Properties for Buy & Bungalow & Villa Properties for Rent in Pune';
+      return 'Bungalow Properties for Sell | Bungalow Properties for Rent | Villa Properties for Sell | Villa Properties for Rent in Pune';
     case 'hotel-resort':
       return 'Hotel Properties for Sell | Hotel Properties for Rent | Resort Properties for Sell | Resort Properties for Rent in Pune';
     case 'preleased-properties':
-      return 'Preleased Commercial Properties for Buy & Investment in Pune';
+      return 'Preleased Commercial Properties for Sell | Preleased Properties for Investment in Pune';
     case 'pre-launch-projects':
-      return 'Pre-Launch Projects & New Property Launches for Buy in Pune';
+      return 'Pre-Launch Projects for Sell | New Property Launches in Pune';
     case 'residential-commercial-land-plot':
-      return 'Residential & Commercial Land & Plot Properties for Buy in Pune';
+      return 'Residential Land & Plots for Sell | Commercial Land & Plots for Sell in Pune';
     case 'agriculture-farm-land':
-      return 'Agricultural Land & Farm Plot Properties for Buy near Pune';
+      return 'Agricultural Land for Sell | Farm Plots for Sell near Pune';
     case 'industrial-land':
-      return 'MIDC & Industrial Land Plot Properties for Buy in Pune';
+      return 'MIDC Industrial Land for Sell | Industrial Plots for Sell in Pune';
     case 'tdr':
-      return 'Transferable Development Rights (TDR) & FSI in Pune & PCMC';
+      return 'Transferable Development Rights (TDR) | FSI Trading in Pune & PCMC';
     case 'group-booking':
-      return 'Bulk Property Purchases & Group Booking in Pune';
+      return 'Bulk Property Purchases | Group Booking in Pune';
     default:
-      return `${category.title} Properties for Buy & ${category.title} Properties for Rent in Pune`;
+      return `${category.title} Properties for Sell | ${category.title} Properties for Rent in Pune`;
   }
 }
 
