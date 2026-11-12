@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
@@ -394,7 +394,7 @@ export function PropertyDetailPageClient({
   }, [hideCostSheet, hidePrice, customCostSheet, priceRaw, hideAmenities, amenitiesList.length, property?.isCommercial, hideComplianceTab]);
 
   useEffect(() => {
-    if (!availableTabs.some((t) => t.id === activeTab)) {
+    if (!availableTabs.some((t: any) => t.id === activeTab)) {
       setActiveTab(availableTabs[0]?.id || 'overview');
     }
   }, [availableTabs, activeTab]);
@@ -752,7 +752,7 @@ export function PropertyDetailPageClient({
 
               {/* TABS NAVIGATION */}
               <div className="bg-white rounded-2xl border border-zinc-200 p-1.5 sm:p-2 flex items-center gap-1.5 sm:gap-2 overflow-x-auto shadow-xs">
-                {availableTabs.map((tab) => (
+                {availableTabs.map((tab: any) => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id as any)}
@@ -871,7 +871,7 @@ export function PropertyDetailPageClient({
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                    {amenitiesList.map((item, idx) => {
+                    {amenitiesList.map((item: any, idx: number) => {
                       const title = typeof item === 'string' ? item : item.title;
                       const desc = typeof item === 'string' ? 'Verified on-site infrastructure & service amenity' : (item.desc || 'Verified on-site infrastructure & service amenity');
                       return (
