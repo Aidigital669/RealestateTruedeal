@@ -56,27 +56,27 @@ export function CategoryHeroSEOHeader({
   const title = getCategorySeoHeading(category);
 
   return (
-    <section className="bg-zinc-950 text-white border-b border-zinc-800/80 px-4 sm:px-6 lg:px-8 py-3.5 sm:py-4">
+    <section className="bg-zinc-950 text-white border-b border-zinc-800/80 px-3.5 sm:px-6 lg:px-8 py-3 sm:py-4">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-2.5">
-        <div className="space-y-1">
+        <div className="space-y-1.5 min-w-0 flex-1">
           {/* Line 1: Breadcrumb + Group Indicator */}
-          <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-[11px] text-zinc-400">
-            <Link href="/" className="hover:text-amber-400 transition-colors flex items-center gap-1">
+          <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-[11px] text-zinc-400 overflow-x-auto scrollbar-none whitespace-nowrap py-0.5">
+            <Link href="/" className="hover:text-amber-400 transition-colors flex items-center gap-1 shrink-0">
               <Home className="w-3 h-3" />
               <span>Home</span>
             </Link>
-            <ChevronRight className="w-2.5 h-2.5 text-zinc-600" />
-            <Link href="/properties" className="hover:text-amber-400 transition-colors">
+            <ChevronRight className="w-2.5 h-2.5 text-zinc-600 shrink-0" />
+            <Link href="/properties" className="hover:text-amber-400 transition-colors shrink-0">
               <span>Categories</span>
             </Link>
-            <ChevronRight className="w-2.5 h-2.5 text-zinc-600" />
-            <span className="text-amber-400 font-bold">{category.title}</span>
-            <span className="text-zinc-600 mx-1">•</span>
-            <span className="text-zinc-400 font-medium">{category.groupLabel}</span>
+            <ChevronRight className="w-2.5 h-2.5 text-zinc-600 shrink-0" />
+            <span className="text-amber-400 font-bold shrink-0">{category.title}</span>
+            <span className="text-zinc-600 mx-1 shrink-0">•</span>
+            <span className="text-zinc-400 font-medium shrink-0">{category.groupLabel}</span>
           </nav>
 
           {/* Line 2: Small, Clean H1 SEO Title */}
-          <h1 className="text-base sm:text-lg md:text-xl font-black text-white tracking-tight leading-snug">
+          <h1 className="text-sm sm:text-base md:text-lg font-black text-white tracking-tight leading-snug break-words">
             {title}
           </h1>
         </div>

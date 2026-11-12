@@ -274,8 +274,8 @@ export function AddPropertyModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in">
-      <div className="bg-white rounded-2xl max-w-2xl w-full p-6 border border-zinc-200 shadow-xl space-y-4 max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/40 backdrop-blur-xs animate-in fade-in">
+      <div className="bg-white rounded-2xl max-w-2xl w-full p-3.5 sm:p-6 border border-zinc-200 shadow-xl space-y-3 sm:space-y-4 max-h-[95vh] sm:max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between pb-3 border-b border-zinc-100 shrink-0">
           <div className="flex items-center gap-2">
             <Building className="w-5 h-5 text-amber-800" />
@@ -350,7 +350,7 @@ export function AddPropertyModal({
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block font-medium text-zinc-700 mb-1">Developer</label>
               <input
@@ -387,7 +387,7 @@ export function AddPropertyModal({
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="block font-semibold text-zinc-800">
@@ -471,7 +471,7 @@ export function AddPropertyModal({
           </div>
 
           {/* MahaRERA & Title Clearance (Add) */}
-          <div className="grid grid-cols-2 gap-3 p-3 bg-zinc-50 rounded-xl border border-zinc-200">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-zinc-50 rounded-xl border border-zinc-200">
             <div>
               <label className="block font-semibold text-zinc-700 mb-1 text-[11px]">
                 MahaRERA Registration ID (leave blank if unassigned)
@@ -1274,8 +1274,8 @@ export function EditPropertyModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
-      <div className="bg-white rounded-2xl max-w-3xl w-full p-5 sm:p-6 border border-zinc-200 shadow-2xl space-y-4 max-h-[92vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+      <div className="bg-white rounded-2xl max-w-3xl w-full p-3.5 sm:p-6 border border-zinc-200 shadow-2xl space-y-3 sm:space-y-4 max-h-[96vh] sm:max-h-[92vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-zinc-100 shrink-0">
           <div className="flex items-center gap-2.5">
@@ -1431,7 +1431,7 @@ export function EditPropertyModal({
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block font-semibold text-zinc-800 mb-1">Developer / Brand</label>
                 <input
@@ -1460,7 +1460,7 @@ export function EditPropertyModal({
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="block font-semibold text-zinc-800">
@@ -1531,7 +1531,7 @@ export function EditPropertyModal({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block font-semibold text-zinc-800 mb-1">Possession / Stage</label>
                 <input
@@ -1936,7 +1936,7 @@ export function EditPropertyModal({
                 </div>
               ) : (
                 <div className="space-y-3 pt-1">
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block font-semibold text-zinc-700 mb-1 text-[11px]">Base Agreement Value</label>
                       <input
@@ -2169,7 +2169,7 @@ export function EditPropertyModal({
                 </button>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block font-semibold text-zinc-700 mb-1 text-[11px]">
                     MahaRERA Registration ID (leave blank if unassigned)

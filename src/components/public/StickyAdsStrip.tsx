@@ -175,7 +175,7 @@ export function StickyAdsStrip() {
       {/* ================= STICKY ADS STRIP (CENTERED BOTTOM AREA) ================= */}
       <aside
         aria-label="Sponsored Partners and Ads"
-        className="fixed bottom-2.5 sm:bottom-5 left-1/2 -translate-x-1/2 z-40 select-none animate-in fade-in slide-in-from-bottom-3 duration-300"
+        className="fixed bottom-[64px] lg:bottom-5 left-1/2 -translate-x-1/2 z-40 select-none animate-in fade-in slide-in-from-bottom-3 duration-300"
       >
         {isMinimized ? (
           /* Minimized Pill to restore */
@@ -200,7 +200,7 @@ export function StickyAdsStrip() {
           </button>
         ) : (
           /* Full Sticky Strip */
-          <div className="relative bg-zinc-950/95 backdrop-blur-xl border border-zinc-800/90 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.6)] p-2 sm:p-2.5 flex items-center gap-2 sm:gap-2.5 transition-all max-w-[calc(100vw-24px)]">
+          <div className="relative bg-zinc-950/95 backdrop-blur-xl border border-zinc-800/90 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.6)] p-1.5 sm:p-2.5 flex items-center gap-1.5 sm:gap-2.5 transition-all max-w-[calc(100vw-16px)] sm:max-w-none">
             {/* Left Header Image Badge: Gold Crown with Premium Royal Background */}
             <div className="flex items-center justify-center shrink-0 pr-1.5 border-r border-zinc-800/80">
               <div
@@ -308,11 +308,11 @@ export function StickyAdsStrip() {
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-2.5 sm:p-4 animate-in fade-in duration-200"
           onClick={() => setActiveAd(null)}
         >
           <div
-            className="relative w-full max-w-lg bg-zinc-950 border border-zinc-800 rounded-3xl overflow-hidden shadow-2xl text-white animate-in zoom-in-95 duration-200"
+            className="relative w-full max-w-lg bg-zinc-950 border border-zinc-800 rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl text-white animate-in zoom-in-95 duration-200 max-h-[92vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}

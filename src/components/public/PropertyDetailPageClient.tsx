@@ -476,8 +476,8 @@ export function PropertyDetailPageClient({
       <main className="min-h-screen bg-zinc-50 text-zinc-900 pb-28 lg:pb-20">
         {/* BREADCRUMB & TOP CONTROLS */}
         <div className="bg-white border-b border-zinc-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-zinc-500 overflow-x-auto py-0.5">
+          <div className="max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 py-2.5 sm:py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3">
+            <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-zinc-500 min-w-0 overflow-x-auto scrollbar-none whitespace-nowrap py-0.5">
               <Link href="/" className="hover:text-amber-600 transition flex items-center gap-1 font-semibold shrink-0">
                 <span>Home</span>
               </Link>
@@ -752,20 +752,20 @@ export function PropertyDetailPageClient({
               </div>
 
               {/* 4 CORE STATS BAR */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 bg-white p-3.5 sm:p-4 rounded-2xl border border-zinc-200 shadow-xs">
-                <div className="p-2.5 sm:p-3 bg-zinc-50 rounded-xl border border-zinc-100">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 bg-white p-3 sm:p-4 rounded-2xl border border-zinc-200 shadow-xs">
+                <div className="p-2 sm:p-3 bg-zinc-50 rounded-xl border border-zinc-100 min-w-0">
                   <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Typology</span>
                   <span className="text-xs sm:text-sm font-black text-zinc-900 block mt-0.5 truncate">{property.bhk}</span>
                 </div>
-                <div className="p-2.5 sm:p-3 bg-zinc-50 rounded-xl border border-zinc-100">
+                <div className="p-2 sm:p-3 bg-zinc-50 rounded-xl border border-zinc-100 min-w-0">
                   <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Carpet Area</span>
                   <span className="text-xs sm:text-sm font-black text-zinc-900 block mt-0.5 truncate">{property.sqft ? property.sqft.replace(/\s*carpet\s*/gi, '').trim() : '1,200 Sq.Ft.'}</span>
                 </div>
-                <div className="p-2.5 sm:p-3 bg-zinc-50 rounded-xl border border-zinc-100">
+                <div className="p-2 sm:p-3 bg-zinc-50 rounded-xl border border-zinc-100 min-w-0">
                   <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Possession</span>
                   <span className="text-xs sm:text-sm font-black text-zinc-900 block mt-0.5 truncate">{property.possession || property.status}</span>
                 </div>
-                <div className="p-2.5 sm:p-3 bg-zinc-50 rounded-xl border border-zinc-100">
+                <div className="p-2 sm:p-3 bg-zinc-50 rounded-xl border border-zinc-100 min-w-0">
                   <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Verification</span>
                   <span className="text-xs sm:text-sm font-bold text-emerald-700 block mt-0.5 truncate">
                     {property.rpsStatus ? `${property.rpsStatus} ✓` : 'Verified Listing ✓'}
@@ -775,28 +775,28 @@ export function PropertyDetailPageClient({
 
               {/* SUITABLE FOR BUSINESS PURPOSES */}
               {suitableForList.length > 0 && (
-                <div className="bg-white rounded-2xl border border-amber-200/80 p-4 sm:p-5 shadow-xs space-y-2.5 bg-gradient-to-br from-white to-amber-50/30">
+                <div className="bg-white rounded-2xl border border-amber-200/80 p-3.5 sm:p-5 shadow-xs space-y-2 bg-gradient-to-br from-white to-amber-50/30">
                   <div className="flex items-center gap-2">
                     <div className="w-7 h-7 rounded-xl bg-amber-100 text-amber-900 flex items-center justify-center font-bold shrink-0 shadow-2xs">
                       <Briefcase className="w-4 h-4 text-amber-700" />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <span className="text-xs font-black text-zinc-950 uppercase tracking-wider block">
                         Suitable For:
                       </span>
-                      <span className="text-[11px] text-zinc-500">
+                      <span className="text-[10px] sm:text-[11px] text-zinc-500 block leading-tight">
                         Admin-assigned commercial suitability labels for customer operations
                       </span>
                     </div>
                   </div>
-                  <div className="flex flex-wrap gap-2 pt-0.5">
+                  <div className="flex flex-wrap gap-1.5 sm:gap-2 pt-0.5">
                     {suitableForList.map((item, idx) => (
                       <span
                         key={idx}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-zinc-900 border border-amber-300 shadow-2xs hover:border-amber-400 transition"
+                        className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-bold bg-white text-zinc-900 border border-amber-300 shadow-2xs hover:border-amber-400 transition"
                       >
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                        <span>{item}</span>
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                        <span className="break-words">{item}</span>
                       </span>
                     ))}
                   </div>
@@ -804,12 +804,12 @@ export function PropertyDetailPageClient({
               )}
 
               {/* TABS NAVIGATION */}
-              <div className="bg-white rounded-2xl border border-zinc-200 p-1.5 sm:p-2 flex items-center gap-1.5 sm:gap-2 overflow-x-auto shadow-xs">
+              <div className="bg-white rounded-2xl border border-zinc-200 p-1 sm:p-2 flex items-center gap-1 sm:gap-2 overflow-x-auto scrollbar-none shadow-xs">
                 {availableTabs.map((tab: any) => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id as any)}
-                    className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+                    className={`px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer shrink-0 ${
                       activeTab === tab.id
                         ? 'bg-zinc-950 text-white shadow-xs'
                         : 'text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100'
@@ -822,37 +822,37 @@ export function PropertyDetailPageClient({
 
               {/* TAB CONTENT */}
               {activeTab === 'overview' && (
-                <div className="bg-white rounded-2xl sm:rounded-3xl border border-zinc-200 p-5 sm:p-8 space-y-6 shadow-xs">
+                <div className="bg-white rounded-2xl sm:rounded-3xl border border-zinc-200 p-4 sm:p-8 space-y-5 sm:space-y-6 shadow-xs">
                   <div>
-                    <h3 className="text-base sm:text-lg font-black text-zinc-950 mb-2">Architectural Narrative & Orientation</h3>
-                    <p className="text-xs sm:text-sm text-zinc-600 leading-relaxed whitespace-pre-line">
+                    <h3 className="text-base sm:text-lg font-black text-zinc-950 mb-2">Architectural Narrative &amp; Orientation</h3>
+                    <p className="text-xs sm:text-sm text-zinc-600 leading-relaxed whitespace-pre-line break-words">
                       {cleanDescription || formatPropertyDescription(property.description)}
                     </p>
                   </div>
 
                   {((!hideHighlights && highlights.length > 0) || (!hideConnectivity && connectivity.length > 0)) && (
-                    <div className={`grid gap-4 pt-2 ${
+                    <div className={`grid gap-3 sm:gap-4 pt-1 sm:pt-2 ${
                       (!hideHighlights && highlights.length > 0) && (!hideConnectivity && connectivity.length > 0)
                         ? 'grid-cols-1 sm:grid-cols-2'
                         : 'grid-cols-1'
                     }`}>
                       {!hideHighlights && highlights.length > 0 && (
-                        <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-200">
+                        <div className="p-3.5 sm:p-4 bg-zinc-50 rounded-2xl border border-zinc-200">
                           <span className="text-xs font-bold text-zinc-900 block mb-2">Engineering &amp; Architectural Highlights</span>
                           <ul className="space-y-1.5 text-xs text-zinc-600 list-disc list-inside">
                             {highlights.map((hl, idx) => (
-                              <li key={idx}>{hl}</li>
+                              <li key={idx} className="break-words">{hl}</li>
                             ))}
                           </ul>
                         </div>
                       )}
 
                       {!hideConnectivity && connectivity.length > 0 && (
-                        <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-200">
+                        <div className="p-3.5 sm:p-4 bg-zinc-50 rounded-2xl border border-zinc-200">
                           <span className="text-xs font-bold text-zinc-900 block mb-2">Location Connectivity Advantage</span>
                           <ul className="space-y-1.5 text-xs text-zinc-600 list-disc list-inside">
                             {connectivity.map((cn, idx) => (
-                              <li key={idx}>{cn}</li>
+                              <li key={idx} className="break-words">{cn}</li>
                             ))}
                           </ul>
                         </div>
@@ -863,7 +863,7 @@ export function PropertyDetailPageClient({
               )}
 
               {activeTab === 'financials' && (
-                <div className="bg-white rounded-2xl sm:rounded-3xl border border-zinc-200 p-5 sm:p-8 space-y-6 shadow-xs">
+                <div className="bg-white rounded-2xl sm:rounded-3xl border border-zinc-200 p-4 sm:p-8 space-y-5 sm:space-y-6 shadow-xs">
                   <div>
                     <h3 className="text-base sm:text-lg font-black text-zinc-950">Statutory Landed Cost Sheet</h3>
                     <p className="text-xs text-zinc-500 mt-1">
@@ -872,39 +872,39 @@ export function PropertyDetailPageClient({
                   </div>
 
                   <div className="border border-zinc-200 rounded-2xl overflow-hidden divide-y divide-zinc-200 text-xs">
-                    <div className="flex justify-between items-center p-3.5 sm:p-4 bg-zinc-50">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 sm:p-4 bg-zinc-50 gap-1 sm:gap-2">
                       <span className="font-bold text-zinc-800">Base Agreement Value</span>
-                      <span className="font-black text-zinc-950 text-sm">
+                      <span className="font-black text-zinc-950 text-sm shrink-0">
                         {customCostSheet?.baseAgreementValue || (priceRaw > 0 ? formatCurrency(priceRaw) : (property.price || 'Price on Request'))}
                       </span>
                     </div>
-                    <div className="flex justify-between items-center p-3.5 sm:p-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 sm:p-4 gap-1 sm:gap-2">
                       <span className="text-zinc-600">MahaRERA Stamp Duty (7%)</span>
-                      <span className="font-semibold text-zinc-900">
+                      <span className="font-semibold text-zinc-900 shrink-0">
                         {customCostSheet?.stampDuty || (priceRaw > 0 ? formatCurrency(stampDuty) : 'Calculated at 7% on Agreement')}
                       </span>
                     </div>
-                    <div className="flex justify-between items-center p-3.5 sm:p-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 sm:p-4 gap-1 sm:gap-2">
                       <span className="text-zinc-600">Statutory Registration Charges</span>
-                      <span className="font-semibold text-zinc-900">
+                      <span className="font-semibold text-zinc-900 shrink-0">
                         {customCostSheet?.registrationCharges || '₹30,000'}
                       </span>
                     </div>
-                    <div className="flex justify-between items-center p-3.5 sm:p-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 sm:p-4 gap-1 sm:gap-2">
                       <span className="text-zinc-600">Goods &amp; Services Tax (GST {isReady ? '0% - OC Issued' : '5%'})</span>
-                      <span className="font-semibold text-zinc-900">
+                      <span className="font-semibold text-zinc-900 shrink-0">
                         {customCostSheet?.gst || (isReady ? '₹0 (OC Received)' : (priceRaw > 0 ? formatCurrency(gstAmount) : 'Subject to Project Stage'))}
                       </span>
                     </div>
-                    <div className="flex justify-between items-center p-3.5 sm:p-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 sm:p-4 gap-1 sm:gap-2">
                       <span className="text-zinc-600">Brokerage &amp; Advisory Fee</span>
-                      <span className="font-bold text-emerald-700">
+                      <span className="font-bold text-emerald-700 shrink-0">
                         {customCostSheet?.brokerage || '₹0 (Zero Brokerage Mandate)'}
                       </span>
                     </div>
-                    <div className="flex justify-between items-center p-4 sm:p-5 bg-zinc-950 text-white font-bold">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 sm:p-5 bg-zinc-950 text-white font-bold gap-1 sm:gap-2">
                       <span className="text-xs sm:text-sm">Estimated Total Landed Outlay</span>
-                      <span className="text-amber-400 text-base sm:text-lg font-black">
+                      <span className="text-amber-400 text-base sm:text-lg font-black shrink-0">
                         {customCostSheet?.totalLandedOutlay || (priceRaw > 0 ? formatCurrency(totalCost) : 'Available on Custom Quote')}
                       </span>
                     </div>
@@ -913,7 +913,7 @@ export function PropertyDetailPageClient({
               )}
 
               {activeTab === 'amenities' && (
-                <div className="bg-white rounded-2xl sm:rounded-3xl border border-zinc-200 p-5 sm:p-8 space-y-6 shadow-xs">
+                <div className="bg-white rounded-2xl sm:rounded-3xl border border-zinc-200 p-4 sm:p-8 space-y-5 sm:space-y-6 shadow-xs">
                   <div>
                     <h3 className="text-base sm:text-lg font-black text-zinc-950">
                       {property.isCommercial ? 'Commercial Infrastructure & Building Ecosystem' : 'Residential Lifestyle & Wellness Ecosystem'}
@@ -923,17 +923,17 @@ export function PropertyDetailPageClient({
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 sm:gap-3">
                     {amenitiesList.map((item: any, idx: number) => {
                       const title = typeof item === 'string' ? item : item.title;
                       const desc = typeof item === 'string' ? 'Verified on-site infrastructure & service amenity' : (item.desc || 'Verified on-site infrastructure & service amenity');
                       return (
-                        <div key={idx} className="p-3.5 bg-zinc-50 border border-zinc-200 rounded-2xl">
+                        <div key={idx} className="p-3 sm:p-3.5 bg-zinc-50 border border-zinc-200 rounded-2xl">
                           <div className="flex items-center gap-1.5 font-bold text-xs text-zinc-900 mb-1">
                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                            <span>{title}</span>
+                            <span className="break-words">{title}</span>
                           </div>
-                          <p className="text-[11px] text-zinc-500 leading-snug">{desc}</p>
+                          <p className="text-[11px] text-zinc-500 leading-snug break-words">{desc}</p>
                         </div>
                       );
                     })}
@@ -942,30 +942,30 @@ export function PropertyDetailPageClient({
               )}
 
               {activeTab === 'compliance' && (
-                <div className="bg-white rounded-2xl sm:rounded-3xl border border-zinc-200 p-5 sm:p-8 space-y-6 shadow-xs">
-                  <div className="p-4 sm:p-5 bg-emerald-50/80 border border-emerald-200 rounded-2xl flex items-start gap-3">
-                    <ShieldCheck className="w-6 h-6 text-emerald-600 shrink-0 mt-0.5" />
+                <div className="bg-white rounded-2xl sm:rounded-3xl border border-zinc-200 p-4 sm:p-8 space-y-5 sm:space-y-6 shadow-xs">
+                  <div className="p-3.5 sm:p-5 bg-emerald-50/80 border border-emerald-200 rounded-2xl flex items-start gap-2.5 sm:gap-3">
+                    <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-600 shrink-0 mt-0.5" />
                     <div>
-                      <h4 className="font-bold text-sm text-emerald-950">MahaRERA &amp; RPS Legal Title Vetting</h4>
-                      <p className="text-xs text-emerald-800 mt-1 leading-relaxed">
+                      <h4 className="font-bold text-xs sm:text-sm text-emerald-950">MahaRERA &amp; RPS Legal Title Vetting</h4>
+                      <p className="text-[11px] sm:text-xs text-emerald-800 mt-1 leading-relaxed break-words">
                         {legalVettingText}
                       </p>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs">
                     {!hideRera ? (
-                      <div className="p-4 bg-zinc-50 border border-zinc-200 rounded-2xl flex items-center justify-between">
-                        <div>
+                      <div className="p-3.5 sm:p-4 bg-zinc-50 border border-zinc-200 rounded-2xl flex items-center justify-between gap-2">
+                        <div className="min-w-0 flex-1">
                           <span className="text-[10px] text-zinc-400 font-bold uppercase block">MahaRERA Registration ID</span>
-                          <span className="font-mono font-bold text-zinc-900 text-sm block mt-0.5">
+                          <span className="font-mono font-bold text-zinc-900 text-xs sm:text-sm block mt-0.5 break-all">
                             {displayRera || 'Available on Request / In Process'}
                           </span>
                         </div>
                         {displayRera && (
                           <button
                             onClick={handleCopyRera}
-                            className="p-2 hover:bg-zinc-200 rounded-lg text-zinc-600 transition cursor-pointer"
+                            className="p-2 hover:bg-zinc-200 rounded-lg text-zinc-600 transition cursor-pointer shrink-0"
                             title="Copy RERA ID"
                           >
                             {copiedRera ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
@@ -973,7 +973,7 @@ export function PropertyDetailPageClient({
                         )}
                       </div>
                     ) : (
-                      <div className="p-4 bg-zinc-50 border border-zinc-200 rounded-2xl">
+                      <div className="p-3.5 sm:p-4 bg-zinc-50 border border-zinc-200 rounded-2xl">
                         <span className="text-[10px] text-zinc-400 font-bold uppercase block">MahaRERA Registration</span>
                         <span className="font-semibold text-zinc-700 text-xs block mt-0.5">
                           Verified Mandate &bull; Private Clearance On Request
@@ -981,9 +981,9 @@ export function PropertyDetailPageClient({
                       </div>
                     )}
 
-                    <div className="p-4 bg-zinc-50 border border-zinc-200 rounded-2xl">
+                    <div className="p-3.5 sm:p-4 bg-zinc-50 border border-zinc-200 rounded-2xl">
                       <span className="text-[10px] text-zinc-400 font-bold uppercase block">Title Clearance Status</span>
-                      <span className="font-bold text-emerald-700 text-sm block mt-0.5">
+                      <span className="font-bold text-emerald-700 text-xs sm:text-sm block mt-0.5 break-words">
                         {rpsStatus}
                       </span>
                     </div>
@@ -1068,7 +1068,7 @@ export function PropertyDetailPageClient({
               </div>
 
               {/* PRIVATE SITE VISIT & ENQUIRY FORM */}
-              <div id="visit-booking-section" className="bg-zinc-950 text-white rounded-2xl sm:rounded-3xl p-5 sm:p-7 shadow-xl border border-zinc-800 scroll-mt-24">
+              <div id="visit-booking-section" className="bg-zinc-950 text-white rounded-2xl sm:rounded-3xl p-4 sm:p-7 shadow-xl border border-zinc-800 scroll-mt-24">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
                   <span className="text-[11px] sm:text-xs font-bold text-amber-400 uppercase tracking-wider">
@@ -1243,7 +1243,7 @@ export function PropertyDetailPageClient({
                 Quoted Price
               </span>
               <div className="text-base sm:text-lg font-black text-zinc-950 truncate leading-tight mt-0.5">
-                {property.price}
+                {hidePrice ? 'Price on Request' : property.price}
               </div>
             </div>
 
