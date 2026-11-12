@@ -380,7 +380,7 @@ export const CATEGORIES_DATA: CategoryItem[] = [
     shortTitle: 'Hotels & Resorts',
     iconName: 'Hotel',
     tagline: 'Business Hotels, Heritage Retreats & Holiday Resorts across Pune, Lonavala & Goa',
-    metaTitle: 'Hotels & Resorts for Sale in Pune, Lonavala & Goa | ANV Reealty',
+    metaTitle: 'Hotel Properties for Sell | Hotel Properties for Rent | Resort Properties for Sell | Resort Properties for Rent in Pune | ANV Reealty',
     metaDescription: 'Acquire verified hospitality assets, business hotels, and leisure resorts in Pune, Lonavala, Mumbai, and Goa. Operational and greenfield opportunities with full title clearance.',
     group: 'specialized',
     groupLabel: 'Hospitality Assets',

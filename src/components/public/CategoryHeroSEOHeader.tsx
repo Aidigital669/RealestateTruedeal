@@ -29,7 +29,7 @@ export function getCategorySeoHeading(category: CategoryItem): string {
     case 'residential-bungalow':
       return 'Bungalow & Villa Properties for Buy & Bungalow & Villa Properties for Rent in Pune';
     case 'hotel-resort':
-      return 'Hotel & Resort Properties for Buy & Hotel & Resort Properties for Rent in Pune';
+      return 'Hotel Properties for Sell | Hotel Properties for Rent | Resort Properties for Sell | Resort Properties for Rent in Pune';
     case 'preleased-properties':
       return 'Preleased Commercial Properties for Buy & Investment in Pune';
     case 'pre-launch-projects':
