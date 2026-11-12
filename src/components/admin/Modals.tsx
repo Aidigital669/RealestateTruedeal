@@ -195,6 +195,43 @@ export function AddPropertyModal({
   const [selectedPurposes, setSelectedPurposes] = useState<number[]>([]);
   const [hideName, setHideName] = useState(false);
   const [hidePrice, setHidePrice] = useState(false);
+  const [isAiStructuring, setIsAiStructuring] = useState(false);
+
+  const handleAiStandardize = async () => {
+    if (!description.trim()) {
+      alert('Please enter or paste property description text first.');
+      return;
+    }
+    setIsAiStructuring(true);
+    try {
+      const res = await fetch('/api/properties/standardize-description', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          rawDescription: description,
+          context: {
+            title: name,
+            location,
+            price,
+            sqft,
+            bhk,
+            status,
+            developer
+          }
+        })
+      });
+      const data = await res.json();
+      if (data?.success && data.standardizedDescription) {
+        setDescription(data.standardizedDescription);
+      } else {
+        setDescription(formatPropertyDescription(description));
+      }
+    } catch {
+      setDescription(formatPropertyDescription(description));
+    } finally {
+      setIsAiStructuring(false);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -568,13 +605,35 @@ export function AddPropertyModal({
           </div>
 
           <div>
-            <label className="block font-medium text-zinc-700 mb-1">Description Overview</label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block font-medium text-zinc-700">Description Overview</label>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setDescription(formatPropertyDescription(description))}
+                  className="text-[11px] font-semibold text-zinc-600 hover:text-zinc-900 bg-zinc-100 hover:bg-zinc-200 px-2 py-0.5 rounded transition cursor-pointer"
+                  title="Format all # hashtags to separate lines"
+                >
+                  🪄 Format #
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAiStandardize}
+                  disabled={isAiStructuring}
+                  className="text-[11px] font-bold text-amber-950 bg-amber-400 hover:bg-amber-300 disabled:opacity-50 px-2.5 py-0.5 rounded transition flex items-center gap-1 cursor-pointer shadow-2xs"
+                  title="Order and structure description strictly following the 42-point hierarchy using Gemini AI"
+                >
+                  <Sparkles className="w-3 h-3 text-amber-950" />
+                  <span>{isAiStructuring ? 'Structuring with Gemini...' : '✨ Gemini AI Organize (42 Steps)'}</span>
+                </button>
+              </div>
+            </div>
             <textarea
-              rows={4}
+              rows={5}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="e.g. Exclusive luxury property curated by Anv Reealty... Each # will automatically start on a new line."
-              className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-zinc-400"
+              placeholder="e.g. #Commercial Shop Available in Nana Peth #Carpet Area: 620 Sq.Ft... Click '✨ Gemini AI Organize' to auto-order into standard 42-point pattern."
+              className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-zinc-400 font-mono text-xs leading-relaxed"
             />
           </div>
 
@@ -688,6 +747,43 @@ export function EditPropertyModal({
   const [possession, setPossession] = useState('Ready to Move');
   const [hideName, setHideName] = useState(false);
   const [hidePrice, setHidePrice] = useState(false);
+  const [isAiStructuring, setIsAiStructuring] = useState(false);
+
+  const handleAiStandardize = async () => {
+    if (!description.trim()) {
+      alert('Please enter or paste property description text first.');
+      return;
+    }
+    setIsAiStructuring(true);
+    try {
+      const res = await fetch('/api/properties/standardize-description', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          rawDescription: description,
+          context: {
+            title: name,
+            location,
+            price,
+            sqft,
+            bhk,
+            status,
+            developer
+          }
+        })
+      });
+      const data = await res.json();
+      if (data?.success && data.standardizedDescription) {
+        setDescription(data.standardizedDescription);
+      } else {
+        setDescription(formatPropertyDescription(description));
+      }
+    } catch {
+      setDescription(formatPropertyDescription(description));
+    } finally {
+      setIsAiStructuring(false);
+    }
+  };
 
   // Update states when property changes
   React.useEffect(() => {
@@ -1216,12 +1312,36 @@ export function EditPropertyModal({
             </div>
 
             <div>
-              <label className="block font-semibold text-zinc-800 mb-1">Architectural Narrative &amp; Orientation (Description)</label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block font-semibold text-zinc-800 text-xs">
+                  Architectural Narrative &amp; Orientation (Description)
+                </label>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setDescription(formatPropertyDescription(description))}
+                    className="text-[11px] font-semibold text-zinc-600 hover:text-zinc-900 bg-zinc-100 hover:bg-zinc-200 px-2 py-0.5 rounded transition cursor-pointer"
+                    title="Split all # hashtags onto new lines"
+                  >
+                    🪄 Format #
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleAiStandardize}
+                    disabled={isAiStructuring}
+                    className="text-[11px] font-bold text-amber-950 bg-amber-400 hover:bg-amber-300 disabled:opacity-50 px-2.5 py-0.5 rounded transition flex items-center gap-1 cursor-pointer shadow-2xs"
+                    title="Organize into standard 42-point hierarchy using Gemini AI"
+                  >
+                    <Sparkles className="w-3 h-3 text-amber-950" />
+                    <span>{isAiStructuring ? 'Structuring with Gemini...' : '✨ Gemini AI Organize (42 Steps)'}</span>
+                  </button>
+                </div>
+              </div>
               <textarea
-                rows={6}
+                rows={7}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600 transition"
+                className="w-full px-3 py-2 border border-zinc-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600 transition font-mono text-xs leading-relaxed"
                 placeholder="Overview of layout, architecture, amenities, and connectivity..."
               />
             </div>

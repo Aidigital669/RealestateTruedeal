@@ -28,6 +28,7 @@ import {
   Image as ImageIcon
 } from 'lucide-react';
 import { EditPropertyModal } from '@/components/admin/Modals';
+import { formatPropertyDescription } from '@/lib/dossier-parser';
 
 interface ScrapedProperty {
   id: string;
@@ -801,8 +802,8 @@ export function ScraperImporter({ onImportComplete, showToast }: ScraperImporter
                   )}
 
                   {/* Description */}
-                  <p className="text-xs text-zinc-600 line-clamp-2 leading-relaxed">
-                    {scrapedSingle.description}
+                  <p className="text-xs text-zinc-600 line-clamp-3 leading-relaxed whitespace-pre-line font-mono">
+                    {formatPropertyDescription(scrapedSingle.description)}
                   </p>
 
                   {scrapedSingle.sourceUrl && (

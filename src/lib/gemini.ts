@@ -19,14 +19,15 @@ export interface GeminiOptions {
 }
 
 const SUPPORTED_MODELS = [
-  "gemini-flash-lite-latest",
+  "gemini-2.5-flash",
+  "gemini-1.5-flash",
   "gemini-flash-latest",
-  "gemma-4-26b-a4b-it",
-  "gemini-2.5-flash"
+  "gemini-flash-lite-latest"
 ];
 
 export async function generateWithGemini(options: GeminiOptions): Promise<string | null> {
-  if (!GEMINI_API_KEY) {
+  const apiKey = process.env.GEMINI_API_KEY || GEMINI_API_KEY;
+  if (!apiKey) {
     return null;
   }
 
@@ -34,8 +35,8 @@ export async function generateWithGemini(options: GeminiOptions): Promise<string
     systemPrompt,
     messages,
     temperature = 0.2,
-    maxOutputTokens = 800,
-    preferredModel = "gemini-flash-lite-latest"
+    maxOutputTokens = 2000,
+    preferredModel = "gemini-2.5-flash"
   } = options;
 
   // Format messages for Gemini API ('assistant' -> 'model')
@@ -56,13 +57,16 @@ export async function generateWithGemini(options: GeminiOptions): Promise<string
 
   for (const model of modelsToTry) {
     try {
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
       const payload: any = {
         contents,
         generationConfig: {
           temperature,
-          maxOutputTokens
+          maxOutputTokens,
+          thinkingConfig: {
+            thinkingBudget: 0
+          }
         }
       };
 

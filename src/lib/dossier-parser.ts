@@ -28,14 +28,18 @@ export interface ParsedDossier {
 
 const DOSSIER_TAG_REGEX = /<!--\s*DOSSIER_DATA:\s*([\s\S]*?)\s*-->/;
 
+import { fastDeterministicStandardizeDescription } from '@/lib/gemini-description-standardizer';
+
 /**
- * Ensures that every line starting with '#' is placed on its own line
+ * Ensures that every line starting with '#' is ordered according to the 42-point hierarchy
+ * and placed on its own line.
  */
 export function formatPropertyDescription(rawDescription: string = ''): string {
   if (!rawDescription) return '';
-  return rawDescription
+  const preformatted = rawDescription
     .replace(/(?:\r?\n)?\s*#/g, '\n#')
     .trim();
+  return fastDeterministicStandardizeDescription(preformatted);
 }
 
 /**
