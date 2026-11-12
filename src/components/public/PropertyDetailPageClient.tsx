@@ -357,6 +357,59 @@ export function PropertyDetailPageClient({
   const legalVettingText = property?.legalVettingText || dossier.legalVettingText || 'This property has completed 100% title deed investigation, environmental clearance, and commencement certification as registered under Government of Maharashtra MahaRERA.';
   const customCostSheet = property?.customCostSheet || dossier.customCostSheet;
 
+  // Aggregate Suitable For list from DB relations, dossier metadata, and description lines
+  const suitableForList = useMemo(() => {
+    const list: string[] = [];
+    const seen = new Set<string>();
+
+    const add = (val: any) => {
+      if (!val) return;
+      const str = typeof val === 'object' ? (val.name || val.title || '') : String(val);
+      // Clean leading # and "Suitable For:"
+      const clean = str.replace(/^(?:#\s*)?(?:suitable\s*for\s*[:\-]?\s*)+/i, '').trim();
+      if (!clean) return;
+
+      // Handle comma or pipe separated items
+      const parts = clean.split(/[,|]/);
+      for (const p of parts) {
+        const item = p.trim().replace(/^#+/, '').trim();
+        const key = item.toLowerCase();
+        if (item && !seen.has(key)) {
+          seen.add(key);
+          list.push(item);
+        }
+      }
+    };
+
+    // 1. From property.businessPurposes
+    if (Array.isArray(property?.businessPurposes)) {
+      for (const bp of property.businessPurposes) {
+        add(bp);
+      }
+    }
+
+    // 2. From dossier.suitableFor
+    if (Array.isArray(dossier?.suitableFor)) {
+      for (const sf of dossier.suitableFor) {
+        add(sf);
+      }
+    } else if (typeof dossier?.suitableFor === 'string') {
+      add(dossier.suitableFor);
+    }
+
+    // 3. From description lines starting with # Suitable For:
+    const desc = cleanDescription || property?.description || '';
+    const matches = desc.match(/#\s*Suitable\s*For\s*:\s*([^\n#]+)/gi);
+    if (matches) {
+      for (const m of matches) {
+        const val = m.replace(/#\s*Suitable\s*For\s*:\s*/i, '');
+        add(val);
+      }
+    }
+
+    return list;
+  }, [property?.businessPurposes, dossier?.suitableFor, cleanDescription, property?.description]);
+
   // Cost estimates
   const priceRaw = property?.priceRaw || 0;
   const stampDuty = Math.round(priceRaw * 0.07);
@@ -721,7 +774,7 @@ export function PropertyDetailPageClient({
               </div>
 
               {/* SUITABLE FOR BUSINESS PURPOSES */}
-              {property.businessPurposes && property.businessPurposes.length > 0 && (
+              {suitableForList.length > 0 && (
                 <div className="bg-white rounded-2xl border border-amber-200/80 p-4 sm:p-5 shadow-xs space-y-2.5 bg-gradient-to-br from-white to-amber-50/30">
                   <div className="flex items-center gap-2">
                     <div className="w-7 h-7 rounded-xl bg-amber-100 text-amber-900 flex items-center justify-center font-bold shrink-0 shadow-2xs">
@@ -737,13 +790,13 @@ export function PropertyDetailPageClient({
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2 pt-0.5">
-                    {property.businessPurposes.map((bp) => (
+                    {suitableForList.map((item, idx) => (
                       <span
-                        key={bp.id}
+                        key={idx}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-zinc-900 border border-amber-300 shadow-2xs hover:border-amber-400 transition"
                       >
                         <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                        <span>{bp.name}</span>
+                        <span>{item}</span>
                       </span>
                     ))}
                   </div>

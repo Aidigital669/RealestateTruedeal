@@ -1,19 +1,33 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Search, X, Check, Briefcase, ChevronDown } from 'lucide-react';
+import { Search, X, Check, Briefcase, ChevronDown, Plus, Sparkles } from 'lucide-react';
 import { INITIAL_BUSINESS_PURPOSES, BusinessPurpose } from '@/lib/business-purposes-constants';
+
+export const POPULAR_SUITABLE_PRESETS = [
+  { label: 'Retail Shop', searchKey: 'Jewellery' },
+  { label: 'Showroom', searchKey: 'Showroom' },
+  { label: 'Corporate Office', searchKey: 'Office' },
+  { label: 'Doctor Clinic', searchKey: 'Clinic' },
+  { label: 'Restaurant / Café', searchKey: 'Restaurant' },
+  { label: 'Bank / ATM', searchKey: 'Bank' },
+  { label: 'Supermarket', searchKey: 'Supermarket' },
+  { label: 'Warehouse', searchKey: 'Other' },
+  { label: 'IT / ITES Space', searchKey: 'Office' },
+  { label: 'Co-Working', searchKey: 'Office' },
+  { label: 'Gym / Fitness', searchKey: 'Gym' }
+];
 
 interface BusinessPurposesMultiSelectProps {
   selectedIds: (number | string)[];
-  onChange: (ids: number[]) => void;
+  onChange: (items: (number | string)[]) => void;
   label?: string;
 }
 
 export function BusinessPurposesMultiSelect({
   selectedIds = [],
   onChange,
-  label = 'Suitable Business Purposes'
+  label = 'Suitable For (Permitted Operations & Businesses)'
 }: BusinessPurposesMultiSelectProps) {
   const [purposes, setPurposes] = useState<BusinessPurpose[]>(() =>
     INITIAL_BUSINESS_PURPOSES.map((p, idx) => ({
@@ -25,6 +39,7 @@ export function BusinessPurposesMultiSelect({
   );
   const [search, setSearch] = useState('');
   const [isOpen, setIsOpen] = useState(false);
+  const [customInput, setCustomInput] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Fetch live purposes from backend if available
@@ -50,22 +65,47 @@ export function BusinessPurposesMultiSelect({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Normalize selected IDs as numbers
-  const numericSelected = useMemo(() => {
-    return selectedIds
-      .map((id) => {
-        if (typeof id === 'number') return id;
-        const parsed = parseInt(String(id), 10);
-        if (!isNaN(parsed)) return parsed;
-        const matched = purposes.find((p) => p.slug === id);
-        return matched ? matched.id : null;
-      })
-      .filter((id): id is number => id !== null);
-  }, [selectedIds, purposes]);
+  // Map selectedIds to full display objects (supports both IDs and custom string tags)
+  const resolvedSelected = useMemo(() => {
+    const list: { id: number | string; name: string; isCustom: boolean }[] = [];
+    const seen = new Set<string>();
 
-  const selectedPurposes = useMemo(() => {
-    return purposes.filter((p) => numericSelected.includes(p.id));
-  }, [purposes, numericSelected]);
+    for (const raw of selectedIds) {
+      if (raw === undefined || raw === null || raw === '') continue;
+
+      if (typeof raw === 'number' || /^\d+$/.test(String(raw))) {
+        const numId = Number(raw);
+        const match = purposes.find((p) => p.id === numId);
+        const name = match ? match.name : `Purpose #${numId}`;
+        const key = name.toLowerCase();
+        if (!seen.has(key)) {
+          seen.add(key);
+          list.push({ id: numId, name, isCustom: false });
+        }
+      } else {
+        const strVal = String(raw).trim();
+        // Check if string matches any known purpose name or slug
+        const match = purposes.find(
+          (p) => p.slug.toLowerCase() === strVal.toLowerCase() || p.name.toLowerCase() === strVal.toLowerCase()
+        );
+        if (match) {
+          const key = match.name.toLowerCase();
+          if (!seen.has(key)) {
+            seen.add(key);
+            list.push({ id: match.id, name: match.name, isCustom: false });
+          }
+        } else {
+          const key = strVal.toLowerCase();
+          if (!seen.has(key)) {
+            seen.add(key);
+            list.push({ id: strVal, name: strVal, isCustom: true });
+          }
+        }
+      }
+    }
+
+    return list;
+  }, [selectedIds, purposes]);
 
   const filteredPurposes = useMemo(() => {
     const q = search.toLowerCase().trim();
@@ -75,22 +115,48 @@ export function BusinessPurposesMultiSelect({
     );
   }, [purposes, search]);
 
-  const handleToggle = (id: number) => {
-    if (numericSelected.includes(id)) {
-      onChange(numericSelected.filter((item) => item !== id));
+  const isSelected = (idOrName: number | string) => {
+    if (typeof idOrName === 'number') {
+      return resolvedSelected.some((item) => item.id === idOrName);
+    }
+    const lower = String(idOrName).toLowerCase().trim();
+    return resolvedSelected.some((item) => 
+      String(item.id).toLowerCase() === lower || item.name.toLowerCase() === lower
+    );
+  };
+
+  const handleTogglePurpose = (p: BusinessPurpose) => {
+    const alreadySelected = isSelected(p.id);
+    if (alreadySelected) {
+      onChange(resolvedSelected.filter((item) => item.id !== p.id && item.name !== p.name).map((item) => item.id));
     } else {
-      onChange([...numericSelected, id]);
+      onChange([...resolvedSelected.map((item) => item.id), p.id]);
     }
   };
 
-  const handleRemove = (id: number, e: React.MouseEvent) => {
-    e.stopPropagation();
-    onChange(numericSelected.filter((item) => item !== id));
+  const handleRemove = (itemToRemove: { id: number | string; name: string }, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    onChange(
+      resolvedSelected
+        .filter((item) => item.id !== itemToRemove.id && item.name !== itemToRemove.name)
+        .map((item) => item.id)
+    );
   };
 
-  const handleSelectAll = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onChange(purposes.map((p) => p.id));
+  const handleAddCustom = (text: string) => {
+    const trimmed = text.trim().replace(/^#+/, '').trim();
+    if (!trimmed) return;
+
+    // Check if matches existing purpose
+    const matched = purposes.find(
+      (p) => p.name.toLowerCase() === trimmed.toLowerCase() || p.slug.toLowerCase() === trimmed.toLowerCase()
+    );
+
+    const valToAdd = matched ? matched.id : trimmed;
+    if (!isSelected(valToAdd)) {
+      onChange([...resolvedSelected.map((item) => item.id), valToAdd]);
+    }
+    setCustomInput('');
   };
 
   const handleClearAll = (e: React.MouseEvent) => {
@@ -99,160 +165,202 @@ export function BusinessPurposesMultiSelect({
   };
 
   return (
-    <div className="space-y-1.5" ref={containerRef}>
+    <div className="space-y-2.5" ref={containerRef}>
       <div className="flex items-center justify-between">
-        <label className="block font-medium text-zinc-700 text-xs">
-          {label}
-          <span className="text-[10px] text-zinc-400 font-normal ml-1">
-            (Select suitable commercial operations)
+        <label className="block font-bold text-zinc-900 text-xs flex items-center gap-1.5">
+          <Briefcase className="w-3.5 h-3.5 text-amber-600" />
+          <span>{label}</span>
+          <span className="text-[10px] text-zinc-400 font-normal">
+            (Choose standard operations or enter custom suitability)
           </span>
         </label>
-        {numericSelected.length > 0 && (
+        {resolvedSelected.length > 0 && (
           <button
             type="button"
             onClick={handleClearAll}
-            className="text-[11px] text-rose-600 hover:underline cursor-pointer font-medium"
+            className="text-[11px] text-rose-600 hover:underline cursor-pointer font-semibold"
           >
-            Clear all ({numericSelected.length})
+            Clear all ({resolvedSelected.length})
           </button>
         )}
       </div>
 
-      {/* Selected Chips / Tags */}
-      {selectedPurposes.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 p-2 bg-amber-50/50 rounded-xl border border-amber-200/70 max-h-28 overflow-y-auto">
-          {selectedPurposes.map((p) => (
+      {/* Quick Commercial Preset Buttons */}
+      <div className="space-y-1">
+        <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">
+          Quick Preset Select:
+        </span>
+        <div className="flex flex-wrap gap-1.5">
+          {POPULAR_SUITABLE_PRESETS.map((preset) => {
+            const active = isSelected(preset.label);
+            return (
+              <button
+                key={preset.label}
+                type="button"
+                onClick={() => {
+                  if (active) {
+                    handleRemove({ id: preset.label, name: preset.label });
+                  } else {
+                    handleAddCustom(preset.label);
+                  }
+                }}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition cursor-pointer flex items-center gap-1 ${
+                  active
+                    ? 'bg-amber-500 text-zinc-950 border border-amber-600 shadow-2xs'
+                    : 'bg-zinc-100 text-zinc-700 hover:bg-amber-100 hover:text-amber-950 border border-zinc-200'
+                }`}
+              >
+                {active ? <Check className="w-2.5 h-2.5 stroke-[3]" /> : <Plus className="w-2.5 h-2.5" />}
+                <span>{preset.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Selected Chips / Badges Display */}
+      {resolvedSelected.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 p-2.5 bg-amber-50/70 rounded-xl border border-amber-200/90 max-h-32 overflow-y-auto shadow-2xs">
+          {resolvedSelected.map((item, idx) => (
             <span
-              key={p.id}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-white text-zinc-900 border border-amber-300 shadow-2xs group"
+              key={idx}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-white text-zinc-900 border border-amber-300 shadow-2xs group"
             >
-              <span>{p.name}</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+              <span>{item.name}</span>
               <button
                 type="button"
-                onClick={(e) => handleRemove(p.id, e)}
-                className="w-3.5 h-3.5 rounded-full flex items-center justify-center text-zinc-400 hover:text-rose-600 hover:bg-zinc-100 transition cursor-pointer"
-                title={`Remove ${p.name}`}
+                onClick={(e) => handleRemove(item, e)}
+                className="w-4 h-4 rounded-full flex items-center justify-center text-zinc-400 hover:text-rose-600 hover:bg-zinc-100 transition cursor-pointer"
+                title={`Remove ${item.name}`}
               >
-                <X className="w-2.5 h-2.5" />
+                <X className="w-3 h-3" />
               </button>
             </span>
           ))}
         </div>
       )}
 
-      {/* Dropdown Trigger Box */}
-      <div className="relative">
-        <div
-          onClick={() => setIsOpen(!isOpen)}
-          className={`w-full min-h-[38px] px-3 py-2 border rounded-lg bg-white cursor-pointer flex items-center justify-between gap-2 text-xs transition ${
-            isOpen ? 'border-amber-500 ring-2 ring-amber-500/20' : 'border-zinc-200 hover:border-zinc-300'
-          }`}
-        >
-          <div className="flex items-center gap-2 text-zinc-600 truncate">
-            <Briefcase className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-            {numericSelected.length === 0 ? (
-              <span className="text-zinc-400">Select Business Purposes (e.g. Jewellery, Restaurant)...</span>
-            ) : (
-              <span className="font-semibold text-zinc-900">
-                {numericSelected.length} {numericSelected.length === 1 ? 'Purpose' : 'Purposes'} Selected
-              </span>
-            )}
-          </div>
-          <ChevronDown
-            className={`w-4 h-4 text-zinc-400 transition-transform duration-200 ${
-              isOpen ? 'rotate-180 text-amber-600' : ''
+      {/* Dropdown Selector & Custom Input Row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {/* Dropdown Trigger Box */}
+        <div className="relative">
+          <div
+            onClick={() => setIsOpen(!isOpen)}
+            className={`w-full min-h-[38px] px-3 py-2 border rounded-xl bg-white cursor-pointer flex items-center justify-between gap-2 text-xs transition ${
+              isOpen ? 'border-amber-500 ring-2 ring-amber-500/20' : 'border-zinc-200 hover:border-zinc-300'
             }`}
-          />
-        </div>
-
-        {/* Dropdown Menu */}
-        {isOpen && (
-          <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-white border border-zinc-200 rounded-xl shadow-xl p-2 space-y-2 animate-in fade-in slide-in-from-top-2 duration-150">
-            {/* Search Input */}
-            <div className="relative">
-              <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search business purpose..."
-                autoFocus
-                className="w-full pl-8 pr-7 py-1.5 text-xs bg-zinc-50 border border-zinc-200 rounded-lg focus:outline-hidden focus:border-amber-500 focus:bg-white"
-              />
-              {search && (
-                <button
-                  type="button"
-                  onClick={() => setSearch('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
-                >
-                  <X className="w-3 h-3" />
-                </button>
+          >
+            <div className="flex items-center gap-2 text-zinc-600 truncate">
+              <Sparkles className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+              {resolvedSelected.length === 0 ? (
+                <span className="text-zinc-400">Select standard purpose...</span>
+              ) : (
+                <span className="font-semibold text-zinc-900">
+                  {resolvedSelected.length} {resolvedSelected.length === 1 ? 'Purpose' : 'Purposes'} Selected
+                </span>
               )}
             </div>
+            <ChevronDown
+              className={`w-4 h-4 text-zinc-400 transition-transform duration-200 ${
+                isOpen ? 'rotate-180 text-amber-600' : ''
+              }`}
+            />
+          </div>
 
-            {/* Quick Actions */}
-            <div className="flex items-center justify-between px-1 text-[11px] text-zinc-500 border-b border-zinc-100 pb-1.5">
-              <span>{filteredPurposes.length} options</span>
-              <div className="space-x-2">
-                <button
-                  type="button"
-                  onClick={handleSelectAll}
-                  className="text-amber-700 hover:underline font-medium cursor-pointer"
-                >
-                  Select All
-                </button>
-                <span>•</span>
-                <button
-                  type="button"
-                  onClick={handleClearAll}
-                  className="text-zinc-500 hover:underline cursor-pointer"
-                >
-                  Deselect All
-                </button>
+          {/* Dropdown Menu */}
+          {isOpen && (
+            <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-white border border-zinc-200 rounded-xl shadow-xl p-2 space-y-2 animate-in fade-in slide-in-from-top-2 duration-150">
+              {/* Search Input */}
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search purpose (e.g. jewellery, clinic)..."
+                  autoFocus
+                  className="w-full pl-8 pr-7 py-1.5 text-xs bg-zinc-50 border border-zinc-200 rounded-lg focus:outline-hidden focus:border-amber-500 focus:bg-white"
+                />
+                {search && (
+                  <button
+                    type="button"
+                    onClick={() => setSearch('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+
+              {/* Checkbox Options List */}
+              <div className="max-h-56 overflow-y-auto space-y-0.5 pr-1">
+                {filteredPurposes.length === 0 ? (
+                  <div className="py-4 text-center text-xs text-zinc-400">
+                    No matching business purposes
+                  </div>
+                ) : (
+                  filteredPurposes.map((p) => {
+                    const checked = isSelected(p.id);
+                    return (
+                      <label
+                        key={p.id}
+                        onClick={() => handleTogglePurpose(p)}
+                        className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer transition select-none ${
+                          checked
+                            ? 'bg-amber-50 text-amber-950 font-semibold'
+                            : 'hover:bg-zinc-50 text-zinc-700'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div
+                            className={`w-4 h-4 rounded border flex items-center justify-center transition ${
+                              checked
+                                ? 'bg-amber-500 border-amber-600 text-zinc-950 shadow-2xs'
+                                : 'border-zinc-300 bg-white'
+                            }`}
+                          >
+                            {checked && <Check className="w-3 h-3 stroke-[3]" />}
+                          </div>
+                          <span>{p.name}</span>
+                        </div>
+                        {checked && (
+                          <span className="text-[10px] text-amber-700 font-bold">Selected</span>
+                        )}
+                      </label>
+                    );
+                  })
+                )}
               </div>
             </div>
+          )}
+        </div>
 
-            {/* Checkbox Options List */}
-            <div className="max-h-56 overflow-y-auto space-y-0.5 pr-1">
-              {filteredPurposes.length === 0 ? (
-                <div className="py-4 text-center text-xs text-zinc-400">
-                  No matching business purposes
-                </div>
-              ) : (
-                filteredPurposes.map((p) => {
-                  const isChecked = numericSelected.includes(p.id);
-                  return (
-                    <label
-                      key={p.id}
-                      onClick={() => handleToggle(p.id)}
-                      className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer transition select-none ${
-                        isChecked
-                          ? 'bg-amber-50 text-amber-950 font-semibold'
-                          : 'hover:bg-zinc-50 text-zinc-700'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <div
-                          className={`w-4 h-4 rounded border flex items-center justify-center transition ${
-                            isChecked
-                              ? 'bg-amber-500 border-amber-600 text-zinc-950 shadow-2xs'
-                              : 'border-zinc-300 bg-white'
-                          }`}
-                        >
-                          {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
-                        </div>
-                        <span>{p.name}</span>
-                      </div>
-                      {isChecked && (
-                        <span className="text-[10px] text-amber-700 font-bold">Selected</span>
-                      )}
-                    </label>
-                  );
-                })
-              )}
-            </div>
-          </div>
-        )}
+        {/* Custom Purpose Input with + Add Button */}
+        <div className="flex items-center gap-1.5">
+          <input
+            type="text"
+            value={customInput}
+            onChange={(e) => setCustomInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleAddCustom(customInput);
+              }
+            }}
+            placeholder="Custom (e.g. shop available in Undri)..."
+            className="flex-1 px-3 py-2 text-xs bg-white border border-zinc-200 rounded-xl focus:outline-hidden focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
+          />
+          <button
+            type="button"
+            onClick={() => handleAddCustom(customInput)}
+            disabled={!customInput.trim()}
+            className="px-3 py-2 bg-zinc-900 hover:bg-zinc-800 disabled:opacity-40 text-white font-bold rounded-xl text-xs cursor-pointer transition shrink-0 flex items-center gap-1"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Add</span>
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -26,6 +26,7 @@ export interface DossierData {
   possession?: string;
   rpsStatus?: string;
   legalVettingText?: string;
+  suitableFor?: (string | number)[] | string;
 
   // Visibility & privacy toggles
   hideName?: boolean;
@@ -50,18 +51,19 @@ export interface ParsedDossier {
 
 const DOSSIER_TAG_REGEX = /<!--\s*DOSSIER_DATA:\s*([\s\S]*?)\s*-->/;
 
-import { fastDeterministicStandardizeDescription } from '@/lib/gemini-description-standardizer';
+import { fastDeterministicStandardizeDescription, normalizeDossierText } from '@/lib/gemini-description-standardizer';
 
 /**
  * Ensures that every line starting with '#' is ordered according to the 42-point hierarchy
- * and placed on its own line.
+ * and placed on its own line without duplicate field prefixes.
  */
 export function formatPropertyDescription(rawDescription: string = ''): string {
   if (!rawDescription) return '';
   const preformatted = rawDescription
     .replace(/(?:\r?\n)?\s*#/g, '\n#')
     .trim();
-  return fastDeterministicStandardizeDescription(preformatted);
+  const standardized = fastDeterministicStandardizeDescription(preformatted);
+  return normalizeDossierText(standardized);
 }
 
 /**
@@ -101,6 +103,11 @@ export function parseDossierData(rawDescription: string = ''): ParsedDossier {
         possession: typeof parsed.possession === 'string' && parsed.possession.trim() ? parsed.possession.trim() : undefined,
         rpsStatus: typeof parsed.rpsStatus === 'string' && parsed.rpsStatus.trim() ? parsed.rpsStatus.trim() : undefined,
         legalVettingText: typeof parsed.legalVettingText === 'string' && parsed.legalVettingText.trim() ? parsed.legalVettingText.trim() : undefined,
+        suitableFor: Array.isArray(parsed.suitableFor)
+          ? parsed.suitableFor.filter(Boolean)
+          : typeof parsed.suitableFor === 'string' && parsed.suitableFor.trim()
+          ? parsed.suitableFor.split(/[,|]/).map((s: string) => s.trim()).filter(Boolean)
+          : undefined,
         hideName: Boolean(parsed.hideName),
         hidePrice: Boolean(parsed.hidePrice),
         hideRera: Boolean(parsed.hideRera),
@@ -115,7 +122,7 @@ export function parseDossierData(rawDescription: string = ''): ParsedDossier {
     };
   } catch (err) {
     return {
-      cleanDescription: rawDescription.replace(DOSSIER_TAG_REGEX, '').trim(),
+      cleanDescription: normalizeDossierText(rawDescription.replace(DOSSIER_TAG_REGEX, '').trim()),
       dossier: {}
     };
   }
@@ -125,7 +132,7 @@ export function parseDossierData(rawDescription: string = ''): ParsedDossier {
  * Serializes narrative text and structured dossier data into a backward-compatible format
  */
 export function embedDossierData(cleanNarrative: string, dossier: DossierData): string {
-  const baseNarrative = cleanNarrative.replace(DOSSIER_TAG_REGEX, '').trim();
+  const baseNarrative = normalizeDossierText(cleanNarrative.replace(DOSSIER_TAG_REGEX, '').trim());
 
   const payload: Record<string, any> = {};
   if (dossier.highlights && dossier.highlights.length > 0) {
@@ -148,6 +155,11 @@ export function embedDossierData(cleanNarrative: string, dossier: DossierData): 
   }
   if (dossier.legalVettingText) {
     payload.legalVettingText = dossier.legalVettingText.trim();
+  }
+  if (dossier.suitableFor) {
+    payload.suitableFor = Array.isArray(dossier.suitableFor)
+      ? dossier.suitableFor.filter(Boolean)
+      : [dossier.suitableFor].filter(Boolean);
   }
   if (dossier.hideName !== undefined) {
     payload.hideName = Boolean(dossier.hideName);

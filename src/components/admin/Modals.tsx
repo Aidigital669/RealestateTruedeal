@@ -193,7 +193,7 @@ export function AddPropertyModal({
   const [videoUrl, setVideoUrl] = useState('');
   const [listingType, setListingType] = useState<'Buy' | 'Rent'>('Buy');
   const [publishOnWebsite, setPublishOnWebsite] = useState(true);
-  const [selectedPurposes, setSelectedPurposes] = useState<number[]>([]);
+  const [selectedPurposes, setSelectedPurposes] = useState<(number | string)[]>([]);
   const [hideName, setHideName] = useState(false);
   const [hidePrice, setHidePrice] = useState(false);
   const [hideRera, setHideRera] = useState(false);
@@ -223,7 +223,8 @@ export function AddPropertyModal({
             sqft,
             bhk,
             status,
-            developer
+            developer,
+            suitableFor: selectedPurposes
           }
         })
       });
@@ -810,7 +811,8 @@ export function AddPropertyModal({
                 hideRera,
                 hideComplianceTab,
                 hideCostSheet,
-                hideAmenities
+                hideAmenities,
+                suitableFor: selectedPurposes.map(String)
               });
 
               onAdd({ 
@@ -883,7 +885,7 @@ export function EditPropertyModal({
   const [images, setImages] = useState<string[]>(['']);
   const [videoUrl, setVideoUrl] = useState('');
   const [listingType, setListingType] = useState<'Buy' | 'Rent'>('Buy');
-  const [selectedPurposes, setSelectedPurposes] = useState<number[]>([]);
+  const [selectedPurposes, setSelectedPurposes] = useState<(number | string)[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
   // Screenshot Dossier & Full Specifications States
@@ -940,7 +942,8 @@ export function EditPropertyModal({
             sqft,
             bhk,
             status,
-            developer
+            developer,
+            suitableFor: selectedPurposes
           }
         })
       });
@@ -1085,9 +1088,22 @@ export function EditPropertyModal({
       }
 
       // Extract existing business purposes
-      const existingPIds = Array.isArray(property.businessPurposeIds)
-        ? property.businessPurposeIds
-        : (Array.isArray(property.businessPurposes) ? property.businessPurposes.map((bp: any) => bp.id || bp) : []);
+      const existingPIds: (number | string)[] = Array.isArray(property.businessPurposeIds)
+        ? [...property.businessPurposeIds]
+        : (Array.isArray(property.businessPurposes) ? property.businessPurposes.map((bp: any) => bp.name || bp.id || bp) : []);
+
+      if (Array.isArray(dossier?.suitableFor)) {
+        for (const sf of dossier.suitableFor) {
+          if (sf && !existingPIds.includes(sf)) {
+            existingPIds.push(sf);
+          }
+        }
+      } else if (typeof dossier?.suitableFor === 'string' && dossier.suitableFor.trim()) {
+        const parts = dossier.suitableFor.split(/[,|]/).map((s: string) => s.trim()).filter(Boolean);
+        for (const p of parts) {
+          if (!existingPIds.includes(p)) existingPIds.push(p);
+        }
+      }
       setSelectedPurposes(existingPIds);
     }
   }, [property]);
@@ -1199,6 +1215,7 @@ export function EditPropertyModal({
         possession: possession.trim(),
         rpsStatus: rpsStatus.trim(),
         legalVettingText: legalVettingText.trim(),
+        suitableFor: selectedPurposes.map(String),
         hideName: Boolean(hideName),
         hidePrice: Boolean(hidePrice),
         hideRera: Boolean(hideRera),
@@ -1538,6 +1555,14 @@ export function EditPropertyModal({
                   placeholder="e.g. Verified Listing ✓ or 100% Clear Title"
                 />
               </div>
+            </div>
+
+            {/* Suitable For (Permitted Operations & Businesses) */}
+            <div className="p-3.5 bg-zinc-50 rounded-xl border border-zinc-200">
+              <BusinessPurposesMultiSelect
+                selectedIds={selectedPurposes}
+                onChange={setSelectedPurposes}
+              />
             </div>
 
             {/* Public Visibility & Privacy Controls Card */}

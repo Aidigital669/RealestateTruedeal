@@ -95,6 +95,7 @@ export async function GET(req: NextRequest) {
           listingType: p.listingType || p.listing_type || 'Sale',
           businessPurposes: assignedPurposes,
           businessPurposeIds: assignedPurposes.map((bp: any) => bp.id),
+          suitableFor: dossier.suitableFor || [],
           priceFormatted: p.price
             ? p.price >= 10000000
               ? `₹${(p.price / 10000000).toFixed(2)} Cr`
@@ -264,6 +265,7 @@ export async function POST(req: NextRequest) {
         hideAmenities: Boolean(hideAmenities),
         hideHighlights: Boolean(hideHighlights),
         hideConnectivity: Boolean(hideConnectivity),
+        suitableFor: Array.isArray(businessPurposeIds) ? businessPurposeIds : (Array.isArray(businessPurposes) ? businessPurposes : undefined),
         customCostSheet: customCostSheet && typeof customCostSheet === 'object' ? customCostSheet : undefined,
       }
     );

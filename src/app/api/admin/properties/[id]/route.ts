@@ -157,6 +157,7 @@ export async function PATCH(
       body.hideHighlights !== undefined ||
       body.hideConnectivity !== undefined ||
       body.customCostSheet !== undefined ||
+      body.suitableFor !== undefined ||
       body.isSafe !== undefined;
 
     if (hasDossierUpdates || body.description !== undefined) {
@@ -173,6 +174,7 @@ export async function PATCH(
         possession: body.possession !== undefined ? body.possession : (body.status !== undefined ? body.status : existingDossier.possession),
         rpsStatus: body.rpsStatus !== undefined ? body.rpsStatus : existingDossier.rpsStatus,
         legalVettingText: body.legalVettingText !== undefined ? body.legalVettingText : existingDossier.legalVettingText,
+        suitableFor: body.suitableFor !== undefined ? body.suitableFor : existingDossier.suitableFor,
         hideName: body.hideName !== undefined ? Boolean(body.hideName) : existingDossier.hideName,
         hidePrice: body.hidePrice !== undefined ? Boolean(body.hidePrice) : existingDossier.hidePrice,
         hideRera: body.hideRera !== undefined ? Boolean(body.hideRera) : existingDossier.hideRera,

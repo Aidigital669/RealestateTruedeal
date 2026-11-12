@@ -150,7 +150,21 @@ export async function setPropertyBusinessPurposes(
       if (typeof item === 'number' || /^\d+$/.test(String(item))) {
         validIds.push(Number(item));
       } else if (typeof item === 'string' && item.trim()) {
-        const found = await queryOne(`SELECT id FROM "BusinessPurpose" WHERE slug = $1 LIMIT 1;`, [item.trim()]);
+        const str = item.trim();
+        const slug = str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        let found = await queryOne(
+          `SELECT id FROM "BusinessPurpose" WHERE slug = $1 OR LOWER(name) = LOWER($2) LIMIT 1;`,
+          [slug, str]
+        );
+        if (!found?.id && str.length >= 2) {
+          found = await queryOne(
+            `INSERT INTO "BusinessPurpose" (name, slug, "isActive", "createdAt", "updatedAt")
+             VALUES ($1, $2, true, NOW(), NOW())
+             ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name
+             RETURNING id;`,
+            [str, slug || `bp-${Date.now()}`]
+          );
+        }
         if (found?.id) validIds.push(found.id);
       }
     }

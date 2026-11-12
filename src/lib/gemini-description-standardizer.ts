@@ -26,7 +26,7 @@ export interface PropertyContext {
   totalFloors?: string;
   floor?: string;
   parking?: string;
-  suitableFor?: string;
+  suitableFor?: (string | number)[] | string;
   features?: string[];
   deposit?: string;
   rent?: string;
@@ -132,7 +132,39 @@ MANDATORY RULES:
 4. PARKING FORMAT: When parking is mentioned, use symbols: 🚗 Four Wheeler: X | 🛵 Two Wheeler: Y.
 5. FURNISHING FORMAT: For commercial offices with fitouts, format under: WS: [count] | Cabins: [count] | Conference: [count] | Reception: [Yes/No] (or 'Bare Shell' / 'Warm Shell' / 'Furnished' as applicable).
 6. AREA FORMAT: Group all area metrics together under Area (e.g. '# Area: Carpet Area: 620 Sq.Ft. | Saleable Area: 900 Sq.Ft. | Basement: 1,100 Sq.Ft.').
-7. OUTPUT ONLY: Output strictly the lines starting with '# '. No intro, no outro, no markdown codeblocks (\`\`\`).`;
+7. OUTPUT ONLY: Output strictly the lines starting with '# '. No intro, no outro, no markdown codeblocks (\`\`\`).
+8. NEVER DUPLICATE HEADINGS: Never repeat the heading in the text line (e.g. NEVER output '# Suitable For: Suitable For: ...' or '# Area: Area: ...'). Output strictly ONE '# <Heading>: <values>'.`;
+
+/**
+ * Normalizes dossier text to eliminate duplicate headings, repeated prefixes,
+ * and malformed hashtag formatting.
+ * Specifically prevents '# Suitable For: Suitable For: ...' or '# Carpet Area: Carpet Area: ...'.
+ */
+export function normalizeDossierText(text: string): string {
+  if (!text) return '';
+  return text
+    .split('\n')
+    .map(line => {
+      let l = line.trim();
+      if (!l) return '';
+
+      // Normalize hashtag prefix to single "# "
+      l = l.replace(/^#+\s*/, '# ');
+
+      // Fix repeated "Suitable For" in heading (e.g. # Suitable For: Suitable For: ...)
+      l = l.replace(/^#\s*(?:Suitable\s*For\s*[:\-]?\s*)+/i, '# Suitable For: ');
+
+      // Fix repeated generic headers: # <Header>: <Header>: ...
+      l = l.replace(/^#\s*([^:]+?)\s*:\s*(?:\1\s*:\s*)+/i, '# $1: ');
+
+      // Fix trailing or malformed colons after "# Field: :"
+      l = l.replace(/^#\s*([^:]+?)\s*:\s*:\s*/, '# $1: ');
+
+      return l;
+    })
+    .filter(Boolean)
+    .join('\n');
+}
 
 /**
  * Uses Gemini AI to structure raw property descriptions according to the 42-point hierarchy.
@@ -141,7 +173,11 @@ export async function geminiStandardizeDescription(
   rawDescription: string = '',
   context: PropertyContext = {}
 ): Promise<string | null> {
-  if (!rawDescription && !context.title) {
+  const suitableText = Array.isArray(context.suitableFor)
+    ? context.suitableFor.join(', ')
+    : context.suitableFor || '';
+
+  if (!rawDescription && !context.title && !suitableText) {
     return '';
   }
 
@@ -161,8 +197,9 @@ ${context.developer ? `Developer/Brand: ${context.developer}` : ''}
 ${context.possession ? `Possession: ${context.possession}` : ''}
 ${context.deposit ? `Deposit: ${context.deposit}` : ''}
 ${context.rent ? `Rent: ${context.rent}` : ''}
+${suitableText ? `Suitable For / Permitted Operations: ${suitableText}` : ''}
 
-Please structure the description strictly according to the 42-point hierarchy. ONLY output fields with values. Each field on its own line starting with '# '.
+Please structure the description strictly according to the 42-point hierarchy. ONLY output fields with values. Each field on its own line starting with '# '. NEVER output duplicate heading prefixes.
 `.trim();
 
   try {
@@ -182,12 +219,14 @@ Please structure the description strictly according to the 42-point hierarchy. O
         .trim();
 
       // Ensure every line starts with '# ' and has single newline separation
-      return cleaned
+      const lines = cleaned
         .split('\n')
         .map(l => l.trim())
         .filter(Boolean)
         .map(l => (l.startsWith('#') ? l : `# ${l}`))
         .join('\n');
+
+      return normalizeDossierText(lines);
     }
   } catch (err: any) {
     console.warn('Gemini description standardizer notice:', err?.message || err);
@@ -204,7 +243,7 @@ export function fastDeterministicStandardizeDescription(
   rawDescription: string = '',
   context: PropertyContext = {}
 ): string {
-  if (!rawDescription) return '';
+  if (!rawDescription && !context.title && !context.suitableFor) return '';
 
   // Extract raw hashtag segments or lines
   const rawSegments = rawDescription
@@ -213,15 +252,22 @@ export function fastDeterministicStandardizeDescription(
     .map(s => s.trim().replace(/^#+/, '').trim())
     .filter(Boolean);
 
-  if (rawSegments.length === 0 && !context.title) {
-    return rawDescription.trim();
+  if (rawSegments.length === 0 && !context.title && !context.suitableFor) {
+    return normalizeDossierText(rawDescription.trim());
   }
 
   const buckets: { [key: number]: string } = {};
 
   const addBucket = (id: number, text: string) => {
     if (!text || !text.trim()) return;
-    const clean = text.trim();
+    let clean = text.trim();
+
+    // Strip redundant heading if it repeats the standard label for this bucket
+    if (id === 19) {
+      clean = clean.replace(/^(?:#\s*)?(?:suitable\s*for\s*[:\-]?\s*)+/i, '').trim();
+      if (!clean) return;
+    }
+
     if (buckets[id]) {
       // Avoid duplicate text in same bucket
       if (!buckets[id].toLowerCase().includes(clean.toLowerCase())) {
@@ -243,6 +289,19 @@ export function fastDeterministicStandardizeDescription(
   if (context.deposit) addBucket(27, `Security Deposit: ${context.deposit}`);
   if (context.rent) addBucket(24, `Rent Per Month: ${context.rent}`);
 
+  // Seed with chosen suitable-for operations from context
+  if (context.suitableFor) {
+    const sfItems = Array.isArray(context.suitableFor)
+      ? context.suitableFor
+      : String(context.suitableFor).split(/[,|]/);
+    for (const sf of sfItems) {
+      const sfStr = String(sf || '').trim();
+      if (sfStr) {
+        addBucket(19, sfStr);
+      }
+    }
+  }
+
   // Analyze raw segments
   for (const seg of rawSegments) {
     let s = seg.trim();
@@ -251,6 +310,13 @@ export function fastDeterministicStandardizeDescription(
     // Separate merged hashtags like #retailshopsatundri into readable words
     if (/^[a-z0-9]+$/i.test(s) && s.length > 10) {
       s = s.replace(/([a-z])([A-Z])/g, '$1 $2');
+    }
+
+    // Direct check for Suitable For segment
+    if (/^suitable\s*for\s*[:\-]?/i.test(s)) {
+      const val = s.replace(/^(?:#\s*)?(?:suitable\s*for\s*[:\-]?\s*)+/i, '').trim();
+      if (val) addBucket(19, val);
+      continue;
     }
 
     if (/project\s*name\s*[:\-]/i.test(s) || /building\s*name\s*[:\-]/i.test(s)) {
@@ -263,7 +329,8 @@ export function fastDeterministicStandardizeDescription(
       if (locMatch && locMatch[1]) {
         addBucket(3, `Landmark, City: ${locMatch[1].trim()}, Pune`);
       }
-      addBucket(19, `Suitable For: ${s}`);
+      const suitVal = s.replace(/^(?:#\s*)?(?:suitable\s*for\s*[:\-]?\s*)+/i, '').trim();
+      addBucket(19, suitVal);
     } else if (/near\s+|opposite\s+|chowk|crossroad|metro|highway|expressway|corridor|towards\s+/i.test(s) && !/road\s*width|facing/i.test(s)) {
       addBucket(3, `Landmark, City: ${s}`);
     } else if (/carpet\s*area|saleable\s*area|super\s*area|built\s*up|total\s*(?:stated\s*)?area|basement|mezzanine/i.test(s)) {
@@ -282,7 +349,8 @@ export function fastDeterministicStandardizeDescription(
     } else if (/on\s*floor|floor\s*no|(\d+)(?:st|nd|rd|th)\s*floor/i.test(s)) {
       addBucket(18, `Property on Floor: ${s}`);
     } else if (/suitable\s*for/i.test(s) || /(?:retail|showroom|clinic|bank|corporate|commercial\s*business|godown|storage)/i.test(s)) {
-      addBucket(19, s.startsWith('Suitable For') ? s : `Suitable For: ${s}`);
+      const cleanSuit = s.replace(/^(?:#\s*)?(?:suitable\s*for\s*[:\-]?\s*)+/i, '').trim();
+      addBucket(19, cleanSuit);
     } else if (/lock[\s\-]*in/i.test(s)) {
       addBucket(22, `Lock-in Period: ${s}`);
     } else if (/lease\s*period|agreement\s*period/i.test(s)) {
@@ -327,11 +395,18 @@ export function fastDeterministicStandardizeDescription(
   const outputLines: string[] = [];
   for (let i = 1; i <= 42; i++) {
     if (buckets[i]) {
-      outputLines.push(`# ${buckets[i]}`);
+      if (i === 19) {
+        // Guarantee single clean header: # Suitable For: <val>
+        const cleanVal = buckets[19].replace(/^(?:#\s*)?(?:suitable\s*for\s*[:\-]?\s*)+/i, '').trim();
+        outputLines.push(`# Suitable For: ${cleanVal}`);
+      } else {
+        outputLines.push(`# ${buckets[i]}`);
+      }
     }
   }
 
-  return outputLines.length > 0 ? outputLines.join('\n') : rawDescription.trim();
+  const result = outputLines.length > 0 ? outputLines.join('\n') : rawDescription.trim();
+  return normalizeDossierText(result);
 }
 
 /**
@@ -341,11 +416,15 @@ export async function standardizePropertyDescription(
   rawDescription: string = '',
   context: PropertyContext = {}
 ): Promise<string> {
-  if (!rawDescription && !context.title) return '';
+  const suitableText = Array.isArray(context.suitableFor)
+    ? context.suitableFor.join(', ')
+    : context.suitableFor || '';
+
+  if (!rawDescription && !context.title && !suitableText) return '';
 
   const aiResult = await geminiStandardizeDescription(rawDescription, context);
   if (aiResult && aiResult.trim()) {
-    return aiResult.trim();
+    return normalizeDossierText(aiResult);
   }
 
   return fastDeterministicStandardizeDescription(rawDescription, context);
