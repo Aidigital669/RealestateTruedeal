@@ -740,45 +740,45 @@ export default function SavedPropertiesPage() {
                     </div>
 
                     {/* Content Body */}
-                    <div className="p-5 flex-1 flex flex-col justify-between">
+                    <div className="p-3.5 sm:p-5 flex-1 flex flex-col justify-between">
                       <div>
                         <div className="flex items-start justify-between gap-2">
                           <Link
                             href={`/properties/${prop.id}`}
-                            className="font-black text-lg text-zinc-950 hover:text-amber-600 transition leading-snug line-clamp-1"
+                            className="font-black text-base sm:text-lg text-zinc-950 hover:text-amber-600 transition leading-snug line-clamp-1"
                           >
                             {prop.name}
                           </Link>
                         </div>
 
-                        <p className="text-xs text-zinc-500 flex items-center gap-1 mt-1 font-medium">
+                        <p className="text-[11px] sm:text-xs text-zinc-500 flex items-center gap-1 mt-0.5 sm:mt-1 font-medium">
                           <MapPin className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                           <span className="truncate">{prop.location}</span>
                         </p>
 
                         {/* Price & Typology Strip */}
-                        <div className="mt-3 pt-3 border-t border-zinc-100 flex items-baseline justify-between">
+                        <div className="mt-2.5 sm:mt-3 pt-2.5 sm:pt-3 border-t border-zinc-100 flex items-baseline justify-between">
                           <div>
-                            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">
+                            <span className="text-[9px] sm:text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">
                               Quoted Value
                             </span>
-                            <span className="text-xl font-black text-zinc-950">
+                            <span className="text-lg sm:text-xl font-black text-zinc-950">
                               {prop.price}
                             </span>
                           </div>
 
                           <div className="text-right">
-                            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">
+                            <span className="text-[9px] sm:text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">
                               Layout / Carpet
                             </span>
-                            <span className="text-xs font-black text-zinc-900">
+                            <span className="text-[11px] sm:text-xs font-black text-zinc-900">
                               {prop.bhk} &bull; {prop.sqft ? prop.sqft.replace(/\s*carpet\s*/gi, '').trim() : '1,200 Sq.Ft.'}
                             </span>
                           </div>
                         </div>
 
                         {/* Status / Possession */}
-                        <div className="mt-2.5 flex items-center justify-between text-[11px] text-zinc-600 bg-zinc-50 p-2 rounded-xl border border-zinc-100">
+                        <div className="mt-2 sm:mt-2.5 flex items-center justify-between text-[10px] sm:text-[11px] text-zinc-600 bg-zinc-50 p-2 rounded-xl border border-zinc-100">
                           <span>Status: <strong className="text-zinc-900">{prop.status}</strong></span>
                           <span className="text-emerald-700 font-bold">RERA Registered ✓</span>
                         </div>

@@ -54,7 +54,6 @@ import { findMatchingCategorySlug } from '@/lib/categories-data';
 import { isUserSeller } from '@/lib/seller-intent';
 import { generateSearchSuggestions, detectQueryAutocorrect, SearchSuggestion } from '@/lib/search-autocorrect';
 import { formatPropertyDescription } from '@/lib/dossier-parser';
-import { usePropertyComparison } from '@/context/PropertyComparisonContext';
 
 export interface BuyerDemandItem {
   id: string;
@@ -467,8 +466,6 @@ export function HomepageSearchablePortal({
   isDedicatedSearchPage = false
 }: HomepageSearchablePortalProps) {
   const router = useRouter();
-  const { compareList } = usePropertyComparison();
-  const hasCompareBar = compareList && compareList.length > 0;
 
   // Main Search & Filter States
   const [searchQuery, setSearchQuery] = useState(initialSearchParams?.search || '');
@@ -3237,45 +3234,52 @@ export function HomepageSearchablePortal({
                           </div>
                         </div>
 
-                        {/* 2. Price & Status */}
-                        <div className="grid grid-cols-2 gap-2 bg-zinc-50/90 p-2.5 rounded-xl border border-zinc-100 text-xs">
+                        {/* 2. Specs Grid: Price | Typology & Area | Status */}
+                        <div className="grid grid-cols-3 gap-1.5 sm:gap-2 bg-zinc-50/90 p-2 sm:p-2.5 rounded-xl border border-zinc-100 text-xs">
                           {/* Price */}
-                          <div>
-                            <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider block">Price</span>
+                          <div className="min-w-0">
+                            <span className="text-[9px] uppercase font-bold text-zinc-400 tracking-wider block truncate">Price</span>
                             {formatPriceDisplay(row.price) === 'Price on Request' || row.hidePrice ? (
                               <button
                                 type="button"
                                 onClick={() => handleInstantEnquiry(row)}
-                                className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-[11px] transition cursor-pointer"
+                                className="mt-0.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-[10px] transition cursor-pointer"
                               >
                                 <Lock className="w-2.5 h-2.5 text-zinc-950" />
-                                <span>Request Price</span>
+                                <span>Request</span>
                               </button>
                             ) : (
-                              <div className="font-black text-zinc-950 text-sm mt-0.5">{formatPriceDisplay(row.price)}</div>
+                              <div className="font-black text-zinc-950 text-xs sm:text-sm mt-0.5 truncate">{formatPriceDisplay(row.price)}</div>
                             )}
                           </div>
 
+                          {/* Typology & Area */}
+                          <div className="min-w-0">
+                            <span className="text-[9px] uppercase font-bold text-zinc-400 tracking-wider block truncate">Config & Area</span>
+                            <div className="font-bold text-zinc-900 text-xs mt-0.5 truncate">{row.bhk}</div>
+                            <div className="text-[10px] text-zinc-500 font-medium truncate">{cleanSqft(row.sqft)}</div>
+                          </div>
+
                           {/* Status */}
-                          <div>
-                            <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider block">Status</span>
+                          <div className="min-w-0">
+                            <span className="text-[9px] uppercase font-bold text-zinc-400 tracking-wider block truncate">Status</span>
                             <div className="mt-0.5">
-                              <span className="inline-block text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200/60">
+                              <span className="inline-block text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200/60 truncate max-w-full">
                                 {row.status}
                               </span>
                             </div>
                           </div>
                         </div>
 
-                        {/* 3. Site Visit icon & Explore button */}
-                        <div className="flex items-center gap-2 pt-0.5">
+                        {/* 3. Action Buttons Row */}
+                        <div className="flex items-center gap-1.5 sm:gap-2 pt-0.5">
                           <button
                             type="button"
                             onClick={() => {
                               setSelectedPropertyForSiteVisit(row);
                               setSiteVisitModalOpen(true);
                             }}
-                            className="inline-flex items-center justify-center p-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 text-zinc-950 shadow-xs transition-all cursor-pointer shrink-0"
+                            className="inline-flex items-center justify-center p-2 sm:p-2.5 rounded-lg sm:rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 text-zinc-950 shadow-xs transition-all cursor-pointer shrink-0"
                             title={`Book VIP Site Visit for ${row.name}`}
                             aria-label={`Book VIP Site Visit for ${row.name}`}
                           >
@@ -3284,11 +3288,11 @@ export function HomepageSearchablePortal({
 
                           <Link
                             href={getPropertyUrl(row)}
-                            className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 active:scale-95 text-zinc-900 font-bold text-xs transition-all cursor-pointer"
+                            className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg sm:rounded-xl bg-zinc-950 hover:bg-zinc-850 active:scale-95 text-white font-bold text-xs transition-all cursor-pointer shadow-xs"
                             title="Explore property"
                           >
-                            <span>Explore</span>
-                            <ArrowRight className="w-3.5 h-3.5 text-zinc-700" />
+                            <span>Explore Details</span>
+                            <ArrowRight className="w-3.5 h-3.5 text-amber-400" />
                           </Link>
                         </div>
                       </div>
@@ -4334,18 +4338,18 @@ export function HomepageSearchablePortal({
             )}
 
             {/* Direct Seller & Buyer Desk Banner */}
-            <div className="bg-gradient-to-r from-zinc-950 via-zinc-900 to-zinc-950 text-white rounded-3xl p-6 sm:p-7 border border-zinc-800 flex flex-col md:flex-row items-center justify-between gap-5 shadow-sm">
-              <div className="flex items-center gap-4 text-center md:text-left">
-                <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shrink-0 mx-auto md:mx-0">
-                  <Building2 className="w-6 h-6 text-amber-400" />
+            <div className="bg-gradient-to-r from-zinc-950 via-zinc-900 to-zinc-950 text-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-7 border border-zinc-800 flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-5 shadow-sm">
+              <div className="flex items-center gap-3 sm:gap-4 text-center md:text-left">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shrink-0 mx-auto md:mx-0">
+                  <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400" />
                 </div>
                 <div>
-                  <span className="text-[11px] font-bold text-amber-400 uppercase tracking-wider block">Direct Seller & Buyer Desk</span>
-                  <h4 className="text-base sm:text-lg font-bold text-white">Have a property matching these buyer profiles?</h4>
-                  <p className="text-xs text-zinc-400">Our advisory team verifies and conducts confidential introductions between genuine property owners and ready buyers.</p>
+                  <span className="text-[10px] sm:text-[11px] font-bold text-amber-400 uppercase tracking-wider block">Direct Seller & Buyer Desk</span>
+                  <h4 className="text-sm sm:text-base md:text-lg font-bold text-white mt-0.5">Have a property matching these buyer profiles?</h4>
+                  <p className="text-[11px] sm:text-xs text-zinc-400 mt-0.5">Our advisory team verifies and conducts confidential introductions between genuine property owners and ready buyers.</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 shrink-0 flex-wrap justify-center">
+              <div className="flex items-center gap-3 shrink-0 w-full sm:w-auto justify-center">
                 <button
                   type="button"
                   onClick={() => {
@@ -4353,7 +4357,7 @@ export function HomepageSearchablePortal({
                     setSelectedBuyerSummaryForConnect(undefined);
                     setSellerModalOpen(true);
                   }}
-                  className="bg-amber-500 hover:bg-amber-400 text-zinc-950 font-black px-6 py-3 rounded-xl text-xs transition flex items-center gap-2 shadow-sm cursor-pointer"
+                  className="w-full sm:w-auto bg-amber-500 hover:bg-amber-400 active:scale-95 text-zinc-950 font-black px-5 py-2.5 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-xs cursor-pointer"
                 >
                   <Building2 className="w-3.5 h-3.5" />
                   <span>Register Property</span>
@@ -4392,76 +4396,76 @@ export function HomepageSearchablePortal({
                   {displayedCardBuyers.map((demand) => (
                     <div
                       key={demand.id}
-                      className="bg-white rounded-3xl border border-zinc-200/90 shadow-sm hover:shadow-xl hover:border-amber-500/40 transition-all duration-300 flex flex-col justify-between overflow-hidden group"
+                      className="bg-white rounded-2xl sm:rounded-3xl border border-zinc-200/90 shadow-sm hover:shadow-xl hover:border-amber-500/40 transition-all duration-300 flex flex-col justify-between overflow-hidden group"
                     >
                       {/* Top Bar */}
-                      <div className="p-5 pb-4 border-b border-zinc-100 bg-gradient-to-r from-zinc-50 to-white">
+                      <div className="p-3.5 sm:p-4 lg:p-5 pb-3 sm:pb-4 border-b border-zinc-100 bg-gradient-to-r from-zinc-50 to-white">
                         <div className="flex items-center justify-between mb-2">
-                          <span className="font-mono text-xs font-bold text-amber-800 bg-amber-100/80 border border-amber-200 px-2.5 py-1 rounded-lg">
+                          <span className="font-mono text-[11px] sm:text-xs font-bold text-amber-800 bg-amber-100/80 border border-amber-200 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg">
                             Ref: {demand.referenceCode}
                           </span>
-                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/70 px-2.5 py-0.5 rounded-full">
-                            <CheckCircle className="w-3 h-3 text-emerald-600" />
+                          <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/70 px-2 sm:px-2.5 py-0.5 rounded-full">
+                            <CheckCircle className="w-3 h-3 text-emerald-600 shrink-0" />
                             <span>Verified Buyer</span>
                           </span>
                         </div>
 
-                        <h4 className="font-extrabold text-base text-zinc-950 group-hover:text-amber-800 transition">
+                        <h4 className="font-extrabold text-sm sm:text-base text-zinc-950 group-hover:text-amber-800 transition">
                           {demand.maskedName}
                         </h4>
-                        <p className="text-xs text-zinc-500 mt-0.5">
+                        <p className="text-[11px] sm:text-xs text-zinc-500 mt-0.5">
                           Target Area: <strong className="text-zinc-800">{demand.locality}, Pune</strong>
                         </p>
                       </div>
 
                       {/* Core Specs Grid */}
-                      <div className="p-5 space-y-3.5 flex-1">
-                        <div className="grid grid-cols-2 gap-2.5 text-xs">
-                          <div className="p-2.5 bg-zinc-50 border border-zinc-100 rounded-xl">
-                            <span className="text-[10px] uppercase font-bold text-zinc-400 block mb-0.5">Configuration</span>
-                            <span className="font-black text-zinc-900">{demand.bhk}</span>
+                      <div className="p-3.5 sm:p-4 lg:p-5 space-y-2.5 sm:space-y-3.5 flex-1">
+                        <div className="grid grid-cols-2 gap-2 sm:gap-2.5 text-xs">
+                          <div className="p-2 sm:p-2.5 bg-zinc-50 border border-zinc-100 rounded-lg sm:rounded-xl">
+                            <span className="text-[9px] sm:text-[10px] uppercase font-bold text-zinc-400 block mb-0.5">Configuration</span>
+                            <span className="font-black text-xs sm:text-sm text-zinc-900">{demand.bhk}</span>
                           </div>
-                          <div className="p-2.5 bg-zinc-50 border border-zinc-100 rounded-xl">
-                            <span className="text-[10px] uppercase font-bold text-zinc-400 block mb-0.5">Budget</span>
-                            <span className="font-black text-amber-700">{demand.budget}</span>
+                          <div className="p-2 sm:p-2.5 bg-zinc-50 border border-zinc-100 rounded-lg sm:rounded-xl">
+                            <span className="text-[9px] sm:text-[10px] uppercase font-bold text-zinc-400 block mb-0.5">Budget</span>
+                            <span className="font-black text-xs sm:text-sm text-amber-700">{demand.budget}</span>
                           </div>
-                          <div className="p-2.5 bg-zinc-50 border border-zinc-100 rounded-xl">
-                            <span className="text-[10px] uppercase font-bold text-zinc-400 block mb-0.5">Timeline</span>
-                            <span className="font-bold text-zinc-800">{demand.timeline}</span>
+                          <div className="p-2 sm:p-2.5 bg-zinc-50 border border-zinc-100 rounded-lg sm:rounded-xl">
+                            <span className="text-[9px] sm:text-[10px] uppercase font-bold text-zinc-400 block mb-0.5">Timeline</span>
+                            <span className="font-bold text-xs sm:text-sm text-zinc-800">{demand.timeline}</span>
                           </div>
-                          <div className="p-2.5 bg-zinc-50 border border-zinc-100 rounded-xl">
-                            <span className="text-[10px] uppercase font-bold text-zinc-400 block mb-0.5">Purpose</span>
-                            <span className="font-bold text-zinc-800">{demand.purpose}</span>
+                          <div className="p-2 sm:p-2.5 bg-zinc-50 border border-zinc-100 rounded-lg sm:rounded-xl">
+                            <span className="text-[9px] sm:text-[10px] uppercase font-bold text-zinc-400 block mb-0.5">Purpose</span>
+                            <span className="font-bold text-xs sm:text-sm text-zinc-800">{demand.purpose}</span>
                           </div>
                         </div>
 
                         {/* Requirements Brief */}
-                        <div className="p-3 bg-amber-50/50 border border-amber-200/60 rounded-2xl">
-                          <span className="text-[10px] uppercase font-bold tracking-wider text-amber-900 block mb-1">
+                        <div className="p-2.5 sm:p-3 bg-amber-50/50 border border-amber-200/60 rounded-xl sm:rounded-2xl">
+                          <span className="text-[9px] sm:text-[10px] uppercase font-bold tracking-wider text-amber-900 block mb-0.5 sm:mb-1">
                             Buyer Requirements Brief
                           </span>
-                          <p className="text-xs text-zinc-700 leading-relaxed line-clamp-3">
+                          <p className="text-[11px] sm:text-xs text-zinc-700 leading-relaxed line-clamp-3">
                             {demand.requirements}
                           </p>
                         </div>
 
                         {/* Requirement Status Badge */}
-                        <div className="p-3 rounded-2xl bg-zinc-950 text-white flex items-center justify-between text-xs">
+                        <div className="p-2.5 sm:p-3 rounded-xl sm:rounded-2xl bg-zinc-950 text-white flex items-center justify-between text-xs">
                           <div>
-                            <span className="text-[10px] uppercase font-bold text-zinc-400 block">Requirement Status</span>
-                            <span className="font-bold text-amber-400 text-xs tracking-wide flex items-center gap-1.5 mt-0.5">
-                              <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+                            <span className="text-[9px] sm:text-[10px] uppercase font-bold text-zinc-400 block">Requirement Status</span>
+                            <span className="font-bold text-amber-400 text-[11px] sm:text-xs tracking-wide flex items-center gap-1.5 mt-0.5">
+                              <ShieldCheck className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                               <span>Verified Mandate</span>
                             </span>
                           </div>
-                          <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded-md text-[11px] font-bold">
+                          <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md text-[10px] sm:text-[11px] font-bold">
                             Active
                           </span>
                         </div>
                       </div>
 
                       {/* Card Bottom CTA */}
-                      <div className="p-5 pt-3 border-t border-zinc-100 bg-zinc-50/70">
+                      <div className="p-3.5 sm:p-4 lg:p-5 pt-2.5 sm:pt-3 border-t border-zinc-100 bg-zinc-50/70">
                         <button
                           type="button"
                           onClick={() => {
@@ -4469,10 +4473,10 @@ export function HomepageSearchablePortal({
                             setSelectedBuyerSummaryForConnect(`${demand.bhk} in ${demand.locality} (${demand.budget})`);
                             setSellerModalOpen(true);
                           }}
-                          className="w-full bg-zinc-950 hover:bg-amber-600 hover:text-zinc-950 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition flex items-center justify-center gap-2 cursor-pointer shadow"
+                          className="w-full bg-zinc-950 hover:bg-amber-600 hover:text-zinc-950 active:scale-[0.98] text-white font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg sm:rounded-xl text-xs transition flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer shadow-xs"
                         >
                           <span>Match My Property to this Buyer</span>
-                          <ArrowRight className="w-3.5 h-3.5 text-amber-400" />
+                          <ArrowRight className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                         </button>
                       </div>
                     </div>
@@ -4576,10 +4580,10 @@ export function HomepageSearchablePortal({
                     </div>
                   </div>
 
-                  <div className="p-5 space-y-2.5">
+                  <div className="p-3.5 sm:p-5 space-y-2 sm:space-y-2.5">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200/80">
-                        <FileText className="w-3 h-3 text-amber-600" />
+                      <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-bold text-amber-800 bg-amber-50 px-2 sm:px-2.5 py-0.5 rounded-full border border-amber-200/80">
+                        <FileText className="w-3 h-3 text-amber-600 shrink-0" />
                         <span>
                           {article.connectedProperty
                             ? `Connected Product: ${article.connectedProperty}`
@@ -4587,38 +4591,38 @@ export function HomepageSearchablePortal({
                         </span>
                       </span>
                       {article.connectedTypology && (
-                        <span className="text-[10px] font-semibold text-zinc-600 bg-zinc-100 px-2 py-0.5 rounded-md border border-zinc-200">
+                        <span className="text-[9px] sm:text-[10px] font-semibold text-zinc-600 bg-zinc-100 px-1.5 sm:px-2 py-0.5 rounded-md border border-zinc-200">
                           {article.connectedTypology}
                         </span>
                       )}
                     </div>
 
-                    <div className="flex items-center justify-between text-[10px] text-zinc-400">
+                    <div className="flex items-center justify-between text-[9px] sm:text-[10px] text-zinc-400">
                       <span>By {article.author || 'ANV Research'}</span>
                       <span>{article.readTime || '6 min read'}</span>
                     </div>
 
-                    <h3 className="font-bold text-base text-zinc-950 group-hover:text-amber-800 transition leading-snug">
+                    <h3 className="font-bold text-sm sm:text-base text-zinc-950 group-hover:text-amber-800 transition leading-snug">
                       {article.title}
                     </h3>
-                    <p className="text-xs text-zinc-600 line-clamp-3 leading-relaxed">
+                    <p className="text-[11px] sm:text-xs text-zinc-600 line-clamp-3 leading-relaxed">
                       {article.description}
                     </p>
                   </div>
                 </div>
 
-                <div className="p-5 pt-3 flex items-center justify-between gap-2 border-t border-zinc-100/80">
+                <div className="p-3.5 sm:p-5 pt-2.5 sm:pt-3 flex items-center justify-between gap-2 border-t border-zinc-100/80">
                   <button
                     type="button"
                     onClick={() => handleOpenFullBlog(article)}
-                    className="text-amber-800 hover:text-amber-950 text-xs font-bold flex items-center gap-1.5 group-hover:gap-2.5 transition-all uppercase tracking-wider cursor-pointer"
+                    className="text-amber-800 hover:text-amber-950 text-xs font-bold flex items-center gap-1.5 group-hover:gap-2 transition-all uppercase tracking-wider cursor-pointer"
                   >
-                    <Lock className="w-3.5 h-3.5 text-amber-700" />
+                    <Lock className="w-3.5 h-3.5 text-amber-700 shrink-0" />
                     <span>Read Full Report</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
 
-                  <span className="text-[10px] font-bold text-zinc-400 bg-zinc-50 border border-zinc-200/80 px-2.5 py-1 rounded-md uppercase tracking-wider">
+                  <span className="text-[9px] sm:text-[10px] font-bold text-zinc-400 bg-zinc-50 border border-zinc-200/80 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md uppercase tracking-wider">
                     Patron Login Required
                   </span>
                 </div>
@@ -4717,20 +4721,16 @@ export function HomepageSearchablePortal({
           setSiteVisitModalOpen(true);
         }}
       />
-      {/* Floating "Go to Top" Up Arrow Button - Sized small on mobile/tablet and positioned just above the Ads section */}
+      {/* Floating "Go to Top" Up Arrow Button */}
       {showBackToSearch && (
         <button
           type="button"
           onClick={scrollToTop}
-          className={`fixed ${
-            hasCompareBar
-              ? 'bottom-[148px] sm:bottom-[156px] lg:bottom-28'
-              : 'bottom-[66px] sm:bottom-[72px] lg:bottom-6'
-          } right-2.5 sm:right-3.5 lg:right-6 z-40 w-8.5 h-8.5 sm:w-9.5 sm:h-9.5 lg:w-11 lg:h-11 rounded-full bg-gradient-to-tr from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-zinc-950 shadow-[0_4px_16px_rgba(245,158,11,0.35)] hover:shadow-[0_8px_20px_rgba(245,158,11,0.5)] flex items-center justify-center transition-all duration-300 cursor-pointer active:scale-90 hover:-translate-y-0.5 border border-amber-300/60 animate-in fade-in slide-in-from-bottom-2 group`}
+          className="fixed bottom-6 right-6 z-40 w-12 h-12 rounded-full bg-gradient-to-tr from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-zinc-950 shadow-[0_10px_25px_rgba(245,158,11,0.35)] hover:shadow-[0_14px_30px_rgba(245,158,11,0.5)] flex items-center justify-center transition-all duration-300 cursor-pointer active:scale-90 hover:-translate-y-1 border border-amber-300/60 animate-in fade-in slide-in-from-bottom-4 group"
           title="Go to top"
           aria-label="Go to top"
         >
-          <ArrowUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 lg:w-5 lg:h-5 stroke-[2.5] transition-transform duration-300 group-hover:-translate-y-0.5" />
+          <ArrowUp className="w-5 h-5 stroke-[2.5] transition-transform duration-300 group-hover:-translate-y-0.5" />
         </button>
       )}
     </>
