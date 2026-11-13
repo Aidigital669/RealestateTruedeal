@@ -20,6 +20,7 @@ interface CrmNavbarProps {
   searchTerm: string;
   onSearchChange: (val: string) => void;
   onOpenMobileSidebar?: () => void;
+  onOpenMobileMenu?: () => void;
 }
 
 export function CrmNavbar({
@@ -29,8 +30,10 @@ export function CrmNavbar({
   onOpenAddAction,
   searchTerm,
   onSearchChange,
-  onOpenMobileSidebar
+  onOpenMobileSidebar,
+  onOpenMobileMenu
 }: CrmNavbarProps) {
+  const handleOpenSidebar = onOpenMobileSidebar || onOpenMobileMenu;
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [userInitials, setUserInitials] = useState('SE');
 
@@ -60,7 +63,7 @@ export function CrmNavbar({
         <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
           <button
             type="button"
-            onClick={onOpenMobileSidebar}
+            onClick={handleOpenSidebar}
             className="lg:hidden p-1.5 -ml-1 text-zinc-700 hover:text-zinc-950 hover:bg-zinc-100 rounded-lg transition cursor-pointer shrink-0"
             aria-label="Open sidebar"
           >
@@ -117,7 +120,7 @@ export function CrmNavbar({
         <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
           <button
             type="button"
-            onClick={onOpenMobileSidebar}
+            onClick={handleOpenSidebar}
             className="lg:hidden p-1.5 -ml-1 text-zinc-700 hover:text-zinc-950 hover:bg-zinc-100 rounded-lg transition cursor-pointer shrink-0"
             aria-label="Open sidebar"
           >
@@ -174,7 +177,7 @@ export function CrmNavbar({
         <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
           <button
             type="button"
-            onClick={onOpenMobileSidebar}
+            onClick={handleOpenSidebar}
             className="lg:hidden p-1.5 -ml-1 text-zinc-700 hover:text-zinc-950 hover:bg-zinc-100 rounded-lg transition cursor-pointer shrink-0"
             aria-label="Open sidebar"
           >
@@ -249,7 +252,7 @@ export function CrmNavbar({
         <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
           <button
             type="button"
-            onClick={onOpenMobileSidebar}
+            onClick={handleOpenSidebar}
             className="lg:hidden p-1.5 -ml-1 text-zinc-700 hover:text-zinc-950 hover:bg-zinc-100 rounded-lg transition cursor-pointer shrink-0"
             aria-label="Open sidebar"
           >
@@ -311,25 +314,26 @@ export function CrmNavbar({
       <div className="flex items-center gap-2 sm:gap-6 flex-1 min-w-0">
         <button
           type="button"
-          onClick={onOpenMobileSidebar}
+          onClick={handleOpenSidebar}
           className="lg:hidden p-1.5 -ml-1 text-zinc-700 hover:text-zinc-950 hover:bg-zinc-100 rounded-lg transition cursor-pointer shrink-0"
           aria-label="Open sidebar"
         >
           <Menu className="w-5 h-5" />
         </button>
 
-        <div className="font-bold text-sm sm:text-base text-zinc-900 tracking-tight shrink-0 whitespace-nowrap">
-          Anv Reealty CRM
+        <div className="font-bold text-xs sm:text-base text-zinc-900 tracking-tight shrink-0 whitespace-nowrap">
+          <span className="hidden sm:inline">Anv Reealty CRM</span>
+          <span className="sm:hidden font-extrabold">CRM</span>
         </div>
 
-        <div className="relative flex-1 max-w-[140px] md:max-w-[200px] xl:max-w-xs">
-          <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
+        <div className="relative flex-1 min-w-0 max-w-[130px] sm:max-w-[200px] xl:max-w-xs">
+          <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             placeholder="Search leads..."
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full pl-8 pr-2 sm:pr-10 py-1.5 bg-zinc-50/60 border border-zinc-200 rounded-lg text-xs text-zinc-800 placeholder:text-zinc-400 focus:outline-hidden focus:border-zinc-400 focus:bg-white transition"
+            className="w-full pl-7 sm:pl-8 pr-2 sm:pr-10 py-1.5 bg-zinc-50/60 border border-zinc-200 rounded-lg text-xs text-zinc-800 placeholder:text-zinc-400 placeholder:truncate focus:outline-hidden focus:border-zinc-400 focus:bg-white transition"
           />
           <kbd className="hidden sm:inline-block absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-mono text-zinc-400 bg-zinc-100 px-1.5 py-0.5 rounded border border-zinc-200">
             ⌘F

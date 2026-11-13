@@ -491,6 +491,16 @@ export function HomepageSearchablePortal({
   const [isSearchSuggestionsOpen, setIsSearchSuggestionsOpen] = useState(false);
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
   const searchContainerRef = useRef<HTMLDivElement>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Debounce the heavy property filtering by 150ms so typing never lags
   useEffect(() => {
@@ -2012,11 +2022,11 @@ export function HomepageSearchablePortal({
           {/* ================= SEARCH BAR ONLY ================= */}
           <div
             id="properties-search-bar"
-            className="sticky top-0 sm:top-2 scroll-mt-4 sm:scroll-mt-6 z-35 w-full bg-white/95 backdrop-blur-md rounded-2xl shadow-md hover:shadow-lg border border-zinc-200/90 p-3 sm:p-4 mb-8 transition-all"
+            className="sticky top-0 sm:top-2 scroll-mt-4 sm:scroll-mt-6 z-35 w-full bg-white/95 backdrop-blur-md rounded-2xl shadow-md hover:shadow-lg border border-zinc-200/90 p-2.5 sm:p-4 mb-6 sm:mb-8 transition-all"
           >
-            <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               <div ref={searchContainerRef} className="relative flex-1 min-w-0">
-                <Search className="w-4 h-4 text-amber-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <Search className="w-4 h-4 text-amber-500 absolute left-3 sm:left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   id="main-search-input"
                   type="text"
@@ -2032,8 +2042,12 @@ export function HomepageSearchablePortal({
                     }
                   }}
                   onKeyDown={handleSearchKeyDown}
-                  placeholder="Search verified properties by location, type, project, or price (e.g. Baner, 3 BHK, Hospital, Undri)..."
-                  className="w-full bg-zinc-50 border border-zinc-200 hover:border-zinc-300 focus:border-amber-500 focus:bg-white focus:ring-2 focus:ring-amber-500/20 rounded-xl pl-10 pr-9 py-2.5 sm:py-3 text-base sm:text-sm font-medium text-zinc-900 placeholder:text-zinc-400 outline-none transition"
+                  placeholder={
+                    isMobile
+                      ? "Search location, 3 BHK, Baner, price..."
+                      : "Search verified properties by location, type, project, or price (e.g. Baner, 3 BHK, Hospital, Undri)..."
+                  }
+                  className="w-full bg-zinc-50 border border-zinc-200 hover:border-zinc-300 focus:border-amber-500 focus:bg-white focus:ring-2 focus:ring-amber-500/20 rounded-xl pl-9 sm:pl-10 pr-9 sm:pr-10 py-2 sm:py-3 text-base sm:text-sm font-medium text-zinc-900 placeholder:text-zinc-400 placeholder:text-xs sm:placeholder:text-sm placeholder:truncate outline-none transition"
                 />
                 {catalogueSearch && (
                   <button
@@ -2048,7 +2062,7 @@ export function HomepageSearchablePortal({
                       setSearchSuggestions([]);
                       setDidYouMean(null);
                     }}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700 w-5 h-5 flex items-center justify-center rounded-full text-xs font-bold cursor-pointer"
+                    className="absolute right-2.5 sm:right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700 active:bg-zinc-200/80 w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold cursor-pointer transition"
                     title="Clear search"
                   >
                     <X className="w-3.5 h-3.5" />
@@ -2057,11 +2071,11 @@ export function HomepageSearchablePortal({
 
                 {/* AUTOFILL & AUTOCORRECT POPUP */}
                 {isSearchSuggestionsOpen && (didYouMean || searchSuggestions.length > 0) && (
-                  <div className="absolute left-0 right-0 top-full mt-2 bg-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.18)] border border-zinc-200/90 ring-1 ring-black/5 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="absolute left-0 right-0 top-full mt-2 bg-white rounded-xl sm:rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.18)] border border-zinc-200/90 ring-1 ring-black/5 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-150">
                     {/* 1. "Did you mean?" Autocorrect Banner */}
                     {didYouMean && (
-                      <div className="p-3 bg-amber-50/90 border-b border-amber-200/80 flex items-center justify-between gap-2.5">
-                        <div className="flex items-center gap-2 text-xs text-amber-950 min-w-0">
+                      <div className="p-2.5 sm:p-3 bg-amber-50/90 border-b border-amber-200/80 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 sm:gap-2 text-xs text-amber-950 min-w-0">
                           <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
                           <span className="text-zinc-600 shrink-0">Did you mean:</span>
                           <button
@@ -2075,7 +2089,7 @@ export function HomepageSearchablePortal({
                         <button
                           type="button"
                           onClick={() => applyCorrection(didYouMean)}
-                          className="text-[11px] font-black px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 shadow-xs transition cursor-pointer shrink-0"
+                          className="text-[10px] sm:text-[11px] font-black px-2 sm:px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 shadow-xs transition cursor-pointer shrink-0"
                         >
                           Apply Fix
                         </button>
@@ -2084,10 +2098,10 @@ export function HomepageSearchablePortal({
 
                     {/* 2. Autofill Suggestions List */}
                     {searchSuggestions.length > 0 && (
-                      <div className="p-1.5 max-h-72 overflow-y-auto space-y-0.5">
+                      <div className="p-1 sm:p-1.5 max-h-60 sm:max-h-72 overflow-y-auto space-y-0.5">
                         <div className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider px-3 py-1 flex items-center justify-between">
                           <span>Suggestions</span>
-                          <span className="text-[9px] text-zinc-400 font-normal">Use ↑ ↓ and Enter to select</span>
+                          <span className="text-[9px] text-zinc-400 font-normal hidden sm:inline">Use ↑ ↓ and Enter to select</span>
                         </div>
 
                         {searchSuggestions.map((suggestion, index) => {
@@ -2098,28 +2112,28 @@ export function HomepageSearchablePortal({
                               type="button"
                               onClick={() => applySuggestion(suggestion)}
                               onMouseEnter={() => setSelectedSuggestionIndex(index)}
-                              className={`w-full px-3 py-2 rounded-xl text-left transition flex items-center justify-between gap-3 cursor-pointer ${
+                              className={`w-full px-2.5 sm:px-3 py-2 rounded-xl text-left transition flex items-center justify-between gap-2.5 cursor-pointer ${
                                 isSelected ? 'bg-amber-500/10 text-zinc-950 font-bold' : 'text-zinc-700 hover:bg-zinc-100/80'
                               }`}
                             >
-                              <div className="flex items-center gap-2.5 min-w-0">
+                              <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
                                 {suggestion.type === 'location' && (
-                                  <div className="w-7 h-7 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
+                                  <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
                                     <MapPin className="w-3.5 h-3.5" />
                                   </div>
                                 )}
                                 {suggestion.type === 'developer' && (
-                                  <div className="w-7 h-7 rounded-lg bg-blue-100 text-blue-800 flex items-center justify-center shrink-0">
+                                  <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-blue-100 text-blue-800 flex items-center justify-center shrink-0">
                                     <Building2 className="w-3.5 h-3.5" />
                                   </div>
                                 )}
                                 {suggestion.type === 'typology' && (
-                                  <div className="w-7 h-7 rounded-lg bg-purple-100 text-purple-800 flex items-center justify-center shrink-0">
+                                  <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-purple-100 text-purple-800 flex items-center justify-center shrink-0">
                                     <Tag className="w-3.5 h-3.5" />
                                   </div>
                                 )}
                                 {suggestion.type === 'property' && (
-                                  <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
+                                  <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
                                     <Home className="w-3.5 h-3.5" />
                                   </div>
                                 )}
@@ -2129,16 +2143,16 @@ export function HomepageSearchablePortal({
                                     {suggestion.label}
                                   </div>
                                   {suggestion.subtitle && (
-                                    <div className="text-[11px] text-zinc-400 truncate">
+                                    <div className="text-[10px] sm:text-[11px] text-zinc-400 truncate">
                                       {suggestion.subtitle}
                                     </div>
                                   )}
                                 </div>
                               </div>
 
-                              <div className="flex items-center gap-2 shrink-0">
+                              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                                 <span
-                                  className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border ${
+                                  className={`text-[9px] font-bold uppercase tracking-wider px-1.5 sm:px-2 py-0.5 rounded-md border ${
                                     suggestion.type === 'location'
                                       ? 'bg-amber-50 text-amber-900 border-amber-200'
                                       : suggestion.type === 'developer'
@@ -2162,37 +2176,39 @@ export function HomepageSearchablePortal({
               </div>
             </div>
 
-
             {/* Real-time Counts & View Mode Switcher */}
-            <div className="mt-3 pt-3 border-t border-zinc-100 flex flex-wrap items-center justify-between gap-2.5">
-              <div className="flex items-center gap-2.5 text-xs">
+            <div className="mt-2.5 sm:mt-3 pt-2.5 sm:pt-3 border-t border-zinc-100 flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2.5 text-xs flex-wrap min-w-0">
                 <span
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-zinc-950 text-white select-none cursor-default shadow-xs"
+                  className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold bg-zinc-950 text-white select-none cursor-default shadow-xs shrink-0"
                   title="Total properties matching search"
                 >
-                  <Building2 className="w-3.5 h-3.5 text-amber-400" />
-                  <span>
-                    <span className="hidden sm:inline">Properties </span>({sortedProperties.length})
+                  <Building2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <span className="flex items-center gap-1">
+                    <span className="font-extrabold text-amber-400">{sortedProperties.length}</span>
+                    <span className="text-zinc-300 font-medium hidden min-[380px]:inline">Properties</span>
+                    <span className="text-zinc-300 font-medium min-[380px]:hidden">Props</span>
                   </span>
                 </span>
 
                 <span
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500 text-zinc-950 select-none cursor-default shadow-xs"
+                  className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold bg-amber-500 text-zinc-950 select-none cursor-default shadow-xs shrink-0"
                   title="Total buyers registered in Pune"
                 >
-                  <Users className="w-3.5 h-3.5 text-zinc-950" />
-                  <span>
-                    <span className="hidden sm:inline">Buyers </span>({filteredCatalogueBuyerDemands.length})
+                  <Users className="w-3.5 h-3.5 text-zinc-950 shrink-0" />
+                  <span className="flex items-center gap-1">
+                    <span className="font-black text-zinc-950">{filteredCatalogueBuyerDemands.length}</span>
+                    <span className="text-zinc-900 font-semibold">Buyers</span>
                   </span>
                 </span>
               </div>
 
               {/* View Switcher: List vs Cards */}
-              <div className="flex items-center gap-1 p-1 bg-zinc-100 rounded-xl border border-zinc-200/90 shadow-2xs">
+              <div className="flex items-center gap-0.5 sm:gap-1 p-0.5 sm:p-1 bg-zinc-100 rounded-lg sm:rounded-xl border border-zinc-200/90 shadow-2xs shrink-0">
                 <button
                   type="button"
                   onClick={() => setPropertyViewMode('table')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                  className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md sm:rounded-lg text-[11px] sm:text-xs font-bold transition flex items-center gap-1 sm:gap-1.5 cursor-pointer ${
                     propertyViewMode === 'table'
                       ? 'bg-zinc-950 text-white shadow-xs font-black'
                       : 'text-zinc-600 hover:text-zinc-950 hover:bg-white/80'
@@ -2205,7 +2221,7 @@ export function HomepageSearchablePortal({
                 <button
                   type="button"
                   onClick={() => setPropertyViewMode('paragraph')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                  className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md sm:rounded-lg text-[11px] sm:text-xs font-bold transition flex items-center gap-1 sm:gap-1.5 cursor-pointer ${
                     propertyViewMode === 'paragraph'
                       ? 'bg-zinc-950 text-white shadow-xs font-black'
                       : 'text-zinc-600 hover:text-zinc-950 hover:bg-white/80'
@@ -2218,7 +2234,7 @@ export function HomepageSearchablePortal({
               </div>
 
               {isUserSeller(catalogueSearch || searchQuery) && (
-                <div className="text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-300/80 px-2.5 py-1 rounded-lg flex items-center gap-1.5 animate-in fade-in select-none cursor-default">
+                <div className="w-full text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-300/80 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 animate-in fade-in select-none cursor-default">
                   <Sparkles className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                   <span>Showing registered buyers for your property query</span>
                 </div>
