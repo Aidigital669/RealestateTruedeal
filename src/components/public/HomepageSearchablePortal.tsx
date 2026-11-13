@@ -54,6 +54,7 @@ import { findMatchingCategorySlug } from '@/lib/categories-data';
 import { isUserSeller } from '@/lib/seller-intent';
 import { generateSearchSuggestions, detectQueryAutocorrect, SearchSuggestion } from '@/lib/search-autocorrect';
 import { formatPropertyDescription } from '@/lib/dossier-parser';
+import { usePropertyComparison } from '@/context/PropertyComparisonContext';
 
 export interface BuyerDemandItem {
   id: string;
@@ -466,6 +467,8 @@ export function HomepageSearchablePortal({
   isDedicatedSearchPage = false
 }: HomepageSearchablePortalProps) {
   const router = useRouter();
+  const { compareList } = usePropertyComparison();
+  const hasCompareBar = compareList && compareList.length > 0;
 
   // Main Search & Filter States
   const [searchQuery, setSearchQuery] = useState(initialSearchParams?.search || '');
@@ -4714,16 +4717,20 @@ export function HomepageSearchablePortal({
           setSiteVisitModalOpen(true);
         }}
       />
-      {/* Floating "Go to Top" Up Arrow Button */}
+      {/* Floating "Go to Top" Up Arrow Button - Sized small on mobile/tablet and positioned just above the Ads section */}
       {showBackToSearch && (
         <button
           type="button"
           onClick={scrollToTop}
-          className="fixed bottom-6 right-6 z-40 w-12 h-12 rounded-full bg-gradient-to-tr from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-zinc-950 shadow-[0_10px_25px_rgba(245,158,11,0.35)] hover:shadow-[0_14px_30px_rgba(245,158,11,0.5)] flex items-center justify-center transition-all duration-300 cursor-pointer active:scale-90 hover:-translate-y-1 border border-amber-300/60 animate-in fade-in slide-in-from-bottom-4 group"
+          className={`fixed ${
+            hasCompareBar
+              ? 'bottom-[148px] sm:bottom-[156px] lg:bottom-28'
+              : 'bottom-[66px] sm:bottom-[72px] lg:bottom-6'
+          } right-2.5 sm:right-3.5 lg:right-6 z-40 w-8.5 h-8.5 sm:w-9.5 sm:h-9.5 lg:w-11 lg:h-11 rounded-full bg-gradient-to-tr from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-zinc-950 shadow-[0_4px_16px_rgba(245,158,11,0.35)] hover:shadow-[0_8px_20px_rgba(245,158,11,0.5)] flex items-center justify-center transition-all duration-300 cursor-pointer active:scale-90 hover:-translate-y-0.5 border border-amber-300/60 animate-in fade-in slide-in-from-bottom-2 group`}
           title="Go to top"
           aria-label="Go to top"
         >
-          <ArrowUp className="w-5 h-5 stroke-[2.5] transition-transform duration-300 group-hover:-translate-y-0.5" />
+          <ArrowUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 lg:w-5 lg:h-5 stroke-[2.5] transition-transform duration-300 group-hover:-translate-y-0.5" />
         </button>
       )}
     </>

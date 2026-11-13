@@ -18,11 +18,13 @@ import {
   PremiumAdsConfig,
   DEFAULT_PREMIUM_CONFIG
 } from '@/lib/premium-ads-constants';
+import { usePropertyComparison } from '@/context/PropertyComparisonContext';
 
 export type AdItem = PremiumAdItem;
 
 export function StickyAdsStrip() {
   const pathname = usePathname();
+  const { compareList } = usePropertyComparison();
   const [mounted, setMounted] = useState(false);
   const [config, setConfig] = useState<PremiumAdsConfig>(DEFAULT_PREMIUM_CONFIG);
   const [activeAd, setActiveAd] = useState<PremiumAdItem | null>(null);
@@ -111,12 +113,18 @@ export function StickyAdsStrip() {
     return null;
   }
 
+  const hasCompareBar = mounted && compareList && compareList.length > 0 && pathname !== '/compare';
+
   return (
     <>
-      {/* ================= STICKY ADS STRIP (CENTERED BOTTOM AREA) ================= */}
+      {/* ================= STICKY ADS STRIP (NARROW BOTTOM AREA) ================= */}
       <aside
         aria-label="Sponsored Partners and Ads"
-        className="fixed bottom-[64px] lg:bottom-5 left-1/2 -translate-x-1/2 z-40 select-none animate-in fade-in slide-in-from-bottom-3 duration-300"
+        className={`fixed ${
+          hasCompareBar
+            ? 'bottom-[84px] lg:bottom-24'
+            : 'bottom-2 sm:bottom-2.5 lg:bottom-5'
+        } left-1/2 -translate-x-1/2 z-40 select-none animate-in fade-in slide-in-from-bottom-3 duration-300`}
       >
         {isMinimized ? (
           /* Minimized Pill to restore */
@@ -140,18 +148,18 @@ export function StickyAdsStrip() {
             </span>
           </button>
         ) : (
-          /* Full Sticky Strip */
-          <div className="relative bg-zinc-950/95 backdrop-blur-xl border border-zinc-800/90 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.6)] p-1.5 sm:p-2.5 flex items-center gap-1.5 sm:gap-2.5 transition-all max-w-[calc(100vw-16px)] sm:max-w-none">
+          /* Full Sticky Strip - Slim and Narrow on Mobile/Tablet */
+          <div className="relative bg-zinc-950/95 backdrop-blur-xl border border-zinc-800/90 rounded-2xl shadow-[0_10px_35px_rgba(0,0,0,0.6)] p-1 sm:p-1.5 lg:p-2.5 flex items-center gap-1 sm:gap-2 transition-all max-w-[calc(100vw-16px)] sm:max-w-none">
             {/* Left Header Image Badge: Gold Crown with Premium Royal Background */}
-            <div className="flex items-center justify-center shrink-0 pr-1.5 border-r border-zinc-800/80">
+            <div className="flex items-center justify-center shrink-0 pr-1 sm:pr-1.5 border-r border-zinc-800/80">
               <div
-                className="relative px-2 py-1 rounded-xl bg-gradient-to-b from-[#2e050f] via-[#420816] to-[#1f030a] border border-amber-400/70 shadow-[0_0_16px_rgba(245,158,11,0.35)] flex items-center justify-center shrink-0 group/crown"
+                className="relative px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-xl bg-gradient-to-b from-[#2e050f] via-[#420816] to-[#1f030a] border border-amber-400/70 shadow-[0_0_12px_rgba(245,158,11,0.35)] flex items-center justify-center shrink-0 group/crown"
                 title={config.crownTitle || 'Premium Collection'}
               >
                 {/* Subtle Amber Glow Behind the Crown */}
                 <div className="absolute inset-0 rounded-xl bg-[radial-gradient(ellipse_at_center,_rgba(245,158,11,0.25)_0%,_transparent_70%)] pointer-events-none" />
 
-                <div className="relative w-14 h-7 sm:w-16 sm:h-8 shrink-0">
+                <div className="relative w-12 h-6 sm:w-14 sm:h-7 lg:w-16 lg:h-8 shrink-0">
                   <Image
                     src={config.crownImage || '/premium-crown.png'}
                     alt={config.crownTitle || 'Premium'}
@@ -169,7 +177,7 @@ export function StickyAdsStrip() {
               <button
                 type="button"
                 onClick={() => handleScroll('left')}
-                className="w-5 h-5 rounded-full bg-zinc-800/90 hover:bg-zinc-700 text-zinc-200 flex items-center justify-center transition shrink-0 cursor-pointer shadow-xs"
+                className="w-4.5 h-4.5 sm:w-5 sm:h-5 rounded-full bg-zinc-800/90 hover:bg-zinc-700 text-zinc-200 flex items-center justify-center transition shrink-0 cursor-pointer shadow-xs"
                 title="Scroll previous ads"
               >
                 <ChevronLeft className="w-3 h-3" />
@@ -180,7 +188,7 @@ export function StickyAdsStrip() {
             <div
               ref={scrollRef}
               onScroll={checkScroll}
-              className="flex items-center gap-2 sm:gap-2.5 overflow-x-auto scrollbar-none py-1 px-0.5 w-[164px] sm:w-[190px] max-w-[164px] sm:max-w-[190px] scroll-smooth"
+              className="flex items-center gap-1.5 sm:gap-2.5 overflow-x-auto scrollbar-none py-0.5 sm:py-1 px-0.5 w-[140px] sm:w-[172px] lg:w-[190px] max-w-[140px] sm:max-w-[172px] lg:max-w-[190px] scroll-smooth"
               style={{ scrollSnapType: 'x mandatory' }}
             >
               {adItems.map((ad) => (
@@ -188,12 +196,12 @@ export function StickyAdsStrip() {
                   key={ad.id}
                   type="button"
                   onClick={() => handleOpenAd(ad)}
-                  className="flex flex-col items-center gap-1 shrink-0 group/circle cursor-pointer focus:outline-none w-[48px] sm:w-[56px]"
+                  className="flex flex-col items-center gap-0.5 sm:gap-1 shrink-0 group/circle cursor-pointer focus:outline-none w-[42px] sm:w-[50px] lg:w-[56px]"
                   title={`${ad.name} - ${ad.tagline}`}
                   style={{ scrollSnapAlign: 'start' }}
                 >
                   {/* Circular Avatar Container with Gold Luxury Border */}
-                  <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full p-[2px] bg-gradient-to-tr from-amber-500 via-yellow-300 to-amber-600 shadow-[0_0_10px_rgba(245,158,11,0.35)] group-hover/circle:shadow-[0_0_16px_rgba(245,158,11,0.65)] group-hover/circle:scale-105 transition-all duration-200">
+                  <div className="w-9.5 h-9.5 sm:w-11 sm:h-11 lg:w-12 lg:h-12 rounded-full p-[2px] bg-gradient-to-tr from-amber-500 via-yellow-300 to-amber-600 shadow-[0_0_8px_rgba(245,158,11,0.35)] group-hover/circle:shadow-[0_0_16px_rgba(245,158,11,0.65)] group-hover/circle:scale-105 transition-all duration-200">
                     <div className="w-full h-full rounded-full overflow-hidden relative bg-black">
                       <Image
                         src={ad.image || '/opus-thumb.jpg'}
@@ -206,7 +214,7 @@ export function StickyAdsStrip() {
                   </div>
 
                   {/* Name Label: Only on sm and above, on mobile show icons only */}
-                  <span className="hidden sm:block text-[10.5px] font-medium text-zinc-200 group-hover/circle:text-amber-400 transition-colors truncate max-w-[56px] text-center leading-tight">
+                  <span className="hidden sm:block text-[10px] sm:text-[10.5px] font-medium text-zinc-200 group-hover/circle:text-amber-400 transition-colors truncate max-w-[50px] sm:max-w-[56px] text-center leading-tight">
                     {ad.name}
                   </span>
                 </button>
@@ -216,14 +224,14 @@ export function StickyAdsStrip() {
               <button
                 type="button"
                 onClick={handlePromoteClick}
-                className="flex flex-col items-center gap-1 shrink-0 group/promote cursor-pointer focus:outline-none w-[48px] sm:w-[56px]"
+                className="flex flex-col items-center gap-0.5 sm:gap-1 shrink-0 group/promote cursor-pointer focus:outline-none w-[42px] sm:w-[50px] lg:w-[56px]"
                 title="Advertise your business here on ANV Realty"
                 style={{ scrollSnapAlign: 'start' }}
               >
-                <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full border-2 border-dashed border-zinc-700 hover:border-amber-400 bg-zinc-900/80 hover:bg-zinc-800 text-zinc-400 hover:text-amber-400 flex items-center justify-center transition-all group-hover/promote:scale-105">
-                  <Plus className="w-4 h-4" />
+                <div className="w-9.5 h-9.5 sm:w-11 sm:h-11 lg:w-12 lg:h-12 rounded-full border-2 border-dashed border-zinc-700 hover:border-amber-400 bg-zinc-900/80 hover:bg-zinc-800 text-zinc-400 hover:text-amber-400 flex items-center justify-center transition-all group-hover/promote:scale-105">
+                  <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </div>
-                <span className="hidden sm:block text-[10.5px] font-medium text-zinc-400 group-hover/promote:text-amber-400 transition-colors truncate max-w-[50px] text-center leading-tight">
+                <span className="hidden sm:block text-[10px] sm:text-[10.5px] font-medium text-zinc-400 group-hover/promote:text-amber-400 transition-colors truncate max-w-[50px] text-center leading-tight">
                   Promote
                 </span>
               </button>
@@ -234,12 +242,23 @@ export function StickyAdsStrip() {
               <button
                 type="button"
                 onClick={() => handleScroll('right')}
-                className="w-5 h-5 rounded-full bg-zinc-800/90 hover:bg-zinc-700 text-zinc-200 flex items-center justify-center transition shrink-0 cursor-pointer shadow-xs"
+                className="w-4.5 h-4.5 sm:w-5 sm:h-5 rounded-full bg-zinc-800/90 hover:bg-zinc-700 text-zinc-200 flex items-center justify-center transition shrink-0 cursor-pointer shadow-xs"
                 title="Scroll more ads"
               >
                 <ChevronRight className="w-3 h-3" />
               </button>
             )}
+
+            {/* Quick Minimize X Button */}
+            <button
+              type="button"
+              onClick={() => setIsMinimized(true)}
+              className="w-4.5 h-4.5 rounded-full bg-zinc-800/80 hover:bg-zinc-700 text-zinc-400 hover:text-white flex items-center justify-center transition shrink-0 cursor-pointer ml-0.5"
+              title="Minimize ads"
+              aria-label="Minimize ads"
+            >
+              <X className="w-2.5 h-2.5" />
+            </button>
           </div>
         )}
       </aside>
