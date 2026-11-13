@@ -91,28 +91,29 @@ export function PropertyCardActions({
       )}
 
       {/* 4 ACTION BUTTONS ROW */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 w-full">
-        {/* Left Group: Compare & Save Shortlist */}
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-2 sm:gap-2.5 w-full">
+        {/* Left Group: Compare & Save Shortlist & Share */}
+        <div className="flex items-center gap-1.5 sm:gap-2">
           {/* 1. COMPARE BUTTON */}
           <button
             onClick={handleToggleCompare}
-            className={`flex-1 sm:flex-none px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer border shadow-2xs ${
+            className={`p-2 sm:px-3 sm:py-2 lg:px-3.5 lg:py-2 rounded-lg sm:rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer border shadow-2xs ${
               isCompared
                 ? 'bg-amber-400 text-black border-amber-400 font-extrabold ring-2 ring-amber-400/40 shadow-xs'
                 : 'bg-white border-zinc-200 hover:border-zinc-300 text-zinc-700 hover:bg-zinc-50'
             }`}
             title={isCompared ? 'Remove from Comparison' : 'Add to Comparison'}
+            aria-label={isCompared ? 'Remove from Comparison' : 'Add to Comparison'}
           >
             {isCompared ? (
               <>
                 <Check className="w-3.5 h-3.5 text-black stroke-[3]" />
-                <span>Compared</span>
+                <span className="hidden sm:inline">Compared</span>
               </>
             ) : (
               <>
                 <Scale className="w-3.5 h-3.5 text-zinc-500" />
-                <span>Compare</span>
+                <span className="hidden sm:inline">Compare</span>
               </>
             )}
           </button>
@@ -120,47 +121,49 @@ export function PropertyCardActions({
           {/* 2. SAVE BUTTON (Matching design with Heart icon) */}
           <button
             onClick={handleToggleSave}
-            className={`p-2.5 border rounded-xl transition-all flex items-center justify-center cursor-pointer shadow-2xs ${
+            className={`p-2 sm:p-2 lg:p-2.5 border rounded-lg sm:rounded-xl transition-all flex items-center justify-center cursor-pointer shadow-2xs ${
               saved
                 ? 'bg-rose-50 border-rose-300 text-rose-600 ring-2 ring-rose-200/50'
                 : 'bg-white border-zinc-200 text-zinc-600 hover:bg-zinc-50 hover:border-zinc-300 hover:text-rose-500'
             }`}
             title={saved ? 'Remove from saved shortlist' : 'Save Residence'}
+            aria-label={saved ? 'Remove from saved shortlist' : 'Save Residence'}
           >
-            <Heart className={`w-4 h-4 transition-transform active:scale-125 ${saved ? 'fill-rose-500 text-rose-500' : ''}`} />
+            <Heart className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform active:scale-125 ${saved ? 'fill-rose-500 text-rose-500' : ''}`} />
           </button>
 
           {/* 3. SHARE BUTTON */}
           <button
             onClick={() => setShareModalOpen(true)}
-            className="p-2.5 border rounded-xl bg-white border-zinc-200 text-zinc-600 hover:bg-zinc-50 hover:border-zinc-300 hover:text-amber-600 transition-all flex items-center justify-center cursor-pointer shadow-2xs"
+            className="p-2 sm:p-2 lg:p-2.5 border rounded-lg sm:rounded-xl bg-white border-zinc-200 text-zinc-600 hover:bg-zinc-50 hover:border-zinc-300 hover:text-amber-600 transition-all flex items-center justify-center cursor-pointer shadow-2xs"
             title="Share Property Details (WhatsApp, Link, Dossier)"
+            aria-label="Share Property Details"
           >
-            <Share2 className="w-4 h-4" />
+            <Share2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </button>
         </div>
 
         {/* Right Group: View Details & Instant Enquiry */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+        <div className="grid grid-cols-2 sm:flex sm:items-center gap-1.5 sm:gap-2 w-full lg:w-auto">
           {/* 4. VIEW DETAILS DIRECT LINK (SEO FRIENDLY SLUG) */}
           <Link
             href={getPropertyUrl(property)}
-            className="flex-1 sm:flex-none px-3.5 py-2.5 border border-zinc-200 hover:border-zinc-950 bg-white hover:bg-zinc-950 hover:text-white rounded-xl text-xs font-bold text-zinc-800 transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs group"
+            className="flex-1 sm:flex-none px-2.5 py-2 sm:px-3 sm:py-2 lg:px-3.5 lg:py-2 border border-zinc-200 hover:border-zinc-950 bg-white hover:bg-zinc-950 hover:text-white rounded-lg sm:rounded-xl text-xs font-bold text-zinc-800 transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs group"
             title="View full dedicated property page"
           >
-            <Eye className="w-3.5 h-3.5 text-zinc-500 group-hover:text-white transition-colors" />
-            <span>View Details</span>
+            <Eye className="w-3.5 h-3.5 text-zinc-500 group-hover:text-white transition-colors shrink-0" />
+            <span className="truncate">View Details</span>
           </Link>
 
           {/* 5. INSTANT ENQUIRY BUTTON */}
           <button
             type="button"
             onClick={handleOpenEnquiry}
-            className="flex-1 sm:flex-none px-4 py-2.5 bg-zinc-950 hover:bg-zinc-850 active:scale-[0.98] rounded-xl text-xs font-black text-white transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer group"
+            className="flex-1 sm:flex-none px-2.5 py-2 sm:px-3.5 sm:py-2 lg:px-4 lg:py-2.5 bg-zinc-950 hover:bg-zinc-850 active:scale-[0.98] rounded-lg sm:rounded-xl text-xs font-black text-white transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer group"
             title="Instant Enquiry / Advisory"
           >
-            <span>Instant Enquiry</span>
-            <ArrowRight className="w-3.5 h-3.5 text-amber-400 group-hover:translate-x-0.5 transition-transform" />
+            <span className="truncate">Instant Enquiry</span>
+            <ArrowRight className="w-3.5 h-3.5 text-amber-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
           </button>
         </div>
       </div>

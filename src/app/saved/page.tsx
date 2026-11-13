@@ -785,21 +785,22 @@ export default function SavedPropertiesPage() {
                       </div>
 
                       {/* 4 CORE ACTION BUTTONS */}
-                      <div className="mt-4 pt-4 border-t border-zinc-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
-                        {/* Left Group: Compare & Save */}
-                        <div className="flex items-center gap-2">
+                      <div className="mt-4 pt-4 border-t border-zinc-100 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-2 sm:gap-2.5">
+                        {/* Left Group: Compare & Save & Safe */}
+                        <div className="flex items-center gap-1.5 sm:gap-2">
                           {/* 1. COMPARE BUTTON */}
                           <button
                             onClick={() => toggleCompare(prop)}
-                            className={`px-3 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer border ${
+                            className={`p-2 sm:px-3 sm:py-2 rounded-lg sm:rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer border ${
                               isCompared
                                 ? 'bg-amber-400 text-black border-amber-400 font-extrabold shadow-xs'
                                 : 'bg-white border-zinc-200 hover:border-zinc-300 text-zinc-700 hover:bg-zinc-50'
                             }`}
                             title={isCompared ? 'Remove from Compare' : 'Add to Compare'}
+                            aria-label={isCompared ? 'Remove from Compare' : 'Add to Compare'}
                           >
                             <Scale className="w-3.5 h-3.5" />
-                            <span>{isCompared ? 'Compared ✓' : 'Compare'}</span>
+                            <span className="hidden sm:inline">{isCompared ? 'Compared ✓' : 'Compare'}</span>
                           </button>
 
                           {/* 2. SAVE BUTTON (HEART) */}
@@ -808,8 +809,9 @@ export default function SavedPropertiesPage() {
                               toggleSave(prop.id, prop.name);
                               showToast(`Removed "${prop.name}" from your shortlist`);
                             }}
-                            className="p-2 border rounded-xl transition cursor-pointer bg-rose-50 border-rose-300 text-rose-600 hover:bg-rose-100 shadow-2xs"
+                            className="p-2 border rounded-lg sm:rounded-xl transition cursor-pointer bg-rose-50 border-rose-300 text-rose-600 hover:bg-rose-100 shadow-2xs"
                             title="Remove from saved shortlist"
+                            aria-label="Remove from saved shortlist"
                           >
                             <Heart className="w-4 h-4 fill-rose-500 text-rose-500" />
                           </button>
@@ -825,12 +827,13 @@ export default function SavedPropertiesPage() {
                                   : `"${prop.name}" Safe protection removed.`
                               );
                             }}
-                            className={`px-2.5 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer border ${
+                            className={`p-2 sm:px-2.5 sm:py-2 rounded-lg sm:rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer border ${
                               isSafeSaved(prop.id)
                                 ? 'bg-emerald-100 text-emerald-800 border-emerald-300 font-extrabold shadow-2xs'
                                 : 'bg-white border-zinc-200 hover:border-zinc-300 text-zinc-700 hover:bg-zinc-50'
                             }`}
                             title={isSafeSaved(prop.id) ? 'Property is Safe (Protected). Click to remove safe' : 'Mark as Safe (protect from delete all)'}
+                            aria-label={isSafeSaved(prop.id) ? 'Property is Safe (Protected). Click to remove safe' : 'Mark as Safe (protect from delete all)'}
                           >
                             <ShieldCheck className={`w-3.5 h-3.5 ${isSafeSaved(prop.id) ? 'text-emerald-700' : 'text-zinc-400'}`} />
                             <span className="hidden sm:inline">{isSafeSaved(prop.id) ? 'Safe ✓' : 'Safe'}</span>
@@ -838,23 +841,23 @@ export default function SavedPropertiesPage() {
                         </div>
 
                         {/* Right Group: View Details & Instant Enquiry */}
-                        <div className="flex items-center gap-2 flex-1 sm:flex-none">
-                          {/* 3. VIEW DETAILS DIRECT LINK (NO POPUP) */}
+                        <div className="grid grid-cols-2 sm:flex sm:items-center gap-1.5 sm:gap-2 w-full lg:w-auto">
+                          {/* 4. VIEW DETAILS DIRECT LINK (NO POPUP) */}
                           <Link
                             href={`/properties/${prop.id}`}
-                            className="flex-1 sm:flex-none px-3.5 py-2 border border-zinc-200 hover:border-zinc-950 bg-white hover:bg-zinc-950 hover:text-white rounded-xl text-xs font-bold text-zinc-800 transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                            className="flex-1 sm:flex-none px-2.5 py-2 sm:px-3.5 sm:py-2 border border-zinc-200 hover:border-zinc-950 bg-white hover:bg-zinc-950 hover:text-white rounded-lg sm:rounded-xl text-xs font-bold text-zinc-800 transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs group"
                           >
-                            <Eye className="w-3.5 h-3.5 text-zinc-500" />
-                            <span>View Details</span>
+                            <Eye className="w-3.5 h-3.5 text-zinc-500 group-hover:text-white transition-colors shrink-0" />
+                            <span className="truncate">View Details</span>
                           </Link>
 
-                          {/* 4. INSTANT ENQUIRY */}
+                          {/* 5. INSTANT ENQUIRY */}
                           <button
                             onClick={() => handleOpenEnquiry(prop)}
-                            className="flex-1 sm:flex-none px-4 py-2 bg-zinc-950 hover:bg-zinc-850 rounded-xl text-xs font-black text-white transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+                            className="flex-1 sm:flex-none px-2.5 py-2 sm:px-4 sm:py-2 bg-zinc-950 hover:bg-zinc-850 rounded-lg sm:rounded-xl text-xs font-black text-white transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer group"
                           >
-                            <span>Instant Enquiry</span>
-                            <ArrowRight className="w-3.5 h-3.5 text-amber-400" />
+                            <span className="truncate">Instant Enquiry</span>
+                            <ArrowRight className="w-3.5 h-3.5 text-amber-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
                           </button>
                         </div>
                       </div>
