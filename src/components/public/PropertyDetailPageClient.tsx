@@ -28,6 +28,7 @@ import {
 import { usePropertyComparison } from '@/context/PropertyComparisonContext';
 import { useSavedProperties } from '@/context/SavedPropertiesContext';
 import { PropertyItem, ALL_FALLBACK_PROPERTIES } from '@/lib/property-types';
+import { isZeroPrice, formatPriceDisplay } from '@/components/public/HomepageSearchablePortal';
 import { getPropertySlug, getPropertyUrl, matchesProperty } from '@/lib/slug';
 import { PublicHeader } from '@/components/public/PublicHeader';
 import { SharePropertyModal } from '@/components/public/SharePropertyModal';
@@ -267,8 +268,10 @@ export function PropertyDetailPageClient({
     if (property?.locality || property?.location) {
       parts.push(`*Location:* ${property?.locality || property?.location}`);
     }
-    if (property?.price) {
-      parts.push(`*Price:* ${property.hidePrice ? 'Price on Request (Confidential)' : property.price}`);
+    if (property?.price && !isZeroPrice(property.price)) {
+      parts.push(`*Price:* ${property.hidePrice ? 'Price on Request (Confidential)' : formatPriceDisplay(property.price)}`);
+    } else {
+      parts.push(`*Price:* Price on Request`);
     }
     if (property?.bhk) {
       parts.push(`*Configuration:* ${property.bhk}`);
@@ -875,7 +878,7 @@ export function PropertyDetailPageClient({
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 sm:p-4 bg-zinc-50 gap-1 sm:gap-2">
                       <span className="font-bold text-zinc-800">Base Agreement Value</span>
                       <span className="font-black text-zinc-950 text-sm shrink-0">
-                        {customCostSheet?.baseAgreementValue || (priceRaw > 0 ? formatCurrency(priceRaw) : (property.price || 'Price on Request'))}
+                        {customCostSheet?.baseAgreementValue || (priceRaw > 0 ? formatCurrency(priceRaw) : (isZeroPrice(property.price) ? 'Price on Request' : formatPriceDisplay(property.price)))}
                       </span>
                     </div>
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 sm:p-4 gap-1 sm:gap-2">
@@ -999,7 +1002,7 @@ export function PropertyDetailPageClient({
                 <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">
                   All-Inclusive Quoted Valuation
                 </span>
-                {property.hidePrice || !property.price || property.price.toLowerCase().includes('request') || property.price === '₹0' ? (
+                {property.hidePrice || isZeroPrice(property.price) ? (
                   <div className="mt-2 space-y-2.5">
                     <div className="text-xl sm:text-2xl font-black text-zinc-900 flex items-center gap-2">
                       <ShieldCheck className="w-5 h-5 text-amber-600" />
@@ -1022,7 +1025,7 @@ export function PropertyDetailPageClient({
                 ) : (
                   <>
                     <div className="text-2xl sm:text-4xl font-black text-zinc-950 mt-1">
-                      {property.price}
+                      {formatPriceDisplay(property.price)}
                     </div>
                     <div className="text-xs text-zinc-500 font-semibold mt-1 flex items-center">
                       <span>{property.priceSuffix || 'All Inclusive'}</span>
@@ -1033,7 +1036,7 @@ export function PropertyDetailPageClient({
                 <div className="mt-4 pt-4 border-t border-zinc-100 flex items-center justify-between text-xs">
                   <span className="text-zinc-500">Estimated Rate:</span>
                   <span className="font-bold text-zinc-900">
-                    {property.hidePrice ? 'Rate on Request' : `₹${Math.round(priceRaw / (property.sqftNum || 1100)).toLocaleString('en-IN')} / sq.ft`}
+                    {property.hidePrice || isZeroPrice(property.price) ? 'Rate on Request' : `₹${Math.round(priceRaw / (property.sqftNum || 1100)).toLocaleString('en-IN')} / sq.ft`}
                   </span>
                 </div>
 
@@ -1243,7 +1246,7 @@ export function PropertyDetailPageClient({
                 Quoted Price
               </span>
               <div className="text-base sm:text-lg font-black text-zinc-950 truncate leading-tight mt-0.5">
-                {hidePrice ? 'Price on Request' : property.price}
+                {hidePrice || isZeroPrice(property.price) ? 'Price on Request' : formatPriceDisplay(property.price)}
               </div>
             </div>
 

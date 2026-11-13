@@ -273,15 +273,14 @@ function formatPriceForDisplay(rawPrice: any): string {
   if (!rawPrice) return 'Price on Request';
   const str = String(rawPrice).trim();
   if (/on request/i.test(str)) return 'Price on Request';
+  const num = parseFloat(str.replace(/[^0-9.]/g, ''));
+  if (isNaN(num) || num <= 0) return 'Price on Request';
+  if (/^₹?\s*0+(\.0+)?\s*(lakh|cr|crore|lac)?$/i.test(str)) return 'Price on Request';
   if (/^₹/.test(str)) return str;
   if (/cr|crore|lakh|lac/i.test(str)) return `₹${str}`;
-  const num = parseFloat(str.replace(/[^0-9.]/g, ''));
-  if (!isNaN(num)) {
-    if (num >= 10000000) return `₹${(num / 10000000).toFixed(2)} Cr`;
-    if (num >= 100000) return `₹${(num / 100000).toFixed(1)} Lakh`;
-    if (num > 0) return `₹${num.toLocaleString('en-IN')}`;
-  }
-  return str || 'Price on Request';
+  if (num >= 10000000) return `₹${(num / 10000000).toFixed(2)} Cr`;
+  if (num >= 100000) return `₹${(num / 100000).toFixed(1)} Lakh`;
+  return `₹${num.toLocaleString('en-IN')}`;
 }
 
 function calculatePriceData(row: any, area: number): { price: number; formatted: string } {

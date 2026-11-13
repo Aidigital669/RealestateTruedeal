@@ -54,6 +54,7 @@ import { findMatchingCategorySlug } from '@/lib/categories-data';
 import { isUserSeller } from '@/lib/seller-intent';
 import { generateSearchSuggestions, detectQueryAutocorrect, SearchSuggestion } from '@/lib/search-autocorrect';
 import { formatPropertyDescription } from '@/lib/dossier-parser';
+import { usePropertyComparison } from '@/context/PropertyComparisonContext';
 
 export interface BuyerDemandItem {
   id: string;
@@ -144,8 +145,19 @@ export interface HomepageSearchablePortalProps {
   isDedicatedSearchPage?: boolean;
 }
 
+export function isZeroPrice(val: string | number | undefined | null): boolean {
+  if (!val) return true;
+  const str = String(val).trim();
+  if (/on request|request/i.test(str)) return true;
+  const num = Number(str.replace(/[^0-9.]/g, ''));
+  if (isNaN(num) || num <= 0) return true;
+  if (/^₹?\s*0+(\.0+)?\s*(lakh|cr|crore|lac)?$/i.test(str)) return true;
+  return false;
+}
+
 export function formatPriceDisplay(val: string | number | undefined | null): string {
   if (!val) return 'Price on Request';
+  if (isZeroPrice(val)) return 'Price on Request';
   const str = String(val).trim();
   if (str.startsWith('₹') || /cr|lakh|crore/i.test(str)) return str;
   const num = Number(str.replace(/[^0-9.]/g, ''));
@@ -466,6 +478,8 @@ export function HomepageSearchablePortal({
   isDedicatedSearchPage = false
 }: HomepageSearchablePortalProps) {
   const router = useRouter();
+  const { compareList } = usePropertyComparison();
+  const hasCompareBar = compareList && compareList.length > 0;
 
   // Main Search & Filter States
   const [searchQuery, setSearchQuery] = useState(initialSearchParams?.search || '');
@@ -3234,52 +3248,45 @@ export function HomepageSearchablePortal({
                           </div>
                         </div>
 
-                        {/* 2. Specs Grid: Price | Typology & Area | Status */}
-                        <div className="grid grid-cols-3 gap-1.5 sm:gap-2 bg-zinc-50/90 p-2 sm:p-2.5 rounded-xl border border-zinc-100 text-xs">
+                        {/* 2. Price & Status */}
+                        <div className="grid grid-cols-2 gap-2 bg-zinc-50/90 p-2.5 rounded-xl border border-zinc-100 text-xs">
                           {/* Price */}
-                          <div className="min-w-0">
-                            <span className="text-[9px] uppercase font-bold text-zinc-400 tracking-wider block truncate">Price</span>
+                          <div>
+                            <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider block">Price</span>
                             {formatPriceDisplay(row.price) === 'Price on Request' || row.hidePrice ? (
                               <button
                                 type="button"
                                 onClick={() => handleInstantEnquiry(row)}
-                                className="mt-0.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-[10px] transition cursor-pointer"
+                                className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-[11px] transition cursor-pointer"
                               >
                                 <Lock className="w-2.5 h-2.5 text-zinc-950" />
-                                <span>Request</span>
+                                <span>Request Price</span>
                               </button>
                             ) : (
-                              <div className="font-black text-zinc-950 text-xs sm:text-sm mt-0.5 truncate">{formatPriceDisplay(row.price)}</div>
+                              <div className="font-black text-zinc-950 text-sm mt-0.5">{formatPriceDisplay(row.price)}</div>
                             )}
                           </div>
 
-                          {/* Typology & Area */}
-                          <div className="min-w-0">
-                            <span className="text-[9px] uppercase font-bold text-zinc-400 tracking-wider block truncate">Config & Area</span>
-                            <div className="font-bold text-zinc-900 text-xs mt-0.5 truncate">{row.bhk}</div>
-                            <div className="text-[10px] text-zinc-500 font-medium truncate">{cleanSqft(row.sqft)}</div>
-                          </div>
-
                           {/* Status */}
-                          <div className="min-w-0">
-                            <span className="text-[9px] uppercase font-bold text-zinc-400 tracking-wider block truncate">Status</span>
+                          <div>
+                            <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider block">Status</span>
                             <div className="mt-0.5">
-                              <span className="inline-block text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200/60 truncate max-w-full">
+                              <span className="inline-block text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200/60">
                                 {row.status}
                               </span>
                             </div>
                           </div>
                         </div>
 
-                        {/* 3. Action Buttons Row */}
-                        <div className="flex items-center gap-1.5 sm:gap-2 pt-0.5">
+                        {/* 3. Site Visit icon & Explore button */}
+                        <div className="flex items-center gap-2 pt-0.5">
                           <button
                             type="button"
                             onClick={() => {
                               setSelectedPropertyForSiteVisit(row);
                               setSiteVisitModalOpen(true);
                             }}
-                            className="inline-flex items-center justify-center p-2 sm:p-2.5 rounded-lg sm:rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 text-zinc-950 shadow-xs transition-all cursor-pointer shrink-0"
+                            className="inline-flex items-center justify-center p-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 text-zinc-950 shadow-xs transition-all cursor-pointer shrink-0"
                             title={`Book VIP Site Visit for ${row.name}`}
                             aria-label={`Book VIP Site Visit for ${row.name}`}
                           >
@@ -3288,11 +3295,11 @@ export function HomepageSearchablePortal({
 
                           <Link
                             href={getPropertyUrl(row)}
-                            className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg sm:rounded-xl bg-zinc-950 hover:bg-zinc-850 active:scale-95 text-white font-bold text-xs transition-all cursor-pointer shadow-xs"
+                            className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 active:scale-95 text-zinc-900 font-bold text-xs transition-all cursor-pointer"
                             title="Explore property"
                           >
-                            <span>Explore Details</span>
-                            <ArrowRight className="w-3.5 h-3.5 text-amber-400" />
+                            <span>Explore</span>
+                            <ArrowRight className="w-3.5 h-3.5 text-zinc-700" />
                           </Link>
                         </div>
                       </div>
@@ -4726,13 +4733,14 @@ export function HomepageSearchablePortal({
         <button
           type="button"
           onClick={scrollToTop}
-          className="fixed bottom-6 right-6 z-40 w-12 h-12 rounded-full bg-gradient-to-tr from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-zinc-950 shadow-[0_10px_25px_rgba(245,158,11,0.35)] hover:shadow-[0_14px_30px_rgba(245,158,11,0.5)] flex items-center justify-center transition-all duration-300 cursor-pointer active:scale-90 hover:-translate-y-1 border border-amber-300/60 animate-in fade-in slide-in-from-bottom-4 group"
-          title="Go to top"
-          aria-label="Go to top"
+          className="fixed bottom-[66px] sm:bottom-[72px] lg:bottom-6 right-2.5 sm:right-3.5 lg:right-6 z-40 w-8.5 h-8.5 sm:w-9.5 sm:h-9.5 lg:w-11 lg:h-11 rounded-full bg-gradient-to-tr from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-zinc-950 shadow-[0_4px_16px_rgba(245,158,11,0.35)] hover:shadow-[0_8px_20px_rgba(245,158,11,0.5)] flex items-center justify-center transition-all duration-300 cursor-pointer active:scale-90 hover:-translate-y-0.5 border border-amber-300/60 animate-in fade-in slide-in-from-bottom-2 group"
+      title="Go to top"
+      aria-label="Go to top"
         >
-          <ArrowUp className="w-5 h-5 stroke-[2.5] transition-transform duration-300 group-hover:-translate-y-0.5" />
-        </button>
-      )}
+      <ArrowUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 lg:w-5 lg:h-5 stroke-[2.5] transition-transform duration-300 group-hover:-translate-y-0.5" />
+    </button >
+      )
+}
     </>
   );
 }
