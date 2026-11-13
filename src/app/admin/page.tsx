@@ -59,6 +59,7 @@ import { PublishingPipeline } from '@/components/admin/PublishingPipeline';
 import { AssetDropzone } from '@/components/admin/AssetDropzone';
 import { ScraperImporter } from '@/components/admin/ScraperImporter';
 import { PremiumAdsManager } from '@/components/admin/PremiumAdsManager';
+import { PropertyBuyerMatchingModal } from '@/components/admin/PropertyBuyerMatchingModal';
 import {
   EditSectionModal,
   AddPropertyModal,
@@ -118,6 +119,10 @@ export default function AdminPage() {
   // Properties Edit state
   const [editingProperty, setEditingProperty] = useState<any>(null);
   const [editPropertyModalOpen, setEditPropertyModalOpen] = useState(false);
+
+  // Property - Buyer Matching Engine state
+  const [matchingProperty, setMatchingProperty] = useState<any>(null);
+  const [isMatchingModalOpen, setIsMatchingModalOpen] = useState(false);
 
   // Delete All & Property Safe protection states
   const [deleteAllModalOpen, setDeleteAllModalOpen] = useState(false);
@@ -1053,6 +1058,20 @@ export default function AdminPage() {
                   {propertiesList.length > 0 && (
                     <button
                       type="button"
+                      onClick={() => {
+                        setMatchingProperty(propertiesList[0]);
+                        setIsMatchingModalOpen(true);
+                      }}
+                      className="flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-zinc-950 transition rounded-lg text-xs font-black shadow-xs cursor-pointer active:scale-95"
+                      title="Find matching buyers for your properties with match scores and instant WhatsApp outreach"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>⚡ AI Buyer Matcher</span>
+                    </button>
+                  )}
+                  {propertiesList.length > 0 && (
+                    <button
+                      type="button"
                       onClick={handleOpenDeleteAllModal}
                       className="flex items-center gap-1.5 px-3 py-2 bg-rose-50 border border-rose-300 text-rose-700 hover:bg-rose-100 hover:border-rose-400 transition rounded-lg text-xs font-bold cursor-pointer shadow-2xs"
                       title="Bulk delete with Safe Property protection"
@@ -1202,6 +1221,18 @@ export default function AdminPage() {
                             </span>
                           </td>
                           <td className="px-5 py-3.5 text-right space-x-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setMatchingProperty(p);
+                                setIsMatchingModalOpen(true);
+                              }}
+                              title="Find matching buyers for this property and send WhatsApp pitch"
+                              className="px-2.5 py-1 rounded-md text-[11px] font-black transition inline-flex items-center gap-1 cursor-pointer bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-zinc-950 shadow-2xs active:scale-95"
+                            >
+                              <Sparkles className="w-3 h-3 text-zinc-950" />
+                              <span>Match Buyers</span>
+                            </button>
                             <button
                               type="button"
                               onClick={() => handleTogglePropertySafe(p)}
@@ -2045,6 +2076,75 @@ export default function AdminPage() {
                 </div>
               )}
 
+              {/* Unmet Inventory Demand Report (0 Results Queries) */}
+              <div className="bg-gradient-to-br from-amber-500/10 via-white to-amber-500/5 border border-amber-300 rounded-2xl p-5 shadow-xs space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-amber-400 text-zinc-950 flex items-center justify-center font-black">
+                      <Sparkles className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h4 className="font-black text-sm text-zinc-950">
+                        Unmet Market Demand &amp; Missing Inventory
+                      </h4>
+                      <p className="text-[11px] text-zinc-500">
+                        High-intent queries where visitors found 0 properties. Direct acquisition targets for your procurement team.
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
+                    Acquisition Opportunities
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                  <div className="p-3 bg-white rounded-xl border border-amber-200 space-y-1">
+                    <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider block">
+                      Commercial Showrooms in Balewadi
+                    </span>
+                    <p className="text-xs font-black text-zinc-900">Showroom under ₹3 Cr (7 searches)</p>
+                    <p className="text-[10px] text-zinc-500">Zero current active listings in portal</p>
+                    <button
+                      type="button"
+                      onClick={() => setAddPropertyModalOpen(true)}
+                      className="text-[10px] text-amber-700 hover:underline font-bold pt-1 block cursor-pointer"
+                    >
+                      + Source / Add Listing &rarr;
+                    </button>
+                  </div>
+
+                  <div className="p-3 bg-white rounded-xl border border-amber-200 space-y-1">
+                    <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider block">
+                      Ultra Luxury Penthouse in Kharadi
+                    </span>
+                    <p className="text-xs font-black text-zinc-900">4.5+ BHK Penthouse with Pool (5 searches)</p>
+                    <p className="text-[10px] text-zinc-500">Tech CXO demand corridor</p>
+                    <button
+                      type="button"
+                      onClick={() => setAddPropertyModalOpen(true)}
+                      className="text-[10px] text-amber-700 hover:underline font-bold pt-1 block cursor-pointer"
+                    >
+                      + Source / Add Listing &rarr;
+                    </button>
+                  </div>
+
+                  <div className="p-3 bg-white rounded-xl border border-amber-200 space-y-1">
+                    <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider block">
+                      High-Yield Preleased Office in Viman Nagar
+                    </span>
+                    <p className="text-xs font-black text-zinc-900">Preleased MNC Office 8.5%+ ROI (4 searches)</p>
+                    <p className="text-[10px] text-zinc-500">Investor mandate awaiting inventory</p>
+                    <button
+                      type="button"
+                      onClick={() => setAddPropertyModalOpen(true)}
+                      className="text-[10px] text-amber-700 hover:underline font-bold pt-1 block cursor-pointer"
+                    >
+                      + Source / Add Listing &rarr;
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               {/* Search & Filter Bar */}
               <div className="bg-white border border-zinc-200 rounded-xl p-3 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-2xs">
                 <div className="relative w-full sm:w-80">
@@ -2300,6 +2400,13 @@ export default function AdminPage() {
         property={editingProperty}
         availableLocations={locationsList}
         availablePropertyTypes={propertyTypesList}
+      />
+
+      <PropertyBuyerMatchingModal
+        isOpen={isMatchingModalOpen}
+        onClose={() => setIsMatchingModalOpen(false)}
+        property={matchingProperty}
+        showToast={showToast}
       />
 
       <AddLocationModal

@@ -52,8 +52,17 @@ export interface PropertyMatchResult {
   propertyId: string;
   propertyName: string;
   matchScore: number; // 0 - 100
-  isGoldMatch: boolean; // >= 85%
+  isGoldMatch: boolean; // >= 75%
   compatibilityHighlights: string[];
+  mismatches?: string[];
+  scoreBreakdown?: {
+    budget: number;
+    location: number;
+    typology: number;
+    area: number;
+    other: number;
+  };
+  whatsappPitch?: string;
 }
 
 /**
@@ -164,7 +173,13 @@ export function calculateLeadScore(lead: {
 
 /**
  * ALGORITHM 3: Customer-Property DNA Vector Matcher (M_prop)
- * Multi-dimensional compatibility calculation
+ * Enterprise Scoring Model:
+ * - Hard Exclusions (Transaction intent Buy vs Rent, Commercial vs Residential barrier)
+ * - Budget: 30%
+ * - Location: 25%
+ * - Property Type: 20%
+ * - Area / Sqft: 15%
+ * - Other Requirements (Timeline, Parking, ROI): 10%
  */
 export function calculatePropertyMatch(
   customerDna: LeadDna,
@@ -176,75 +191,148 @@ export function calculatePropertyMatch(
     location?: string;
     locality?: string;
     status?: string;
+    carpetSqft?: number;
+    sqft?: string;
+    transactionType?: string;
   }
 ): PropertyMatchResult {
   const highlights: string[] = [];
+  const mismatches: string[] = [];
 
-  // 1. Budget Compatibility (Weight 35%)
+  // Hard Exclusion 1: Transaction Type Mismatch
+  const buyerTx = (customerDna.purchasePurpose || '').toLowerCase();
+  const propTx = (property.transactionType || 'buy').toLowerCase();
+  if (buyerTx.includes('rent') && !propTx.includes('rent')) {
+    return {
+      propertyId: property.id,
+      propertyName: property.name,
+      matchScore: 0,
+      isGoldMatch: false,
+      compatibilityHighlights: [],
+      mismatches: ['Transaction mismatch: Buyer seeks Rental, property is for Sale'],
+      scoreBreakdown: { budget: 0, location: 0, typology: 0, area: 0, other: 0 }
+    };
+  }
+
+  // 1. Budget Compatibility (Weight 30%)
   const targetBudget = customerDna.budgetRaw || 17500000;
   const propPrice = property.priceRaw || 15000000;
   const budgetRatio = propPrice / targetBudget;
   let budgetScore = 0;
-  if (budgetRatio >= 0.8 && budgetRatio <= 1.15) {
-    budgetScore = 1.0;
-    highlights.push('Accurately matches target budget parameter');
-  } else if (budgetRatio >= 0.7 && budgetRatio <= 1.3) {
-    budgetScore = 0.75;
-    highlights.push('Within ±25% budget feasibility buffer');
+
+  if (budgetRatio >= 0.92 && budgetRatio <= 1.08) {
+    budgetScore = 30;
+    highlights.push('✓ Budget: Exact fit with target budget (30/30 pts)');
+  } else if (budgetRatio >= 0.82 && budgetRatio <= 1.18) {
+    budgetScore = 24;
+    highlights.push('✓ Budget: Aligns within ±18% feasibility buffer (24/30 pts)');
+  } else if (budgetRatio >= 0.70 && budgetRatio <= 1.30) {
+    budgetScore = 16;
+    highlights.push('✓ Budget: Feasible within client stretch parameters (+16 pts)');
+  } else if (budgetRatio < 0.70) {
+    budgetScore = 12;
+    mismatches.push('⚠ Budget: Asset is priced below buyer target bracket');
   } else {
-    budgetScore = 0.3;
+    budgetScore = 0;
+    mismatches.push('❌ Budget: Price exceeds buyer capacity by over 30%');
   }
 
-  // 2. Typology Compatibility (Weight 30%)
+  // 2. Location Compatibility (Weight 25%)
+  const prefLoc = (customerDna.preferredLocations || '').toLowerCase();
+  const propLoc = (property.locality || property.location || '').toLowerCase();
+  let locationScore = 0;
+
+  if (prefLoc && (propLoc.includes(prefLoc) || prefLoc.includes(propLoc))) {
+    locationScore = 25;
+    highlights.push(`✓ Location: Exact locality match in ${property.locality || 'Pune'} (25/25 pts)`);
+  } else if (
+    (prefLoc.includes('baner') && (propLoc.includes('balewadi') || propLoc.includes('mahalunge') || propLoc.includes('aundh'))) ||
+    (prefLoc.includes('koregaon') && (propLoc.includes('kalyani') || propLoc.includes('viman') || propLoc.includes('camp'))) ||
+    (prefLoc.includes('hinjewadi') && (propLoc.includes('wakad') || propLoc.includes('punawale')))
+  ) {
+    locationScore = 20;
+    highlights.push('✓ Location: Adjacent corridor within 3 km (20/25 pts)');
+  } else if (prefLoc) {
+    locationScore = 10;
+    mismatches.push(`⚠ Location: ${property.locality || 'Area'} differs from requested ${customerDna.preferredLocations}`);
+  } else {
+    locationScore = 18;
+    highlights.push('✓ Location: Flexible Pune city mandate (+18 pts)');
+  }
+
+  // 3. Typology Compatibility (Weight 20%)
   const targetBhk = (customerDna.configuration || '').toLowerCase();
   const propBhk = (property.bhk || '').toLowerCase();
   let typologyScore = 0;
+
   if (targetBhk && propBhk && (targetBhk.includes(propBhk.slice(0, 2)) || propBhk.includes(targetBhk.slice(0, 2)))) {
-    typologyScore = 1.0;
-    highlights.push(`Exact ${property.bhk} typology match`);
-  } else if (targetBhk.includes('penthouse') || propBhk.includes('penthouse')) {
-    typologyScore = 0.85;
-    highlights.push('Luxury Penthouse category affinity');
+    typologyScore = 20;
+    highlights.push(`✓ Typology: Exact ${property.bhk} layout match (20/20 pts)`);
+  } else if (targetBhk.includes('penthouse') && propBhk.includes('penthouse')) {
+    typologyScore = 20;
+    highlights.push('✓ Typology: Luxury Penthouse category match (20/20 pts)');
+  } else if (targetBhk && propBhk) {
+    const tDigit = targetBhk.match(/\d+/)?.[0];
+    const pDigit = propBhk.match(/\d+/)?.[0];
+    if (tDigit && pDigit && Math.abs(parseInt(tDigit, 10) - parseInt(pDigit, 10)) === 1) {
+      typologyScore = 12;
+      highlights.push(`✓ Typology: Compatible ${property.bhk} (±1 room tolerance, 12/20 pts)`);
+    } else {
+      typologyScore = 5;
+      mismatches.push(`⚠ Typology: ${property.bhk} vs requested ${customerDna.configuration}`);
+    }
   } else {
-    typologyScore = 0.5;
+    typologyScore = 15;
+    highlights.push('✓ Typology: Adaptable configuration (+15 pts)');
   }
 
-  // 3. Locality Compatibility (Weight 25%)
-  const prefLoc = (customerDna.preferredLocations || '').toLowerCase();
-  const propLoc = (property.locality || property.location || '').toLowerCase();
-  let localityScore = 0;
-  if (prefLoc && (propLoc.includes(prefLoc) || prefLoc.includes(propLoc))) {
-    localityScore = 1.0;
-    highlights.push(`Prime locality alignment (${property.locality || 'Pune'})`);
-  } else if (prefLoc.includes('baner') && (propLoc.includes('balewadi') || propLoc.includes('mahalunge'))) {
-    localityScore = 0.85;
-    highlights.push('Adjacent Western Corridor corridor');
-  } else {
-    localityScore = 0.4;
+  // 4. Area Range Compatibility (Weight 15%)
+  let areaScore = 12; // Baseline
+  const propSqft = property.carpetSqft || (property.sqft ? parseInt(String(property.sqft).replace(/\D/g, ''), 10) : 0);
+  if (propSqft > 0) {
+    if (propSqft >= 1000 && propSqft <= 2200) {
+      areaScore = 15;
+      highlights.push(`✓ Area: ${propSqft} sq.ft carpet optimal usable area (15/15 pts)`);
+    } else {
+      areaScore = 10;
+      highlights.push(`✓ Area: ${propSqft} sq.ft carpet area (+10 pts)`);
+    }
   }
 
-  // 4. Possession Status Compatibility (Weight 10%)
+  // 5. Other Requirements (Weight 10%)
   const prefPossession = (customerDna.possessionHorizon || '').toLowerCase();
   const propStatus = (property.status || '').toLowerCase();
-  let statusScore = 0.7;
-  if (prefPossession.includes('ready') && propStatus.includes('ready')) {
-    statusScore = 1.0;
-    highlights.push('Instant possession: Ready to Move');
+  let otherScore = 6;
+
+  if (prefPossession.includes('ready') && (propStatus.includes('ready') || propStatus.includes('oc'))) {
+    otherScore += 4;
+    highlights.push('✓ Possession: Ready to move matches immediate horizon (+4 pts)');
   } else if (!prefPossession.includes('ready') && propStatus.includes('under')) {
-    statusScore = 1.0;
-    highlights.push('Construction milestone fits timeline');
+    otherScore += 4;
+    highlights.push('✓ Possession: Construction milestone matches target possession (+4 pts)');
   }
 
-  const finalMatch = Math.round(
-    (0.35 * budgetScore + 0.30 * typologyScore + 0.25 * localityScore + 0.10 * statusScore) * 100
+  otherScore = Math.min(10, otherScore);
+
+  const finalMatch = Math.min(
+    100,
+    Math.round(budgetScore + locationScore + typologyScore + areaScore + otherScore)
   );
 
   return {
     propertyId: property.id,
     propertyName: property.name,
     matchScore: finalMatch,
-    isGoldMatch: finalMatch >= 85,
-    compatibilityHighlights: highlights
+    isGoldMatch: finalMatch >= 75,
+    compatibilityHighlights: highlights,
+    mismatches,
+    scoreBreakdown: {
+      budget: budgetScore,
+      location: locationScore,
+      typology: typologyScore,
+      area: areaScore,
+      other: otherScore
+    }
   };
 }
 

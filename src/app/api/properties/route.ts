@@ -9,6 +9,10 @@ import {
   getPropertyRawPrice
 } from "@/lib/property-matching";
 import { getPurposesForProperties } from "@/lib/business-purposes";
+import {
+  parseNaturalLanguageSearch,
+  getLocalitiesWithinRadius
+} from "@/lib/matching-and-search-engine";
 
 export async function GET(req: NextRequest) {
   try {
@@ -22,6 +26,16 @@ export async function GET(req: NextRequest) {
     let purpose = searchParams.get("purpose") || searchParams.get("businessPurpose") || "";
     let transactionType = searchParams.get("transactionType") || searchParams.get("intent") || "";
 
+    // Advanced & Specialized Search Parameters
+    const radiusKm = searchParams.get("radiusKm") ? parseInt(searchParams.get("radiusKm")!, 10) : null;
+    const carpetAreaMin = searchParams.get("carpetAreaMin") ? parseInt(searchParams.get("carpetAreaMin")!, 10) : null;
+    const carpetAreaMax = searchParams.get("carpetAreaMax") ? parseInt(searchParams.get("carpetAreaMax")!, 10) : null;
+    const floor = searchParams.get("floor");
+    const parking = searchParams.get("parking");
+    const furnishing = searchParams.get("furnishing");
+    const possession = searchParams.get("possession");
+    const minRoi = searchParams.get("minRoi") ? parseFloat(searchParams.get("minRoi")!) : null;
+
     let aiParsed = false;
     let aiSummary = "";
 
@@ -32,6 +46,18 @@ export async function GET(req: NextRequest) {
       .replace(/([a-z])([A-Z])/g, "$1 $2")
       .replace(/\s+/g, " ")
       .trim();
+
+    // Natural Language Query Understanding
+    const nlpCriteria = parseNaturalLanguageSearch(cleanSearch);
+    if ((!locality || locality === "All" || locality === "All Localities") && nlpCriteria.locality) {
+      locality = nlpCriteria.locality;
+    }
+    if ((!bhk || bhk === "All" || bhk === "All Typologies") && nlpCriteria.bhk) {
+      bhk = nlpCriteria.bhk;
+    }
+    if ((!propertyType || propertyType === "All" || propertyType === "All Types") && nlpCriteria.typology) {
+      propertyType = nlpCriteria.typology;
+    }
 
     // --- 0. Google Gemini AI Semantic Query Extraction ---
     if (cleanSearch.length > 2 && (!bhk || bhk === "All") && (!locality || locality === "All")) {
@@ -274,15 +300,41 @@ Return ONLY valid JSON (no markdown formatting).`;
       }
     }
 
-    // Locality filtering
+    // Locality & Radius proximity filtering
+    const effectiveRadius = radiusKm || nlpCriteria.radiusKm || 0;
     if (locality && locality !== "All" && locality !== "All Localities") {
-      sql += ` AND (
-        LOWER(COALESCE(loc.name, '')) LIKE $${paramIndex} OR 
-        LOWER(COALESCE(p.address, '')) LIKE $${paramIndex} OR
-        LOWER(p.title) LIKE $${paramIndex}
-      )`;
-      params.push(`%${locality.toLowerCase()}%`);
-      paramIndex++;
+      if (effectiveRadius > 0) {
+        const radiusNeighbors = getLocalitiesWithinRadius(locality, effectiveRadius).map((n) => n.name);
+        if (radiusNeighbors.length > 0) {
+          const locClauses = radiusNeighbors.map(
+            (_, idx) =>
+              `LOWER(COALESCE(loc.name, '')) LIKE $${paramIndex + idx} OR LOWER(COALESCE(p.address, '')) LIKE $${
+                paramIndex + idx
+              } OR LOWER(p.title) LIKE $${paramIndex + idx}`
+          );
+          sql += ` AND (${locClauses.join(' OR ')})`;
+          radiusNeighbors.forEach((rn) => {
+            params.push(`%${rn.toLowerCase()}%`);
+            paramIndex++;
+          });
+        } else {
+          sql += ` AND (
+            LOWER(COALESCE(loc.name, '')) LIKE $${paramIndex} OR 
+            LOWER(COALESCE(p.address, '')) LIKE $${paramIndex} OR
+            LOWER(p.title) LIKE $${paramIndex}
+          )`;
+          params.push(`%${locality.toLowerCase()}%`);
+          paramIndex++;
+        }
+      } else {
+        sql += ` AND (
+          LOWER(COALESCE(loc.name, '')) LIKE $${paramIndex} OR 
+          LOWER(COALESCE(p.address, '')) LIKE $${paramIndex} OR
+          LOWER(p.title) LIKE $${paramIndex}
+        )`;
+        params.push(`%${locality.toLowerCase()}%`);
+        paramIndex++;
+      }
     }
 
     // Status filtering
@@ -311,6 +363,61 @@ Return ONLY valid JSON (no markdown formatting).`;
       } else if (priceRange === "above_4cr" || priceRange.includes("₹4.0 Cr+") || priceRange.toLowerCase().includes("above 4")) {
         sql += ` AND p.price >= 40000000`;
       }
+    }
+
+    // Natural Language Budget Extracted (if priceRange was not explicit)
+    if ((!priceRange || priceRange === "Any Budget" || priceRange === "All" || priceRange === "all") && nlpCriteria.maxPrice) {
+      sql += ` AND p.price <= $${paramIndex}`;
+      params.push(nlpCriteria.maxPrice);
+      paramIndex++;
+    }
+    if ((!priceRange || priceRange === "Any Budget" || priceRange === "All" || priceRange === "all") && nlpCriteria.minPrice) {
+      sql += ` AND p.price >= $${paramIndex}`;
+      params.push(nlpCriteria.minPrice);
+      paramIndex++;
+    }
+
+    // Carpet Area Range Filtering
+    const effectiveCarpetMin = carpetAreaMin || nlpCriteria.carpetAreaMin;
+    const effectiveCarpetMax = carpetAreaMax || nlpCriteria.carpetAreaMax;
+    if (effectiveCarpetMin) {
+      sql += ` AND p."carpetArea" >= $${paramIndex}`;
+      params.push(effectiveCarpetMin);
+      paramIndex++;
+    }
+    if (effectiveCarpetMax) {
+      sql += ` AND p."carpetArea" <= $${paramIndex}`;
+      params.push(effectiveCarpetMax);
+      paramIndex++;
+    }
+
+    // Parking Filter
+    if (parking === 'true' || parking === 'yes' || nlpCriteria.hasParking) {
+      sql += ` AND (LOWER(p.description) LIKE '%parking%' OR LOWER(p.title) LIKE '%parking%')`;
+    }
+
+    // Furnishing Filter
+    const effectiveFurnishing = furnishing || nlpCriteria.furnishing;
+    if (effectiveFurnishing) {
+      sql += ` AND (LOWER(p.description) LIKE $${paramIndex} OR LOWER(p.title) LIKE $${paramIndex})`;
+      params.push(`%${effectiveFurnishing.toLowerCase()}%`);
+      paramIndex++;
+    }
+
+    // Floor Filter
+    const effectiveFloor = floor || nlpCriteria.floorPreference;
+    if (effectiveFloor === 'penthouse') {
+      sql += ` AND (p.bedrooms >= 4 OR LOWER(p.title) LIKE '%penthouse%' OR LOWER(COALESCE(pt.name, '')) LIKE '%penthouse%')`;
+    } else if (effectiveFloor === 'ground') {
+      sql += ` AND (LOWER(p.description) LIKE '%ground floor%' OR LOWER(p.title) LIKE '%ground floor%')`;
+    } else if (effectiveFloor === 'high') {
+      sql += ` AND (LOWER(p.description) LIKE '%high floor%' OR LOWER(p.description) LIKE '%higher floor%')`;
+    }
+
+    // Investment & ROI Yield Filter
+    const effectiveRoi = minRoi || nlpCriteria.minRoi;
+    if (effectiveRoi || nlpCriteria.isPreleased) {
+      sql += ` AND (LOWER(p.description) LIKE '%roi%' OR LOWER(p.description) LIKE '%pre-leased%' OR LOWER(p.description) LIKE '%preleased%' OR LOWER(p.title) LIKE '%preleased%')`;
     }
 
     // Property type filtering
@@ -467,11 +574,32 @@ Return ONLY valid JSON (no markdown formatting).`;
         .map((item) => item.prop);
     }
 
+    // Similar Properties Alternative Recommendations (when exact match returns 0 or low count)
+    let similarAlternatives: any[] = [];
+    if (finalProperties.length === 0 && properties.length > 0) {
+      similarAlternatives = properties.slice(0, 4);
+    }
+
+    // Search Analytics & Unmet Demand Logging
+    if (cleanSearch.length > 2) {
+      query(
+        `INSERT INTO search_history (query, locality, bhk, results_count, intent, created_at)
+         VALUES ($1, $2, $3, $4, $5, NOW())`,
+        [cleanSearch, locality || 'All', bhk || 'All', finalProperties.length, nlpCriteria.intent || 'buyer']
+      ).catch(() => {});
+    }
+
     return NextResponse.json({
       success: true,
       count: finalProperties.length,
       aiParsed,
-      aiSummary: aiSummary || (bhk ? `Verified ${bhk} properties${locality ? ` in ${locality}` : ""}` : "Curated Pune luxury & commercial properties"),
+      aiSummary:
+        aiSummary ||
+        (bhk
+          ? `Verified ${bhk} properties${locality ? ` in ${locality}` : ''}`
+          : 'Curated Pune luxury & commercial properties'),
+      nlpCriteria,
+      similarAlternatives,
       properties: finalProperties
     });
   } catch (error: any) {
