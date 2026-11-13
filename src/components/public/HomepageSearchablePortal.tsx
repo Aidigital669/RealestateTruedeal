@@ -2222,21 +2222,6 @@ export function HomepageSearchablePortal({
                 </button>
               </div>
             </div>
-
-            {/* Seller Query Detected Alert Banner - Outside the controls row */}
-            {isUserSeller(catalogueSearch || searchQuery) && (
-              <div className="mt-2.5 w-full text-[11px] sm:text-xs font-bold text-amber-900 bg-amber-50/90 border border-amber-300 rounded-xl p-2 sm:px-3 sm:py-2 flex items-center gap-2 shadow-2xs animate-in fade-in select-none">
-                <div className="w-5 h-5 rounded-lg bg-amber-400 text-zinc-950 flex items-center justify-center shrink-0 font-black">
-                  <Sparkles className="w-3.5 h-3.5" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <span className="font-extrabold text-zinc-950">Seller Query Detected:</span>{' '}
-                  <span className="text-amber-900 font-medium">
-                    Showing verified registered buyers matching your property query
-                  </span>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* ================= SECTION 1: VERIFIED PROPERTIES ================= */}
