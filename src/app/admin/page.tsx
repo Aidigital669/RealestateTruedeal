@@ -60,6 +60,7 @@ import { AssetDropzone } from '@/components/admin/AssetDropzone';
 import { ScraperImporter } from '@/components/admin/ScraperImporter';
 import { PremiumAdsManager } from '@/components/admin/PremiumAdsManager';
 import { PropertyBuyerMatchingModal } from '@/components/admin/PropertyBuyerMatchingModal';
+import { BuyerDataUploadModal } from '@/components/admin/BuyerDataUploadModal';
 import {
   EditSectionModal,
   AddPropertyModal,
@@ -133,6 +134,14 @@ export default function AdminPage() {
   // Search filter states for sub-views
   const [locationSearchFilter, setLocationSearchFilter] = useState('');
   const [propertyTypeSearchFilter, setPropertyTypeSearchFilter] = useState('');
+
+  // Buyer Upload & Buyer Demands state
+  const [buyerUploadModalOpen, setBuyerUploadModalOpen] = useState(false);
+  const [buyerDemandsList, setBuyerDemandsList] = useState<any[]>([]);
+  const [isLoadingBuyerDemands, setIsLoadingBuyerDemands] = useState(false);
+  const [buyerSearchQuery, setBuyerSearchQuery] = useState('');
+  const [buyerLocalityFilter, setBuyerLocalityFilter] = useState('All');
+  const [buyerTypologyFilter, setBuyerTypologyFilter] = useState('All');
 
   // Toast notification helper
   const showToast = (msg: string) => {
@@ -236,9 +245,27 @@ export default function AdminPage() {
     }
   };
 
+  const fetchBuyerDemands = async () => {
+    setIsLoadingBuyerDemands(true);
+    try {
+      const res = await fetch('/api/buyer-demands');
+      const data = await res.json();
+      if (data.success && Array.isArray(data.demands)) {
+        setBuyerDemandsList(data.demands);
+      }
+    } catch (e) {
+      console.error('Failed to fetch buyer demands:', e);
+    } finally {
+      setIsLoadingBuyerDemands(false);
+    }
+  };
+
   useEffect(() => {
     if (activeTab === 'search-history') {
       fetchSearchHistory();
+    }
+    if (activeTab === 'buyer-demands') {
+      fetchBuyerDemands();
     }
   }, [activeTab]);
 
@@ -350,6 +377,9 @@ export default function AdminPage() {
           setCrmSelectedLead(mapped[0]);
         }
       }
+
+      // 8. Live Buyer Demands
+      fetchBuyerDemands();
     } catch (err) {
       console.log('Admin data fetch fallback:', err);
     }

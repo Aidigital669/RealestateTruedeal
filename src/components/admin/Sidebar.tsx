@@ -25,6 +25,7 @@ import {
   CheckCircle2,
   X,
   User,
+  Users,
   ShieldCheck,
   LogOut,
   Settings,
@@ -110,6 +111,7 @@ export function Sidebar({
       items: [
         { id: 'media-library', label: 'Media Library', icon: FolderArchive },
         { id: 'enquiries', label: 'Enquiries & Leads', icon: Inbox, badge: counts?.enquiries !== undefined ? String(counts.enquiries) : undefined, badgeVariant: 'peach' },
+        { id: 'buyer-demands', label: 'Buyer Demands', icon: Users, badge: 'Upload', badgeVariant: 'peach', hasDot: true },
         { id: 'search-history', label: 'Search History', icon: History }
       ]
     },

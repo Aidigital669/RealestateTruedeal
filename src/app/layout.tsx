@@ -58,12 +58,10 @@ import { SavedPropertiesProvider } from "@/context/SavedPropertiesContext";
 import { StickyAdsStrip } from "@/components/public/StickyAdsStrip";
 
 const FloatingCompareBar = dynamic(
-  () => import('@/components/public/FloatingCompareBar').then((m) => m.FloatingCompareBar),
-  { ssr: false }
+  () => import('@/components/public/FloatingCompareBar').then((m) => m.FloatingCompareBar)
 );
 const TimedEnquiryModal = dynamic(
-  () => import('@/components/public/TimedEnquiryModal').then((m) => m.TimedEnquiryModal),
-  { ssr: false }
+  () => import('@/components/public/TimedEnquiryModal').then((m) => m.TimedEnquiryModal)
 );
 
 export default function RootLayout({
