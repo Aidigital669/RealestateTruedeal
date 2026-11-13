@@ -58,6 +58,7 @@ import { SectionManager } from '@/components/admin/SectionManager';
 import { PublishingPipeline } from '@/components/admin/PublishingPipeline';
 import { AssetDropzone } from '@/components/admin/AssetDropzone';
 import { ScraperImporter } from '@/components/admin/ScraperImporter';
+import { PremiumAdsManager } from '@/components/admin/PremiumAdsManager';
 import {
   EditSectionModal,
   AddPropertyModal,
@@ -1027,6 +1028,9 @@ export default function AdminPage() {
                 </div>
               </div>
             </>
+          ) : activeTab === 'premium-ads' ? (
+            /* Premium Clients & Ads Strip Management */
+            <PremiumAdsManager showToast={showToast} />
           ) : activeTab === 'properties' ? (
             /* Properties Sub-View */
             <div className="space-y-5">

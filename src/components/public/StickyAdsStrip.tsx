@@ -13,106 +13,19 @@ import {
   Plus,
   ExternalLink
 } from 'lucide-react';
+import {
+  PremiumAdItem,
+  PremiumAdsConfig,
+  DEFAULT_PREMIUM_CONFIG
+} from '@/lib/premium-ads-constants';
 
-export interface AdItem {
-  id: string;
-  name: string;
-  category: string;
-  tagline: string;
-  description: string;
-  badge?: string;
-  image: string;
-  videoUrl?: string;
-  ctaText: string;
-  ctaMessage: string;
-}
-
-const AD_ITEMS: AdItem[] = [
-  {
-    id: 'opus-video',
-    name: 'Opus',
-    category: 'Signature Luxury Living',
-    tagline: 'Opus Luxury Residences & Penthouses',
-    description:
-      'Experience premier ultra-luxury architecture, curated landscape views, and bespoke craftsmanship at Opus. Schedule an exclusive private walkthrough and access institutional pre-launch inventory pricing.',
-    image: '/opus-thumb.jpg',
-    videoUrl: '/Opusvideo.mp4',
-    ctaText: 'Explore Opus & Schedule Visit',
-    ctaMessage: 'Hello ANV Realty advisory, I watched the Opus video ad and would like to schedule an exclusive site visit and receive pricing brochure for Opus.'
-  },
-  {
-    id: 'ai-digital',
-    name: 'AI Digital',
-    category: 'Digital Marketing Partner',
-    tagline: 'AI Meta & Google Ads • 3D Virtual Walkthroughs',
-    description:
-      'Premier performance marketing partner for real estate builders, channel partners, and developers. Specializing in high-intent buyer acquisition, AI meta lead funnels, and photorealistic 3D architectural renders.',
-    image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=400&q=80',
-    videoUrl: '/AiDigital.mp4',
-    ctaText: 'Get Free Project Audit',
-    ctaMessage: 'Hello AI Digital team, I saw your promotional ad on ANV Realty and would like a Free Project Audit for real estate digital marketing.'
-  },
-  {
-    id: 'hdfc-loans',
-    name: 'Home Loan',
-    category: 'Banking & Mortgages',
-    tagline: '8.40% ROI • 48-Hour Instant In-Principle Sanction',
-    description:
-      'Fast-track institutional home loans and balance transfers for luxury residential and commercial properties in Pune with zero processing fees and doorstep documentation.',
-    image: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=400&q=80',
-    ctaText: 'Check Eligibility',
-    ctaMessage: 'Hello ANV Realty advisory, I would like to check home loan eligibility and lowest ROI for Pune properties.'
-  },
-  {
-    id: 'luxury-interiors',
-    name: 'Interiors',
-    category: 'Luxury Architecture',
-    tagline: 'Turnkey Modular Kitchens & Italian Decor',
-    description:
-      'End-to-end bespoke interior architecture, smart home automation, Italian marble flooring, and customized modular interiors with a 10-year warranty.',
-    image: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=400&q=80',
-    ctaText: 'Get 3D Design Consultation',
-    ctaMessage: 'Hello, I am interested in interior design and modular layout planning for my Pune property.'
-  },
-  {
-    id: 'legal-audit',
-    name: 'Legal Due',
-    category: 'Title Search & RERA',
-    tagline: '30-Year Title Verification & RERA Compliance',
-    description:
-      'Independent institutional legal scrutiny, search reports, encumbrance verification, and agreement vetting by senior High Court real estate advocates.',
-    image: 'https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&w=400&q=80',
-    ctaText: 'Request Legal Scrutiny',
-    ctaMessage: 'Hello ANV Realty legal cell, I would like to verify property title and legal documentation.'
-  },
-  {
-    id: 'vastu-shastra',
-    name: 'Vastu',
-    category: 'Vastu & Energy',
-    tagline: 'Scientific Vastu for Penthouses & Commercial',
-    description:
-      'Non-demolition Vastu remedies, entrance energy balancing, and directional optimization for business prosperity and peaceful family residences.',
-    image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=400&q=80',
-    ctaText: 'Book Vastu Consultation',
-    ctaMessage: 'Hello, I would like to consult a Vastu expert for my residential / commercial property in Pune.'
-  },
-  {
-    id: 'preleased-leasing',
-    name: 'MNC Lease',
-    category: 'Commercial Pre-Leased',
-    tagline: 'Grade-A Corporate Tenants with 8.5%+ Yield',
-    description:
-      'Connect with institutional corporate tenants, IT/ITeS firms, and retail brands looking for long-term lease commitments across prime Pune IT corridors.',
-    image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=400&q=80',
-    ctaText: 'View Leasing Demand',
-    ctaMessage: 'Hello ANV Realty leasing division, I want to explore MNC pre-leased commercial opportunities in Pune.'
-  }
-];
+export type AdItem = PremiumAdItem;
 
 export function StickyAdsStrip() {
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
-  const [activeAd, setActiveAd] = useState<AdItem | null>(null);
+  const [config, setConfig] = useState<PremiumAdsConfig>(DEFAULT_PREMIUM_CONFIG);
+  const [activeAd, setActiveAd] = useState<PremiumAdItem | null>(null);
   const [isMinimized, setIsMinimized] = useState(false);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
@@ -123,6 +36,22 @@ export function StickyAdsStrip() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Fetch dynamic ads from backend
+  useEffect(() => {
+    fetch('/api/premium-ads')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.config && Array.isArray(data.config.ads)) {
+          setConfig(data.config);
+        }
+      })
+      .catch((err) => {
+        console.warn('Using fallback default premium ads:', err);
+      });
+  }, []);
+
+  const adItems = config.ads.filter((ad) => ad.isActive !== false);
 
   const checkScroll = () => {
     if (!scrollRef.current) return;
@@ -136,7 +65,7 @@ export function StickyAdsStrip() {
       return;
     }
     checkScroll();
-  }, [pathname, mounted]);
+  }, [pathname, mounted, adItems.length]);
 
   const handleScroll = (direction: 'left' | 'right') => {
     if (!scrollRef.current) return;
@@ -148,25 +77,37 @@ export function StickyAdsStrip() {
     setTimeout(checkScroll, 200);
   };
 
-  const handleOpenAd = (ad: AdItem) => {
+  const handleOpenAd = (ad: PremiumAdItem) => {
     setActiveAd(ad);
     setIsVideoMuted(true);
   };
 
   const handlePromoteClick = () => {
     const text = encodeURIComponent(
-      'Hello ANV Realty team, I would like to feature our company ad in your website Ads strip for Pune property buyers and investors.'
+      config.promoteMessage ||
+        'Hello ANV Realty team, I would like to feature our company ad in your website Ads strip for Pune property buyers and investors.'
     );
-    window.open(`https://wa.me/919373020701?text=${text}`, '_blank');
+    const phone = config.promoteWhatsAppNumber || '919373020701';
+    window.open(`https://wa.me/${phone}?text=${text}`, '_blank');
   };
 
-  const handleAdCta = (ad: AdItem) => {
+  const handleAdCta = (ad: PremiumAdItem) => {
+    if (ad.linkUrl) {
+      window.open(ad.linkUrl, '_blank');
+      return;
+    }
     const text = encodeURIComponent(ad.ctaMessage);
-    window.open(`https://wa.me/919373020701?text=${text}`, '_blank');
+    const phone = config.promoteWhatsAppNumber || '919373020701';
+    window.open(`https://wa.me/${phone}?text=${text}`, '_blank');
   };
 
   // Guard against SSR hydration mismatches and hide on admin/crm portals
   if (!mounted || pathname?.startsWith('/admin') || pathname?.startsWith('/crm')) {
+    return null;
+  }
+
+  // If there are no active ads, do not render the strip
+  if (adItems.length === 0) {
     return null;
   }
 
@@ -187,15 +128,15 @@ export function StickyAdsStrip() {
           >
             <div className="relative w-7 h-4 shrink-0">
               <Image
-                src="/premium-crown.png"
-                alt="Premium"
+                src={config.crownImage || '/premium-crown.png'}
+                alt={config.crownTitle || 'Premium'}
                 fill
                 unoptimized
                 className="object-contain drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]"
               />
             </div>
             <span className="text-[10px] text-amber-300 font-bold bg-amber-950/80 border border-amber-500/40 px-1.5 py-0.2 rounded-full">
-              {AD_ITEMS.length}
+              {adItems.length}
             </span>
           </button>
         ) : (
@@ -205,15 +146,15 @@ export function StickyAdsStrip() {
             <div className="flex items-center justify-center shrink-0 pr-1.5 border-r border-zinc-800/80">
               <div
                 className="relative px-2 py-1 rounded-xl bg-gradient-to-b from-[#2e050f] via-[#420816] to-[#1f030a] border border-amber-400/70 shadow-[0_0_16px_rgba(245,158,11,0.35)] flex items-center justify-center shrink-0 group/crown"
-                title="Premium Collection"
+                title={config.crownTitle || 'Premium Collection'}
               >
                 {/* Subtle Amber Glow Behind the Crown */}
                 <div className="absolute inset-0 rounded-xl bg-[radial-gradient(ellipse_at_center,_rgba(245,158,11,0.25)_0%,_transparent_70%)] pointer-events-none" />
 
                 <div className="relative w-14 h-7 sm:w-16 sm:h-8 shrink-0">
                   <Image
-                    src="/premium-crown.png"
-                    alt="Premium"
+                    src={config.crownImage || '/premium-crown.png'}
+                    alt={config.crownTitle || 'Premium'}
                     fill
                     unoptimized
                     priority
@@ -242,20 +183,20 @@ export function StickyAdsStrip() {
               className="flex items-center gap-2 sm:gap-2.5 overflow-x-auto scrollbar-none py-1 px-0.5 w-[164px] sm:w-[190px] max-w-[164px] sm:max-w-[190px] scroll-smooth"
               style={{ scrollSnapType: 'x mandatory' }}
             >
-              {AD_ITEMS.map((ad) => (
+              {adItems.map((ad) => (
                 <button
                   key={ad.id}
                   type="button"
                   onClick={() => handleOpenAd(ad)}
                   className="flex flex-col items-center gap-1 shrink-0 group/circle cursor-pointer focus:outline-none w-[48px] sm:w-[56px]"
-                  style={{ scrollSnapAlign: 'start' }}
                   title={`${ad.name} - ${ad.tagline}`}
+                  style={{ scrollSnapAlign: 'start' }}
                 >
-                  {/* Circle Icon Container with Elegant Amber Story Ring */}
-                  <div className="relative w-11 h-11 sm:w-12 sm:h-12 rounded-full p-[1.5px] bg-gradient-to-tr from-amber-400 to-amber-500 group-hover/circle:from-amber-300 group-hover/circle:to-amber-400 transition-all duration-300 group-hover/circle:scale-105 shadow-sm">
-                    <div className="relative w-full h-full rounded-full overflow-hidden bg-zinc-900 border border-zinc-950">
+                  {/* Circular Avatar Container with Gold Luxury Border */}
+                  <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full p-[2px] bg-gradient-to-tr from-amber-500 via-yellow-300 to-amber-600 shadow-[0_0_10px_rgba(245,158,11,0.35)] group-hover/circle:shadow-[0_0_16px_rgba(245,158,11,0.65)] group-hover/circle:scale-105 transition-all duration-200">
+                    <div className="w-full h-full rounded-full overflow-hidden relative bg-black">
                       <Image
-                        src={ad.image}
+                        src={ad.image || '/opus-thumb.jpg'}
                         alt={ad.name}
                         fill
                         unoptimized
@@ -320,7 +261,7 @@ export function StickyAdsStrip() {
               <div className="flex items-center gap-2.5 min-w-0">
                 <div className="w-9 h-9 rounded-full overflow-hidden relative shrink-0 border border-amber-500/50">
                   <Image
-                    src={activeAd.image}
+                    src={activeAd.image || '/opus-thumb.jpg'}
                     alt={activeAd.name}
                     fill
                     unoptimized
@@ -333,7 +274,7 @@ export function StickyAdsStrip() {
                       {activeAd.name}
                     </h3>
                     <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-amber-500 text-zinc-950">
-                      Sponsored
+                      {activeAd.badge || 'Sponsored'}
                     </span>
                   </div>
                   <p className="text-xs text-zinc-400 truncate">{activeAd.category}</p>
@@ -374,13 +315,17 @@ export function StickyAdsStrip() {
                     }}
                     className="absolute bottom-3 right-3 px-2.5 py-1.5 rounded-xl bg-black/75 hover:bg-black text-white text-xs font-bold border border-white/20 backdrop-blur-sm flex items-center gap-1.5 transition cursor-pointer"
                   >
-                    {isVideoMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5 text-amber-400" />}
+                    {isVideoMuted ? (
+                      <VolumeX className="w-3.5 h-3.5" />
+                    ) : (
+                      <Volume2 className="w-3.5 h-3.5 text-amber-400" />
+                    )}
                     <span>{isVideoMuted ? 'Unmute' : 'Audio On'}</span>
                   </button>
                 </>
               ) : (
                 <Image
-                  src={activeAd.image}
+                  src={activeAd.image || '/opus-thumb.jpg'}
                   alt={activeAd.name}
                   fill
                   unoptimized
@@ -425,4 +370,3 @@ export function StickyAdsStrip() {
     </>
   );
 }
-

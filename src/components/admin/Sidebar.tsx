@@ -30,7 +30,8 @@ import {
   Settings,
   Globe,
   History,
-  Phone
+  Phone,
+  Crown
 } from 'lucide-react';
 
 interface NavItem {
@@ -78,6 +79,7 @@ export function Sidebar({
       group: 'WEBSITE',
       items: [
         { id: 'homepage-editor', label: 'Homepage Editor', icon: LayoutTemplate, hasDot: true },
+        { id: 'premium-ads', label: 'Premium & Client Ads', icon: Crown, hasDot: true, badge: 'Crown', badgeVariant: 'peach' },
         { id: 'pages', label: 'Pages', icon: FileText },
         { id: 'navigation', label: 'Navigation', icon: Navigation },
         { id: 'banners', label: 'Banners', icon: ImageIcon },

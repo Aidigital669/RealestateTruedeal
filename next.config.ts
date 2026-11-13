@@ -4,6 +4,9 @@ const nextConfig: NextConfig = {
   devIndicators: false,
   output: "standalone",
   serverExternalPackages: ['pdf-parse', '@napi-rs/canvas', 'pg'],
+  experimental: {
+    turbopackPluginRuntimeStrategy: 'workerThreads',
+  },
   images: {
     remotePatterns: [
       {
