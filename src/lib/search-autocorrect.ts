@@ -168,6 +168,7 @@ export const COMMON_TYPO_MAPPINGS: Record<string, string> = {
   balewady: 'Balewadi',
 
   // Wakad variants
+  wakd: 'Wakad',
   waakad: 'Wakad',
   wakadd: 'Wakad',
   wakda: 'Wakad',
@@ -260,6 +261,60 @@ export const COMMON_TYPO_MAPPINGS: Record<string, string> = {
   lodha: 'Lodha Group'
 };
 
+// 5. Valid Real Estate & English Domain Vocabulary (MUST NEVER be autocorrected into locations/typos)
+export const VALID_DOMAIN_WORDS = new Set<string>([
+  // Core user intents & action verbs
+  'i', 'me', 'my', 'we', 'our', 'us', 'you', 'your', 'he', 'she', 'they', 'it', 'its',
+  'need', 'needs', 'needed', 'needing',
+  'want', 'wants', 'wanted', 'wanting',
+  'look', 'looks', 'looking', 'looked',
+  'search', 'searches', 'searching', 'searched',
+  'find', 'finds', 'finding', 'found',
+  'show', 'shows', 'showing', 'showed',
+  'give', 'gives', 'giving', 'gave',
+  'get', 'gets', 'getting', 'got',
+  'have', 'has', 'having', 'had',
+  'buy', 'buyer', 'buyers', 'buying', 'bought',
+  'sell', 'seller', 'sellers', 'selling', 'sold',
+  'rent', 'renter', 'renters', 'renting', 'rented', 'rental', 'rentals',
+  'lease', 'leases', 'leased', 'leasing', 'preleased', 'prelease',
+  'invest', 'invests', 'investing', 'invested', 'investor', 'investors', 'investment', 'investments', 'roi', 'yield',
+  'purchase', 'purchases', 'purchasing', 'purchased',
+  'client', 'clients', 'customer', 'customers', 'lead', 'leads', 'deal', 'deals',
+  'broker', 'brokers', 'brokerage', 'agent', 'agents', 'advisor', 'advisors', 'consultant',
+
+  // Real estate typologies & categories
+  'property', 'properties', 'real', 'estate', 'realty', 'unit', 'units', 'space', 'spaces',
+  'flat', 'flats', 'apartment', 'apartments', 'house', 'houses', 'home', 'homes',
+  'villa', 'villas', 'rowhouse', 'rowhouses', 'bungalow', 'bungalows', 'tenement',
+  'penthouse', 'penthouses', 'studio', 'studios', 'duplex', 'simplex',
+  'office', 'offices', 'workspace', 'coworking', 'shop', 'shops', 'showroom', 'showrooms',
+  'retail', 'commercial', 'residential', 'industrial', 'warehouse', 'warehouses', 'godown', 'godowns',
+  'factory', 'factories', 'shed', 'sheds', 'plot', 'plots', 'land', 'lands',
+  'hospital', 'hospitals', 'clinic', 'clinics', 'hotel', 'restaurant', 'school', 'college',
+
+  // Configurations, metrics & features
+  'bhk', 'rk', 'bachelor', 'family', 'sqft', 'sq', 'ft', 'feet', 'meter', 'meters', 'sqm',
+  'acre', 'acres', 'guntha', 'gunthas', 'carpet', 'builtup', 'super', 'saleable',
+  'area', 'size', 'floor', 'floors', 'ground', 'top', 'balcony', 'terrace',
+  'parking', 'parkings', 'car', 'park', 'covered', 'open',
+  'furnish', 'furnished', 'unfurnished', 'semifurnished', 'bare', 'warm', 'fitted',
+  'ready', 'possession', 'under', 'construction', 'new', 'resale', 'old',
+  'rera', 'clear', 'title', 'sanctioned', 'approved', 'verified',
+
+  // Financial & Pricing
+  'price', 'prices', 'pricing', 'budget', 'budgets', 'rate', 'rates', 'cost', 'costs',
+  'value', 'valuation', 'outlay', 'cheapest', 'cheap', 'affordable', 'luxury', 'premium',
+  'cr', 'crore', 'crores', 'lakh', 'lakhs', 'lac', 'lacs', 'k', 'thousand', 'thousands',
+  'rupees', 'rs', 'inr', 'low', 'high', 'min', 'max',
+
+  // Common prepositions, conjunctions & grammar words
+  'a', 'an', 'the', 'in', 'at', 'on', 'near', 'by', 'to', 'from', 'for', 'with', 'without',
+  'under', 'above', 'below', 'between', 'around', 'about', 'and', 'or', 'nor', 'not', 'no',
+  'any', 'all', 'some', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
+  'can', 'could', 'will', 'would', 'should', 'must', 'urgent', 'immediately', 'soon'
+]);
+
 /**
  * Computes exact Levenshtein edit distance between string a and b.
  */
@@ -294,16 +349,29 @@ export function getLevenshteinDistance(a: string, b: string): number {
 }
 
 /**
- * Searches dictionary for the closest word matching input word within maxDistance.
+ * Searches dictionary for the closest word matching input word within allowed edit distance.
+ * Protected against corrupting valid domain vocabulary (e.g. "buyer" -> "Baner").
  */
 export function findClosestTypo(word: string, dictionary: string[], maxDistance = 2): string | null {
   const cleanWord = word.trim().toLowerCase();
   if (cleanWord.length < 3) return null;
 
+  // Never autocorrect recognized domain words or English language tokens
+  if (VALID_DOMAIN_WORDS.has(cleanWord)) {
+    return null;
+  }
+
   // Direct fast phonetic dictionary check
   if (COMMON_TYPO_MAPPINGS[cleanWord]) {
     return COMMON_TYPO_MAPPINGS[cleanWord];
   }
+
+  // Strict edit distance threshold based on word length:
+  // - Length 3-4: edit distance 0 (never fuzzy guess short words)
+  // - Length 5-6: strictly edit distance 1
+  // - Length 7+: edit distance up to maxDistance (max 2)
+  if (cleanWord.length < 5) return null;
+  const allowedDist = cleanWord.length <= 6 ? 1 : Math.min(2, maxDistance);
 
   let bestMatch: string | null = null;
   let minDistance = Infinity;
@@ -315,7 +383,6 @@ export function findClosestTypo(word: string, dictionary: string[], maxDistance 
     }
 
     const dist = getLevenshteinDistance(cleanWord, entryLower);
-    const allowedDist = cleanWord.length <= 4 ? 1 : maxDistance;
 
     if (dist <= allowedDist && dist < minDistance) {
       minDistance = dist;
@@ -327,8 +394,8 @@ export function findClosestTypo(word: string, dictionary: string[], maxDistance 
 }
 
 /**
- * Analyzes a full query string, checks for typos in words or phrases,
- * and returns the autocorrected suggestion if any typo was identified.
+ * Analyzes a full query string, checks for genuine typos in words or phrases,
+ * and returns the autocorrected suggestion only when a genuine misspelling exists.
  */
 export function detectQueryAutocorrect(
   rawQuery: string,
@@ -382,17 +449,24 @@ export function detectQueryAutocorrect(
     const cleanToken = token.replace(/[^a-zA-Z0-9]/g, '');
     if (cleanToken.length < 3) return token;
 
-    // Check direct typo map
-    const mapped = COMMON_TYPO_MAPPINGS[cleanToken.toLowerCase()];
-    if (mapped && mapped.toLowerCase() !== cleanToken.toLowerCase()) {
+    const lowerClean = cleanToken.toLowerCase();
+
+    // Guard: NEVER autocorrect recognized English or real-estate vocabulary
+    if (VALID_DOMAIN_WORDS.has(lowerClean)) {
+      return token;
+    }
+
+    // Check direct typo map (e.g. 'hinjwadi' -> 'Hinjewadi')
+    const mapped = COMMON_TYPO_MAPPINGS[lowerClean];
+    if (mapped && mapped.toLowerCase() !== lowerClean) {
       hasCorrection = true;
       replacedTerms.push({ original: token, corrected: mapped });
       return mapped;
     }
 
-    // Check Levenshtein fuzzy match
+    // Check Levenshtein fuzzy match with strict thresholds
     const closest = findClosestTypo(cleanToken, fullDictionary, 2);
-    if (closest && closest.toLowerCase() !== cleanToken.toLowerCase()) {
+    if (closest && closest.toLowerCase() !== lowerClean) {
       hasCorrection = true;
       replacedTerms.push({ original: token, corrected: closest });
       return closest;
