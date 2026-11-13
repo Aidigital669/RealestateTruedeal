@@ -2179,59 +2179,62 @@ export function HomepageSearchablePortal({
             </div>
 
             {/* Real-time Counts & View Mode Switcher */}
-            <div className="mt-2.5 sm:mt-3 pt-2.5 sm:pt-3 border-t border-zinc-100 flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5 sm:gap-2.5 text-xs flex-wrap min-w-0">
+            <div className="mt-2.5 sm:mt-3 pt-2.5 sm:pt-3 border-t border-zinc-100 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2.5 text-xs min-w-0">
                 <span
                   className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold bg-zinc-950 text-white select-none cursor-default shadow-xs shrink-0"
-                  title="Total properties matching search"
+                  title={`${sortedProperties.length} Verified Properties`}
+                  aria-label={`${sortedProperties.length} Properties`}
                 >
                   <Building2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                   <span className="flex items-center gap-1">
                     <span className="font-extrabold text-amber-400">{sortedProperties.length}</span>
-                    <span className="text-zinc-300 font-medium hidden min-[380px]:inline">Properties</span>
-                    <span className="text-zinc-300 font-medium min-[380px]:hidden">Props</span>
+                    <span className="text-zinc-300 font-medium hidden lg:inline">Properties</span>
                   </span>
                 </span>
 
                 <span
                   className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold bg-amber-500 text-zinc-950 select-none cursor-default shadow-xs shrink-0"
-                  title="Total buyers registered in Pune"
+                  title={`${filteredCatalogueBuyerDemands.length} Verified Buyers`}
+                  aria-label={`${filteredCatalogueBuyerDemands.length} Buyers`}
                 >
                   <Users className="w-3.5 h-3.5 text-zinc-950 shrink-0" />
                   <span className="flex items-center gap-1">
                     <span className="font-black text-zinc-950">{filteredCatalogueBuyerDemands.length}</span>
-                    <span className="text-zinc-900 font-semibold">Buyers</span>
+                    <span className="text-zinc-900 font-semibold hidden lg:inline">Buyers</span>
                   </span>
                 </span>
               </div>
 
-              {/* View Switcher: List vs Cards */}
+              {/* View Switcher: Only icons on mobile and tablet (< lg), icons + labels on desktop (>= lg) */}
               <div className="flex items-center gap-0.5 sm:gap-1 p-0.5 sm:p-1 bg-zinc-100 rounded-lg sm:rounded-xl border border-zinc-200/90 shadow-2xs shrink-0">
                 <button
                   type="button"
                   onClick={() => setPropertyViewMode('table')}
-                  className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md sm:rounded-lg text-[11px] sm:text-xs font-bold transition flex items-center gap-1 sm:gap-1.5 cursor-pointer ${
+                  className={`p-1.5 lg:px-3 lg:py-1.5 rounded-md sm:rounded-lg text-[11px] sm:text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                     propertyViewMode === 'table'
                       ? 'bg-zinc-950 text-white shadow-xs font-black'
                       : 'text-zinc-600 hover:text-zinc-950 hover:bg-white/80'
                   }`}
                   title="View as List"
+                  aria-label="View as List"
                 >
                   <List className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                  <span>List</span>
+                  <span className="hidden lg:inline">List</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setPropertyViewMode('paragraph')}
-                  className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md sm:rounded-lg text-[11px] sm:text-xs font-bold transition flex items-center gap-1 sm:gap-1.5 cursor-pointer ${
+                  className={`p-1.5 lg:px-3 lg:py-1.5 rounded-md sm:rounded-lg text-[11px] sm:text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                     propertyViewMode === 'paragraph'
                       ? 'bg-zinc-950 text-white shadow-xs font-black'
                       : 'text-zinc-600 hover:text-zinc-950 hover:bg-white/80'
                   }`}
                   title="View as Cards"
+                  aria-label="View as Cards"
                 >
                   <FileText className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                  <span>Cards</span>
+                  <span className="hidden lg:inline">Cards</span>
                 </button>
               </div>
 
