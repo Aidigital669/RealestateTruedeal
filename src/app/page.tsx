@@ -25,6 +25,15 @@ export const metadata: Metadata = {
 
 const fallbackProperties: PropertyItem[] = [];
 
+let cachedPageData: {
+  insights: BlogItem[];
+  dbLocs: any[];
+  dbTypes: any[];
+  dbStatuses: any[];
+  timestamp: number;
+} | null = null;
+const PAGE_CACHE_TTL = 60 * 1000; // 60s in-memory cache for ultra-fast response
+
 const fallbackInsights: BlogItem[] = [
   {
     id: 'blog-1',
@@ -72,37 +81,65 @@ export default async function Home(props: {
   let properties: PropertyItem[] = fallbackProperties;
   let insights: BlogItem[] = fallbackInsights;
 
+  const now = Date.now();
+  let dbLocs: any[] = [];
+  let dbTypes: any[] = [];
+  let dbStatuses: any[] = [];
+
   try {
-    // 1. Fetch live properties from PostgreSQL database with business purposes and listing type
-    properties = await fetchAllProperties();
+    if (cachedPageData && (now - cachedPageData.timestamp < PAGE_CACHE_TTL)) {
+      properties = await fetchAllProperties();
+      insights = cachedPageData.insights;
+      dbLocs = cachedPageData.dbLocs;
+      dbTypes = cachedPageData.dbTypes;
+      dbStatuses = cachedPageData.dbStatuses;
+    } else {
+      const [fetchedProps, fetchedBlogs, fetchedLocs, fetchedTypes, fetchedStatuses] = await Promise.all([
+        fetchAllProperties(),
+        query(`
+          SELECT 
+            b.id, b.title, COALESCE(b.excerpt, b.content) as description,
+            COALESCE(b."featuredImage", 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80') as image,
+            COALESCE(c.name, 'Market Report') as category,
+            COALESCE(b."authorName", 'ANV Research') as author
+          FROM "Blog" b
+          LEFT JOIN "BlogCategory" c ON b."categoryId" = c.id
+          ORDER BY b."createdAt" DESC
+          LIMIT 6;
+        `),
+        query(`SELECT DISTINCT name FROM "Location" WHERE name IS NOT NULL AND TRIM(name) != '' ORDER BY name ASC;`),
+        query(`SELECT DISTINCT name FROM "PropertyType" WHERE name IS NOT NULL AND TRIM(name) != '' ORDER BY name ASC;`),
+        query(`SELECT DISTINCT status FROM "Property" WHERE status IS NOT NULL AND TRIM(status) != '' AND status != 'Draft';`)
+      ]);
 
+      properties = fetchedProps;
+      dbLocs = fetchedLocs || [];
+      dbTypes = fetchedTypes || [];
+      dbStatuses = fetchedStatuses || [];
 
-    // 2. Fetch live blogs from PostgreSQL database
-    const dbBlogs = await query(`
-      SELECT 
-        b.id, b.title, COALESCE(b.excerpt, b.content) as description,
-        COALESCE(b."featuredImage", 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80') as image,
-        COALESCE(c.name, 'Market Report') as category,
-        COALESCE(b."authorName", 'ANV Research') as author
-      FROM "Blog" b
-      LEFT JOIN "BlogCategory" c ON b."categoryId" = c.id
-      ORDER BY b."createdAt" DESC
-      LIMIT 6;
-    `);
+      if (fetchedBlogs && fetchedBlogs.length > 0) {
+        insights = fetchedBlogs.map((b: any) => ({
+          id: String(b.id),
+          title: b.title,
+          description: b.description,
+          image: b.image,
+          category: b.category,
+          author: b.author,
+          readTime: "6 min read"
+        }));
+      }
 
-    if (dbBlogs && dbBlogs.length > 0) {
-      insights = dbBlogs.map((b: any) => ({
-        id: String(b.id),
-        title: b.title,
-        description: b.description,
-        image: b.image,
-        category: b.category,
-        author: b.author,
-        readTime: "6 min read"
-      }));
+      cachedPageData = {
+        insights,
+        dbLocs,
+        dbTypes,
+        dbStatuses,
+        timestamp: now
+      };
     }
   } catch (error) {
     console.log("Database connection fallback to curated properties & insights:", error);
+    properties = await fetchAllProperties().catch(() => fallbackProperties);
   }
 
   // 3. Dynamic Filter Options: automatically increase as per products in database
@@ -121,7 +158,6 @@ export default async function Home(props: {
   ]);
 
   const dynamicTypologiesList = [
-
     { value: "Commercial Office", label: "Office Space" },
     { value: "Hospital / Healthcare", label: "Hospital / Healthcare" },
     { value: "1 BHK", label: "1 BHK" },
@@ -138,13 +174,7 @@ export default async function Home(props: {
   ]);
 
   try {
-    const [dbLocs, dbTypes, dbStatuses] = await Promise.all([
-      query(`SELECT DISTINCT name FROM "Location" WHERE name IS NOT NULL AND TRIM(name) != '' ORDER BY name ASC;`),
-      query(`SELECT DISTINCT name FROM "PropertyType" WHERE name IS NOT NULL AND TRIM(name) != '' ORDER BY name ASC;`),
-      query(`SELECT DISTINCT status FROM "Property" WHERE status IS NOT NULL AND TRIM(status) != '' AND status != 'Draft';`)
-    ]);
-
-    dbLocs?.forEach((r: any) => {
+    dbLocs.forEach((r: any) => {
       if (r.name && r.name.trim()) dynamicLocalitiesSet.add(r.name.trim());
     });
 
@@ -153,7 +183,7 @@ export default async function Home(props: {
     });
 
     const seenTypes = new Set(dynamicTypologiesList.map((t) => t.value.toLowerCase()));
-    dbTypes?.forEach((r: any) => {
+    dbTypes.forEach((r: any) => {
       const name = r.name?.trim();
       if (name && !seenTypes.has(name.toLowerCase()) && !name.toLowerCase().includes("commercial")) {
         seenTypes.add(name.toLowerCase());
@@ -161,7 +191,7 @@ export default async function Home(props: {
       }
     });
 
-    dbStatuses?.forEach((r: any) => {
+    dbStatuses.forEach((r: any) => {
       if (r.status && r.status.trim()) dynamicStatusesSet.add(r.status.trim());
     });
 
@@ -169,7 +199,7 @@ export default async function Home(props: {
       if (p.status && p.status.trim()) dynamicStatusesSet.add(p.status.trim());
     });
   } catch (err) {
-    console.log("Filter options query fallback:", err);
+    console.log("Filter options processing error:", err);
   }
 
   const initialFilterOptions = {

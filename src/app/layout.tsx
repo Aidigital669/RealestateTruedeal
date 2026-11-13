@@ -31,7 +31,7 @@ export const metadata: Metadata = {
   },
   description: "Anv Reealty - Pune's premier luxury real estate advisory and verified buyer-seller marketplace for residential apartments, penthouses, and commercial spaces.",
   alternates: {
-    canonical: './',
+    canonical: '/',
   },
   icons: {
     icon: "/LogoAnv-original.png",
@@ -52,11 +52,19 @@ export const metadata: Metadata = {
   },
 };
 
+import dynamic from 'next/dynamic';
 import { PropertyComparisonProvider } from "@/context/PropertyComparisonContext";
 import { SavedPropertiesProvider } from "@/context/SavedPropertiesContext";
-import { FloatingCompareBar } from "@/components/public/FloatingCompareBar";
 import { StickyAdsStrip } from "@/components/public/StickyAdsStrip";
-import { TimedEnquiryModal } from "@/components/public/TimedEnquiryModal";
+
+const FloatingCompareBar = dynamic(
+  () => import('@/components/public/FloatingCompareBar').then((m) => m.FloatingCompareBar),
+  { ssr: false }
+);
+const TimedEnquiryModal = dynamic(
+  () => import('@/components/public/TimedEnquiryModal').then((m) => m.TimedEnquiryModal),
+  { ssr: false }
+);
 
 export default function RootLayout({
   children,
@@ -78,12 +86,12 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col w-full max-w-full" suppressHydrationWarning>
         {/* Google tag (gtag.js) */}
         <Script
-          strategy="afterInteractive"
+          strategy="lazyOnload"
           src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
         />
         <Script
           id="google-tag-gtag"
-          strategy="afterInteractive"
+          strategy="lazyOnload"
         >
           {`
             window.dataLayer = window.dataLayer || [];

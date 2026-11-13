@@ -16,9 +16,7 @@ export const pool =
     connectionTimeoutMillis: 10000
   });
 
-if (process.env.NODE_ENV !== 'production') {
-  globalForPg.pgPool = pool;
-}
+globalForPg.pgPool = pool;
 
 export async function query<T = any>(text: string, params?: any[]): Promise<T[]> {
   const res = await pool.query(text, params);

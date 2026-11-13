@@ -7,8 +7,19 @@ import { parseDossierData, getDefaultHighlights, getDefaultConnectivity } from '
 export type { PropertyItem };
 export { ALL_FALLBACK_PROPERTIES };
 
+let cachedProperties: { data: PropertyItem[]; timestamp: number } | null = null;
+const CACHE_TTL_MS = 60 * 1000; // 60s in-memory cache for ultra-fast page loads
 
-export async function fetchAllProperties(): Promise<PropertyItem[]> {
+export function clearPropertyCache() {
+  cachedProperties = null;
+}
+
+export async function fetchAllProperties(forceFresh = false): Promise<PropertyItem[]> {
+  const now = Date.now();
+  if (!forceFresh && cachedProperties && now - cachedProperties.timestamp < CACHE_TTL_MS) {
+    return cachedProperties.data;
+  }
+
   try {
     const dbProps = await query(`
       SELECT 
@@ -39,7 +50,7 @@ export async function fetchAllProperties(): Promise<PropertyItem[]> {
       const propIds = dbProps.map((p: any) => p.id);
       const purposesMap = await getPurposesForProperties(propIds);
 
-      return dbProps.map((p: any) => {
+      const mapped: PropertyItem[] = dbProps.map((p: any) => {
         const numPrice = Number(p.price) || 15000000;
         const formattedPrice =
           numPrice >= 10000000
@@ -163,6 +174,9 @@ export async function fetchAllProperties(): Promise<PropertyItem[]> {
           businessPurposes: purposesMap[String(p.id)] || []
         };
       });
+
+      cachedProperties = { data: mapped, timestamp: Date.now() };
+      return mapped;
     }
   } catch (err) {
     console.warn("DB property fetch fallback:", err);
