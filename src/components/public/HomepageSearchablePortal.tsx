@@ -313,8 +313,8 @@ const PropertyCard = React.memo(function PropertyCard({
                   !/anv\s*(signature\s*partner|verified\s*developer|partner\s*developer)/i.test(property.developer) && (
                     <span
                       className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border ${property.isCommercial || property.bhk.includes('Commercial')
-                          ? 'text-blue-950 bg-blue-50 border-blue-200/60'
-                          : 'text-amber-800 bg-amber-50 border-amber-200/60'
+                        ? 'text-blue-950 bg-blue-50 border-blue-200/60'
+                        : 'text-amber-800 bg-amber-50 border-amber-200/60'
                         }`}
                     >
                       {property.developer}
@@ -379,8 +379,8 @@ const PropertyCard = React.memo(function PropertyCard({
               </span>
               <span
                 className={`font-extrabold mt-0.5 block truncate ${property.isCommercial || property.bhk.includes('Commercial')
-                    ? 'text-blue-950 font-black'
-                    : 'text-zinc-900'
+                  ? 'text-blue-950 font-black'
+                  : 'text-zinc-900'
                   }`}
               >
                 {property.bhk}
@@ -1051,7 +1051,7 @@ export function HomepageSearchablePortal({
             }
           }
         })
-        .catch(() => {});
+        .catch(() => { });
     }, 150);
 
     return () => clearTimeout(timer);
@@ -1716,284 +1716,272 @@ export function HomepageSearchablePortal({
           onClick={() => setActiveHeaderDropdown(null)}
         />
         <div className="w-full sm:w-88 p-3.5 sm:p-4 bg-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.25)] border border-zinc-200 ring-1 ring-black/5 animate-in fade-in zoom-in-95 duration-150 font-normal select-none text-left space-y-2.5 z-[100] relative text-zinc-900">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-zinc-100 pb-2">
-          <div className="text-xs font-black text-zinc-900 uppercase tracking-wider flex items-center gap-1.5">
-            <ArrowUpDown className="w-3.5 h-3.5 text-amber-600" />
-            <span>Sort Properties</span>
-          </div>
-          <div className="flex items-center gap-2">
-            {sortBy !== 'price_low' && (
+          {/* Header */}
+          <div className="flex items-center justify-between border-b border-zinc-100 pb-2">
+            <div className="text-xs font-black text-zinc-900 uppercase tracking-wider flex items-center gap-1.5">
+              <ArrowUpDown className="w-3.5 h-3.5 text-amber-600" />
+              <span>Sort Properties</span>
+            </div>
+            <div className="flex items-center gap-2">
+              {sortBy !== 'price_low' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSortBy('price_low');
+                    setExpandedSortCategory(null);
+                    setActiveHeaderDropdown(null);
+                  }}
+                  className="text-[11px] font-bold text-amber-700 hover:text-amber-800 cursor-pointer"
+                >
+                  Reset (Low to High)
+                </button>
+              )}
               <button
                 type="button"
-                onClick={() => {
-                  setSortBy('price_low');
-                  setExpandedSortCategory(null);
-                  setActiveHeaderDropdown(null);
-                }}
-                className="text-[11px] font-bold text-amber-700 hover:text-amber-800 cursor-pointer"
+                onClick={() => setActiveHeaderDropdown(null)}
+                className="p-1 -mr-1 text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 rounded-lg transition cursor-pointer"
+                aria-label="Close sort menu"
               >
-                Reset (Low to High)
+                <X className="w-4 h-4" />
               </button>
-            )}
+            </div>
+          </div>
+
+          {/* 1. Price */}
+          <div className={`rounded-xl border transition-all ${expandedSortCategory === 'price' ? 'border-amber-400/80 bg-amber-50/20 shadow-xs' : 'border-zinc-200/80 bg-zinc-50/70 hover:bg-zinc-100/60'}`}>
             <button
               type="button"
-              onClick={() => setActiveHeaderDropdown(null)}
-              className="p-1 -mr-1 text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 rounded-lg transition cursor-pointer"
-              aria-label="Close sort menu"
+              onClick={() => toggleCategory('price')}
+              className="w-full p-2.5 flex items-center justify-between text-left cursor-pointer group"
             >
-              <X className="w-4 h-4" />
+              <div className="flex items-center gap-2 min-w-0">
+                <Tag className="w-4 h-4 text-amber-600 shrink-0" />
+                <span className="text-xs font-bold text-zinc-900 truncate">1. Price</span>
+                {getActiveBadge('price') && (
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 shrink-0">
+                    {getActiveBadge('price')}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-1 shrink-0 ml-2">
+                <ChevronDown
+                  className={`w-4 h-4 text-zinc-400 group-hover:text-amber-600 transition-transform duration-200 ${expandedSortCategory === 'price' ? 'rotate-180 text-amber-600' : ''
+                    }`}
+                />
+              </div>
             </button>
+
+            {expandedSortCategory === 'price' && (
+              <div className="p-2.5 pt-0 border-t border-amber-100/80 mt-1 grid grid-cols-2 gap-1.5 text-xs animate-in fade-in duration-150">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSortBy('price_low');
+                    setActiveHeaderDropdown(null);
+                  }}
+                  className={`px-2.5 py-2 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${sortBy === 'price_low'
+                    ? 'bg-amber-500 font-black text-zinc-950 shadow-xs'
+                    : 'bg-white hover:bg-zinc-100 text-zinc-700 border border-zinc-200/80'
+                    }`}
+                >
+                  <span>Low to High (Default)</span>
+                  {sortBy === 'price_low' && <Check className="w-3.5 h-3.5 text-zinc-950 stroke-[2.5]" />}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSortBy('price_high');
+                    setActiveHeaderDropdown(null);
+                  }}
+                  className={`px-2.5 py-2 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${sortBy === 'price_high'
+                    ? 'bg-amber-500 font-black text-zinc-950 shadow-xs'
+                    : 'bg-white hover:bg-zinc-100 text-zinc-700 border border-zinc-200/80'
+                    }`}
+                >
+                  <span>High to Low</span>
+                  {sortBy === 'price_high' && <Check className="w-3.5 h-3.5 text-zinc-950 stroke-[2.5]" />}
+                </button>
+              </div>
+            )}
           </div>
-        </div>
 
-        {/* 1. Price */}
-        <div className={`rounded-xl border transition-all ${expandedSortCategory === 'price' ? 'border-amber-400/80 bg-amber-50/20 shadow-xs' : 'border-zinc-200/80 bg-zinc-50/70 hover:bg-zinc-100/60'}`}>
-          <button
-            type="button"
-            onClick={() => toggleCategory('price')}
-            className="w-full p-2.5 flex items-center justify-between text-left cursor-pointer group"
-          >
-            <div className="flex items-center gap-2 min-w-0">
-              <Tag className="w-4 h-4 text-amber-600 shrink-0" />
-              <span className="text-xs font-bold text-zinc-900 truncate">1. Price</span>
-              {getActiveBadge('price') && (
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 shrink-0">
-                  {getActiveBadge('price')}
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-1 shrink-0 ml-2">
-              <ChevronDown
-                className={`w-4 h-4 text-zinc-400 group-hover:text-amber-600 transition-transform duration-200 ${
-                  expandedSortCategory === 'price' ? 'rotate-180 text-amber-600' : ''
-                }`}
-              />
-            </div>
-          </button>
+          {/* 2. Building Name */}
+          <div className={`rounded-xl border transition-all ${expandedSortCategory === 'name' ? 'border-amber-400/80 bg-amber-50/20 shadow-xs' : 'border-zinc-200/80 bg-zinc-50/70 hover:bg-zinc-100/60'}`}>
+            <button
+              type="button"
+              onClick={() => toggleCategory('name')}
+              className="w-full p-2.5 flex items-center justify-between text-left cursor-pointer group"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <Building2 className="w-4 h-4 text-amber-600 shrink-0" />
+                <span className="text-xs font-bold text-zinc-900 truncate">2. Building Name</span>
+                {getActiveBadge('name') && (
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 shrink-0">
+                    {getActiveBadge('name')}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-1 shrink-0 ml-2">
+                <ChevronDown
+                  className={`w-4 h-4 text-zinc-400 group-hover:text-amber-600 transition-transform duration-200 ${expandedSortCategory === 'name' ? 'rotate-180 text-amber-600' : ''
+                    }`}
+                />
+              </div>
+            </button>
 
-          {expandedSortCategory === 'price' && (
-            <div className="p-2.5 pt-0 border-t border-amber-100/80 mt-1 grid grid-cols-2 gap-1.5 text-xs animate-in fade-in duration-150">
-              <button
-                type="button"
-                onClick={() => {
-                  setSortBy('price_low');
-                  setActiveHeaderDropdown(null);
-                }}
-                className={`px-2.5 py-2 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${
-                  sortBy === 'price_low'
+            {expandedSortCategory === 'name' && (
+              <div className="p-2.5 pt-0 border-t border-amber-100/80 mt-1 grid grid-cols-2 gap-1.5 text-xs animate-in fade-in duration-150">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSortBy('name_asc');
+                    setActiveHeaderDropdown(null);
+                  }}
+                  className={`px-2.5 py-2 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${sortBy === 'name_asc'
                     ? 'bg-amber-500 font-black text-zinc-950 shadow-xs'
                     : 'bg-white hover:bg-zinc-100 text-zinc-700 border border-zinc-200/80'
-                }`}
-              >
-                <span>Low to High (Default)</span>
-                {sortBy === 'price_low' && <Check className="w-3.5 h-3.5 text-zinc-950 stroke-[2.5]" />}
-              </button>
+                    }`}
+                >
+                  <span>A → Z</span>
+                  {sortBy === 'name_asc' && <Check className="w-3.5 h-3.5 text-zinc-950 stroke-[2.5]" />}
+                </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setSortBy('price_high');
-                  setActiveHeaderDropdown(null);
-                }}
-                className={`px-2.5 py-2 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${
-                  sortBy === 'price_high'
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSortBy('name_desc');
+                    setActiveHeaderDropdown(null);
+                  }}
+                  className={`px-2.5 py-2 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${sortBy === 'name_desc'
                     ? 'bg-amber-500 font-black text-zinc-950 shadow-xs'
                     : 'bg-white hover:bg-zinc-100 text-zinc-700 border border-zinc-200/80'
-                }`}
-              >
-                <span>High to Low</span>
-                {sortBy === 'price_high' && <Check className="w-3.5 h-3.5 text-zinc-950 stroke-[2.5]" />}
-              </button>
-            </div>
-          )}
-        </div>
+                    }`}
+                >
+                  <span>Z → A</span>
+                  {sortBy === 'name_desc' && <Check className="w-3.5 h-3.5 text-zinc-950 stroke-[2.5]" />}
+                </button>
+              </div>
+            )}
+          </div>
 
-        {/* 2. Building Name */}
-        <div className={`rounded-xl border transition-all ${expandedSortCategory === 'name' ? 'border-amber-400/80 bg-amber-50/20 shadow-xs' : 'border-zinc-200/80 bg-zinc-50/70 hover:bg-zinc-100/60'}`}>
-          <button
-            type="button"
-            onClick={() => toggleCategory('name')}
-            className="w-full p-2.5 flex items-center justify-between text-left cursor-pointer group"
-          >
-            <div className="flex items-center gap-2 min-w-0">
-              <Building2 className="w-4 h-4 text-amber-600 shrink-0" />
-              <span className="text-xs font-bold text-zinc-900 truncate">2. Building Name</span>
-              {getActiveBadge('name') && (
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 shrink-0">
-                  {getActiveBadge('name')}
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-1 shrink-0 ml-2">
-              <ChevronDown
-                className={`w-4 h-4 text-zinc-400 group-hover:text-amber-600 transition-transform duration-200 ${
-                  expandedSortCategory === 'name' ? 'rotate-180 text-amber-600' : ''
-                }`}
-              />
-            </div>
-          </button>
+          {/* 3. Location */}
+          <div className={`rounded-xl border transition-all ${expandedSortCategory === 'location' ? 'border-amber-400/80 bg-amber-50/20 shadow-xs' : 'border-zinc-200/80 bg-zinc-50/70 hover:bg-zinc-100/60'}`}>
+            <button
+              type="button"
+              onClick={() => toggleCategory('location')}
+              className="w-full p-2.5 flex items-center justify-between text-left cursor-pointer group"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <MapPin className="w-4 h-4 text-amber-600 shrink-0" />
+                <span className="text-xs font-bold text-zinc-900 truncate">3. Location</span>
+                {getActiveBadge('location') && (
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 shrink-0">
+                    {getActiveBadge('location')}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-1 shrink-0 ml-2">
+                <ChevronDown
+                  className={`w-4 h-4 text-zinc-400 group-hover:text-amber-600 transition-transform duration-200 ${expandedSortCategory === 'location' ? 'rotate-180 text-amber-600' : ''
+                    }`}
+                />
+              </div>
+            </button>
 
-          {expandedSortCategory === 'name' && (
-            <div className="p-2.5 pt-0 border-t border-amber-100/80 mt-1 grid grid-cols-2 gap-1.5 text-xs animate-in fade-in duration-150">
-              <button
-                type="button"
-                onClick={() => {
-                  setSortBy('name_asc');
-                  setActiveHeaderDropdown(null);
-                }}
-                className={`px-2.5 py-2 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${
-                  sortBy === 'name_asc'
+            {expandedSortCategory === 'location' && (
+              <div className="p-2.5 pt-0 border-t border-amber-100/80 mt-1 grid grid-cols-2 gap-1.5 text-xs animate-in fade-in duration-150">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSortBy('locality_asc');
+                    setActiveHeaderDropdown(null);
+                  }}
+                  className={`px-2.5 py-2 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${sortBy === 'locality_asc'
                     ? 'bg-amber-500 font-black text-zinc-950 shadow-xs'
                     : 'bg-white hover:bg-zinc-100 text-zinc-700 border border-zinc-200/80'
-                }`}
-              >
-                <span>A → Z</span>
-                {sortBy === 'name_asc' && <Check className="w-3.5 h-3.5 text-zinc-950 stroke-[2.5]" />}
-              </button>
+                    }`}
+                >
+                  <span>A → Z</span>
+                  {sortBy === 'locality_asc' && <Check className="w-3.5 h-3.5 text-zinc-950 stroke-[2.5]" />}
+                </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setSortBy('name_desc');
-                  setActiveHeaderDropdown(null);
-                }}
-                className={`px-2.5 py-2 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${
-                  sortBy === 'name_desc'
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSortBy('locality_desc');
+                    setActiveHeaderDropdown(null);
+                  }}
+                  className={`px-2.5 py-2 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${sortBy === 'locality_desc'
                     ? 'bg-amber-500 font-black text-zinc-950 shadow-xs'
                     : 'bg-white hover:bg-zinc-100 text-zinc-700 border border-zinc-200/80'
-                }`}
-              >
-                <span>Z → A</span>
-                {sortBy === 'name_desc' && <Check className="w-3.5 h-3.5 text-zinc-950 stroke-[2.5]" />}
-              </button>
-            </div>
-          )}
-        </div>
+                    }`}
+                >
+                  <span>Z → A</span>
+                  {sortBy === 'locality_desc' && <Check className="w-3.5 h-3.5 text-zinc-950 stroke-[2.5]" />}
+                </button>
+              </div>
+            )}
+          </div>
 
-        {/* 3. Location */}
-        <div className={`rounded-xl border transition-all ${expandedSortCategory === 'location' ? 'border-amber-400/80 bg-amber-50/20 shadow-xs' : 'border-zinc-200/80 bg-zinc-50/70 hover:bg-zinc-100/60'}`}>
-          <button
-            type="button"
-            onClick={() => toggleCategory('location')}
-            className="w-full p-2.5 flex items-center justify-between text-left cursor-pointer group"
-          >
-            <div className="flex items-center gap-2 min-w-0">
-              <MapPin className="w-4 h-4 text-amber-600 shrink-0" />
-              <span className="text-xs font-bold text-zinc-900 truncate">3. Location</span>
-              {getActiveBadge('location') && (
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 shrink-0">
-                  {getActiveBadge('location')}
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-1 shrink-0 ml-2">
-              <ChevronDown
-                className={`w-4 h-4 text-zinc-400 group-hover:text-amber-600 transition-transform duration-200 ${
-                  expandedSortCategory === 'location' ? 'rotate-180 text-amber-600' : ''
-                }`}
-              />
-            </div>
-          </button>
+          {/* 4. Area (Sq.Ft.) */}
+          <div className={`rounded-xl border transition-all ${expandedSortCategory === 'area' ? 'border-amber-400/80 bg-amber-50/20 shadow-xs' : 'border-zinc-200/80 bg-zinc-50/70 hover:bg-zinc-100/60'}`}>
+            <button
+              type="button"
+              onClick={() => toggleCategory('area')}
+              className="w-full p-2.5 flex items-center justify-between text-left cursor-pointer group"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <Grid className="w-4 h-4 text-amber-600 shrink-0" />
+                <span className="text-xs font-bold text-zinc-900 truncate">4. Area (Sq.Ft.)</span>
+                {getActiveBadge('area') && (
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 shrink-0">
+                    {getActiveBadge('area')}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-1 shrink-0 ml-2">
+                <ChevronDown
+                  className={`w-4 h-4 text-zinc-400 group-hover:text-amber-600 transition-transform duration-200 ${expandedSortCategory === 'area' ? 'rotate-180 text-amber-600' : ''
+                    }`}
+                />
+              </div>
+            </button>
 
-          {expandedSortCategory === 'location' && (
-            <div className="p-2.5 pt-0 border-t border-amber-100/80 mt-1 grid grid-cols-2 gap-1.5 text-xs animate-in fade-in duration-150">
-              <button
-                type="button"
-                onClick={() => {
-                  setSortBy('locality_asc');
-                  setActiveHeaderDropdown(null);
-                }}
-                className={`px-2.5 py-2 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${
-                  sortBy === 'locality_asc'
+            {expandedSortCategory === 'area' && (
+              <div className="p-2.5 pt-0 border-t border-amber-100/80 mt-1 grid grid-cols-2 gap-1.5 text-xs animate-in fade-in duration-150">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSortBy('size_low');
+                    setActiveHeaderDropdown(null);
+                  }}
+                  className={`px-2.5 py-2 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${sortBy === 'size_low' || sortBy === 'area_low'
                     ? 'bg-amber-500 font-black text-zinc-950 shadow-xs'
                     : 'bg-white hover:bg-zinc-100 text-zinc-700 border border-zinc-200/80'
-                }`}
-              >
-                <span>A → Z</span>
-                {sortBy === 'locality_asc' && <Check className="w-3.5 h-3.5 text-zinc-950 stroke-[2.5]" />}
-              </button>
+                    }`}
+                >
+                  <span>Low to High</span>
+                  {(sortBy === 'size_low' || sortBy === 'area_low') && <Check className="w-3.5 h-3.5 text-zinc-950 stroke-[2.5]" />}
+                </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setSortBy('locality_desc');
-                  setActiveHeaderDropdown(null);
-                }}
-                className={`px-2.5 py-2 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${
-                  sortBy === 'locality_desc'
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSortBy('size_high');
+                    setActiveHeaderDropdown(null);
+                  }}
+                  className={`px-2.5 py-2 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${sortBy === 'size_high' || sortBy === 'area_high'
                     ? 'bg-amber-500 font-black text-zinc-950 shadow-xs'
                     : 'bg-white hover:bg-zinc-100 text-zinc-700 border border-zinc-200/80'
-                }`}
-              >
-                <span>Z → A</span>
-                {sortBy === 'locality_desc' && <Check className="w-3.5 h-3.5 text-zinc-950 stroke-[2.5]" />}
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* 4. Area (Sq.Ft.) */}
-        <div className={`rounded-xl border transition-all ${expandedSortCategory === 'area' ? 'border-amber-400/80 bg-amber-50/20 shadow-xs' : 'border-zinc-200/80 bg-zinc-50/70 hover:bg-zinc-100/60'}`}>
-          <button
-            type="button"
-            onClick={() => toggleCategory('area')}
-            className="w-full p-2.5 flex items-center justify-between text-left cursor-pointer group"
-          >
-            <div className="flex items-center gap-2 min-w-0">
-              <Grid className="w-4 h-4 text-amber-600 shrink-0" />
-              <span className="text-xs font-bold text-zinc-900 truncate">4. Area (Sq.Ft.)</span>
-              {getActiveBadge('area') && (
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 shrink-0">
-                  {getActiveBadge('area')}
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-1 shrink-0 ml-2">
-              <ChevronDown
-                className={`w-4 h-4 text-zinc-400 group-hover:text-amber-600 transition-transform duration-200 ${
-                  expandedSortCategory === 'area' ? 'rotate-180 text-amber-600' : ''
-                }`}
-              />
-            </div>
-          </button>
-
-          {expandedSortCategory === 'area' && (
-            <div className="p-2.5 pt-0 border-t border-amber-100/80 mt-1 grid grid-cols-2 gap-1.5 text-xs animate-in fade-in duration-150">
-              <button
-                type="button"
-                onClick={() => {
-                  setSortBy('size_low');
-                  setActiveHeaderDropdown(null);
-                }}
-                className={`px-2.5 py-2 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${
-                  sortBy === 'size_low' || sortBy === 'area_low'
-                    ? 'bg-amber-500 font-black text-zinc-950 shadow-xs'
-                    : 'bg-white hover:bg-zinc-100 text-zinc-700 border border-zinc-200/80'
-                }`}
-              >
-                <span>Low to High</span>
-                {(sortBy === 'size_low' || sortBy === 'area_low') && <Check className="w-3.5 h-3.5 text-zinc-950 stroke-[2.5]" />}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setSortBy('size_high');
-                  setActiveHeaderDropdown(null);
-                }}
-                className={`px-2.5 py-2 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${
-                  sortBy === 'size_high' || sortBy === 'area_high'
-                    ? 'bg-amber-500 font-black text-zinc-950 shadow-xs'
-                    : 'bg-white hover:bg-zinc-100 text-zinc-700 border border-zinc-200/80'
-                }`}
-              >
-                <span>High to Low</span>
-                {(sortBy === 'size_high' || sortBy === 'area_high') && <Check className="w-3.5 h-3.5 text-zinc-950 stroke-[2.5]" />}
-              </button>
-            </div>
-          )}
-        </div>
+                    }`}
+                >
+                  <span>High to Low</span>
+                  {(sortBy === 'size_high' || sortBy === 'area_high') && <Check className="w-3.5 h-3.5 text-zinc-950 stroke-[2.5]" />}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </>
     );
@@ -2018,15 +2006,15 @@ export function HomepageSearchablePortal({
         id="search-results-section"
         className="w-full max-w-full pt-0"
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 w-full">
+        <div className="max-w-7xl mx-auto px-1.5 sm:px-3 lg:px-8 pb-10 sm:pb-12 w-full">
           {/* ================= SEARCH BAR ONLY ================= */}
           <div
             id="properties-search-bar"
-            className="sticky top-0 sm:top-2 scroll-mt-4 sm:scroll-mt-6 z-35 w-full bg-white/95 backdrop-blur-md rounded-2xl shadow-md hover:shadow-lg border border-zinc-200/90 p-2.5 sm:p-4 mb-6 sm:mb-8 transition-all"
+            className="sticky top-0 sm:top-2 scroll-mt-4 sm:scroll-mt-6 z-35 w-full bg-white/95 backdrop-blur-md rounded-xl sm:rounded-2xl shadow-md hover:shadow-lg border border-zinc-200/90 p-2 sm:p-2.5 lg:p-4 mb-4 sm:mb-6 lg:mb-8 transition-all"
           >
             <div className="flex items-center gap-2 sm:gap-3">
               <div ref={searchContainerRef} className="relative flex-1 min-w-0">
-                <Search className="w-4 h-4 text-amber-500 absolute left-3 sm:left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <Search className="w-4 h-4 text-amber-500 absolute left-2.5 sm:left-3 lg:left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   id="main-search-input"
                   type="text"
@@ -2049,7 +2037,7 @@ export function HomepageSearchablePortal({
                   }
                   title="Search properties and buyers by location, type, budget or requirements..."
                   aria-label="Search properties and buyers by location, type, budget or requirements..."
-                  className="w-full bg-zinc-50 border border-zinc-200 hover:border-zinc-300 focus:border-amber-500 focus:bg-white focus:ring-2 focus:ring-amber-500/20 rounded-xl pl-9 sm:pl-10 pr-9 sm:pr-10 py-2 sm:py-3 text-base sm:text-sm font-medium text-zinc-900 placeholder:text-zinc-400 placeholder:text-xs sm:placeholder:text-sm placeholder:truncate outline-none transition"
+                  className="w-full bg-zinc-50 border border-zinc-200 hover:border-zinc-300 focus:border-amber-500 focus:bg-white focus:ring-2 focus:ring-amber-500/20 rounded-xl pl-8 sm:pl-9 lg:pl-10 pr-8 sm:pr-9 lg:pr-10 py-2 sm:py-2.5 lg:py-3 text-base sm:text-sm font-medium text-zinc-900 placeholder:text-zinc-400 placeholder:text-xs sm:placeholder:text-sm placeholder:truncate outline-none transition"
                 />
                 {catalogueSearch && (
                   <button
@@ -2064,7 +2052,7 @@ export function HomepageSearchablePortal({
                       setSearchSuggestions([]);
                       setDidYouMean(null);
                     }}
-                    className="absolute right-2.5 sm:right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700 active:bg-zinc-200/80 w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold cursor-pointer transition"
+                    className="absolute right-2 sm:right-2.5 lg:right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700 active:bg-zinc-200/80 w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold cursor-pointer transition"
                     title="Clear search"
                   >
                     <X className="w-3.5 h-3.5" />
@@ -2114,9 +2102,8 @@ export function HomepageSearchablePortal({
                               type="button"
                               onClick={() => applySuggestion(suggestion)}
                               onMouseEnter={() => setSelectedSuggestionIndex(index)}
-                              className={`w-full px-2.5 sm:px-3 py-2 rounded-xl text-left transition flex items-center justify-between gap-2.5 cursor-pointer ${
-                                isSelected ? 'bg-amber-500/10 text-zinc-950 font-bold' : 'text-zinc-700 hover:bg-zinc-100/80'
-                              }`}
+                              className={`w-full px-2.5 sm:px-3 py-2 rounded-xl text-left transition flex items-center justify-between gap-2.5 cursor-pointer ${isSelected ? 'bg-amber-500/10 text-zinc-950 font-bold' : 'text-zinc-700 hover:bg-zinc-100/80'
+                                }`}
                             >
                               <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
                                 {suggestion.type === 'location' && (
@@ -2154,15 +2141,14 @@ export function HomepageSearchablePortal({
 
                               <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                                 <span
-                                  className={`text-[9px] font-bold uppercase tracking-wider px-1.5 sm:px-2 py-0.5 rounded-md border ${
-                                    suggestion.type === 'location'
-                                      ? 'bg-amber-50 text-amber-900 border-amber-200'
-                                      : suggestion.type === 'developer'
+                                  className={`text-[9px] font-bold uppercase tracking-wider px-1.5 sm:px-2 py-0.5 rounded-md border ${suggestion.type === 'location'
+                                    ? 'bg-amber-50 text-amber-900 border-amber-200'
+                                    : suggestion.type === 'developer'
                                       ? 'bg-blue-50 text-blue-900 border-blue-200'
                                       : suggestion.type === 'typology'
-                                      ? 'bg-purple-50 text-purple-900 border-purple-200'
-                                      : 'bg-emerald-50 text-emerald-900 border-emerald-200'
-                                  }`}
+                                        ? 'bg-purple-50 text-purple-900 border-purple-200'
+                                        : 'bg-emerald-50 text-emerald-900 border-emerald-200'
+                                    }`}
                                 >
                                   {suggestion.badge}
                                 </span>
@@ -2251,8 +2237,8 @@ export function HomepageSearchablePortal({
           <div id="properties-section" className="space-y-6">
             {/* ================= 1. INSTITUTIONAL COMPARISON TABLE (SEEN FIRST) ================= */}
             {propertyViewMode === 'table' && sortedProperties.length > 0 && (
-              <div id="properties-table-container" className="mb-4 sm:mb-8 bg-white rounded-2xl sm:rounded-3xl shadow-sm border border-zinc-200 overflow-hidden w-full max-w-full">
-                <div className="bg-zinc-950 p-2.5 sm:p-5 text-white flex items-center justify-between gap-2">
+              <div id="properties-table-container" className="mb-4 sm:mb-8 bg-white rounded-xl sm:rounded-2xl lg:rounded-3xl shadow-sm border border-zinc-200 overflow-hidden w-full max-w-full">
+                <div className="bg-zinc-950 p-2 sm:p-3 lg:p-5 text-white flex items-center justify-between gap-2">
                   <div className="hidden sm:block">
                     <h3 className="text-lg font-bold flex items-center gap-2 tracking-tight text-white">
                       <Building2 className="w-5 h-5 text-amber-400" />
@@ -2270,11 +2256,10 @@ export function HomepageSearchablePortal({
                           setActiveHeaderDropdown(activeHeaderDropdown === 'sort' ? null : 'sort');
                           setHeaderSearchQuery('');
                         }}
-                        className={`p-2 rounded-xl transition flex items-center justify-center gap-1 shadow-sm cursor-pointer ${
-                          sortBy !== 'price_low'
-                            ? 'bg-amber-400 text-zinc-950 font-black ring-1 ring-amber-300'
-                            : 'bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-700/80'
-                        }`}
+                        className={`p-2 rounded-xl transition flex items-center justify-center gap-1 shadow-sm cursor-pointer ${sortBy !== 'price_low'
+                          ? 'bg-amber-400 text-zinc-950 font-black ring-1 ring-amber-300'
+                          : 'bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-700/80'
+                          }`}
                         title={`Sort properties (Active: ${getSortLabel(sortBy)})`}
                         aria-label="Sort properties"
                       >
@@ -2330,17 +2315,15 @@ export function HomepageSearchablePortal({
                                 setActiveHeaderDropdown(activeHeaderDropdown === 'developer' ? null : 'developer');
                                 setHeaderSearchQuery('');
                               }}
-                              className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
-                                selectedDeveloper !== 'All' || ['name_asc', 'name_desc', 'developer_asc'].includes(sortBy)
-                                  ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                                  : 'text-zinc-700 hover:bg-zinc-100'
-                              }`}
+                              className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${selectedDeveloper !== 'All' || ['name_asc', 'name_desc', 'developer_asc'].includes(sortBy)
+                                ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                                : 'text-zinc-700 hover:bg-zinc-100'
+                                }`}
                             >
                               <span>Property &amp; Developer</span>
                               <ChevronDown
-                                className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                                  activeHeaderDropdown === 'developer' ? 'rotate-180 text-amber-600' : 'text-zinc-500'
-                                }`}
+                                className={`w-3.5 h-3.5 transition-transform duration-200 ${activeHeaderDropdown === 'developer' ? 'rotate-180 text-amber-600' : 'text-zinc-500'
+                                  }`}
                               />
                             </button>
 
@@ -2412,9 +2395,8 @@ export function HomepageSearchablePortal({
                                           setSortBy(opt.value);
                                           setActiveHeaderDropdown(null);
                                         }}
-                                        className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${
-                                          isSelected ? 'bg-amber-50 font-bold text-amber-900' : 'text-zinc-700 hover:bg-zinc-100'
-                                        }`}
+                                        className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${isSelected ? 'bg-amber-50 font-bold text-amber-900' : 'text-zinc-700 hover:bg-zinc-100'
+                                          }`}
                                       >
                                         <span>{opt.label}</span>
                                         {isSelected && <Check className="w-3.5 h-3.5 text-amber-600 shrink-0" />}
@@ -2437,11 +2419,10 @@ export function HomepageSearchablePortal({
                                           setSelectedDeveloper('All');
                                           setActiveHeaderDropdown(null);
                                         }}
-                                        className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${
-                                          selectedDeveloper === 'All'
-                                            ? 'bg-amber-50 font-bold text-amber-900'
-                                            : 'text-zinc-700 hover:bg-zinc-100'
-                                        }`}
+                                        className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${selectedDeveloper === 'All'
+                                          ? 'bg-amber-50 font-bold text-amber-900'
+                                          : 'text-zinc-700 hover:bg-zinc-100'
+                                          }`}
                                       >
                                         <span>All Developers</span>
                                         {selectedDeveloper === 'All' && <Check className="w-3.5 h-3.5 text-amber-600 shrink-0" />}
@@ -2458,11 +2439,10 @@ export function HomepageSearchablePortal({
                                             setSelectedDeveloper(isSelected ? 'All' : dev);
                                             setActiveHeaderDropdown(null);
                                           }}
-                                          className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${
-                                            isSelected
-                                              ? 'bg-amber-50 font-bold text-amber-900'
-                                              : 'text-zinc-700 hover:bg-zinc-100'
-                                          }`}
+                                          className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${isSelected
+                                            ? 'bg-amber-50 font-bold text-amber-900'
+                                            : 'text-zinc-700 hover:bg-zinc-100'
+                                            }`}
                                         >
                                           <span className="truncate">{dev}</span>
                                           {isSelected && <Check className="w-3.5 h-3.5 text-amber-600 shrink-0" />}
@@ -2507,17 +2487,15 @@ export function HomepageSearchablePortal({
                                 setActiveHeaderDropdown(activeHeaderDropdown === 'locality' ? null : 'locality');
                                 setHeaderSearchQuery('');
                               }}
-                              className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
-                                selectedLocality !== 'All' || ['locality_asc', 'locality_desc'].includes(sortBy)
-                                  ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                                  : 'text-zinc-700 hover:bg-zinc-100'
-                              }`}
+                              className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${selectedLocality !== 'All' || ['locality_asc', 'locality_desc'].includes(sortBy)
+                                ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                                : 'text-zinc-700 hover:bg-zinc-100'
+                                }`}
                             >
                               <span>Locality</span>
                               <ChevronDown
-                                className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                                  activeHeaderDropdown === 'locality' ? 'rotate-180 text-amber-600' : 'text-zinc-500'
-                                }`}
+                                className={`w-3.5 h-3.5 transition-transform duration-200 ${activeHeaderDropdown === 'locality' ? 'rotate-180 text-amber-600' : 'text-zinc-500'
+                                  }`}
                               />
                             </button>
 
@@ -2577,9 +2555,8 @@ export function HomepageSearchablePortal({
                                       setSortBy(sortBy === 'locality_asc' ? 'relevance' : 'locality_asc');
                                       setActiveHeaderDropdown(null);
                                     }}
-                                    className={`px-2 py-0.5 rounded text-[10px] font-bold transition cursor-pointer ${
-                                      sortBy === 'locality_asc' ? 'bg-amber-500 text-zinc-950' : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
-                                    }`}
+                                    className={`px-2 py-0.5 rounded text-[10px] font-bold transition cursor-pointer ${sortBy === 'locality_asc' ? 'bg-amber-500 text-zinc-950' : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
+                                      }`}
                                   >
                                     A → Z
                                   </button>
@@ -2589,9 +2566,8 @@ export function HomepageSearchablePortal({
                                       setSortBy(sortBy === 'locality_desc' ? 'relevance' : 'locality_desc');
                                       setActiveHeaderDropdown(null);
                                     }}
-                                    className={`px-2 py-0.5 rounded text-[10px] font-bold transition cursor-pointer ${
-                                      sortBy === 'locality_desc' ? 'bg-amber-500 text-zinc-950' : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
-                                    }`}
+                                    className={`px-2 py-0.5 rounded text-[10px] font-bold transition cursor-pointer ${sortBy === 'locality_desc' ? 'bg-amber-500 text-zinc-950' : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
+                                      }`}
                                   >
                                     Z → A
                                   </button>
@@ -2607,11 +2583,10 @@ export function HomepageSearchablePortal({
                                       setSelectedLocality('All');
                                       setActiveHeaderDropdown(null);
                                     }}
-                                    className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${
-                                      selectedLocality === 'All'
-                                        ? 'bg-amber-50 font-bold text-amber-900'
-                                        : 'text-zinc-700 hover:bg-zinc-100'
-                                    }`}
+                                    className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${selectedLocality === 'All'
+                                      ? 'bg-amber-50 font-bold text-amber-900'
+                                      : 'text-zinc-700 hover:bg-zinc-100'
+                                      }`}
                                   >
                                     <span>All Locations (Default)</span>
                                     {selectedLocality === 'All' && <Check className="w-3.5 h-3.5 text-amber-600" />}
@@ -2628,11 +2603,10 @@ export function HomepageSearchablePortal({
                                         setSelectedLocality(isSelected ? 'All' : loc);
                                         setActiveHeaderDropdown(null);
                                       }}
-                                      className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${
-                                        isSelected
-                                          ? 'bg-amber-50 font-bold text-amber-900'
-                                          : 'text-zinc-700 hover:bg-zinc-100'
-                                      }`}
+                                      className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${isSelected
+                                        ? 'bg-amber-50 font-bold text-amber-900'
+                                        : 'text-zinc-700 hover:bg-zinc-100'
+                                        }`}
                                     >
                                       <span className="truncate">{loc}</span>
                                       {isSelected && <Check className="w-3.5 h-3.5 text-amber-600 shrink-0" />}
@@ -2675,18 +2649,16 @@ export function HomepageSearchablePortal({
                                 setActiveHeaderDropdown(activeHeaderDropdown === 'typography' ? null : 'typography');
                                 setHeaderSearchQuery('');
                               }}
-                              className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
-                                selectedBhk !== 'All' ||
+                              className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${selectedBhk !== 'All' ||
                                 ['typography_asc', 'typography_desc'].includes(sortBy)
-                                  ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                                  : 'text-zinc-700 hover:bg-zinc-100'
-                              }`}
+                                ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                                : 'text-zinc-700 hover:bg-zinc-100'
+                                }`}
                             >
                               <span>Typology</span>
                               <ChevronDown
-                                className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                                  activeHeaderDropdown === 'typography' ? 'rotate-180 text-amber-600' : 'text-zinc-500'
-                                }`}
+                                className={`w-3.5 h-3.5 transition-transform duration-200 ${activeHeaderDropdown === 'typography' ? 'rotate-180 text-amber-600' : 'text-zinc-500'
+                                  }`}
                               />
                             </button>
 
@@ -2763,9 +2735,8 @@ export function HomepageSearchablePortal({
                                       setSortBy(sortBy === 'typography_asc' ? 'relevance' : 'typography_asc');
                                       setActiveHeaderDropdown(null);
                                     }}
-                                    className={`px-2 py-0.5 rounded text-[10px] font-bold transition cursor-pointer ${
-                                      sortBy === 'typography_asc' ? 'bg-amber-500 text-zinc-950' : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
-                                    }`}
+                                    className={`px-2 py-0.5 rounded text-[10px] font-bold transition cursor-pointer ${sortBy === 'typography_asc' ? 'bg-amber-500 text-zinc-950' : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
+                                      }`}
                                   >
                                     A → Z
                                   </button>
@@ -2775,9 +2746,8 @@ export function HomepageSearchablePortal({
                                       setSortBy(sortBy === 'typography_desc' ? 'relevance' : 'typography_desc');
                                       setActiveHeaderDropdown(null);
                                     }}
-                                    className={`px-2 py-0.5 rounded text-[10px] font-bold transition cursor-pointer ${
-                                      sortBy === 'typography_desc' ? 'bg-amber-500 text-zinc-950' : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
-                                    }`}
+                                    className={`px-2 py-0.5 rounded text-[10px] font-bold transition cursor-pointer ${sortBy === 'typography_desc' ? 'bg-amber-500 text-zinc-950' : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
+                                      }`}
                                   >
                                     Z → A
                                   </button>
@@ -2793,11 +2763,10 @@ export function HomepageSearchablePortal({
                                       setSelectedBhk('All');
                                       setActiveHeaderDropdown(null);
                                     }}
-                                    className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${
-                                      selectedBhk === 'All'
-                                        ? 'bg-amber-50 font-bold text-amber-900'
-                                        : 'text-zinc-700 hover:bg-zinc-100'
-                                    }`}
+                                    className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${selectedBhk === 'All'
+                                      ? 'bg-amber-50 font-bold text-amber-900'
+                                      : 'text-zinc-700 hover:bg-zinc-100'
+                                      }`}
                                   >
                                     <span>All Configurations (Default)</span>
                                     {selectedBhk === 'All' && <Check className="w-3.5 h-3.5 text-amber-600" />}
@@ -2814,11 +2783,10 @@ export function HomepageSearchablePortal({
                                         setSelectedBhk(isSelected ? 'All' : t.value);
                                         setActiveHeaderDropdown(null);
                                       }}
-                                      className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${
-                                        isSelected
-                                          ? 'bg-amber-50 font-bold text-amber-900'
-                                          : 'text-zinc-700 hover:bg-zinc-100'
-                                      }`}
+                                      className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${isSelected
+                                        ? 'bg-amber-50 font-bold text-amber-900'
+                                        : 'text-zinc-700 hover:bg-zinc-100'
+                                        }`}
                                     >
                                       <div className="flex items-center gap-1.5 truncate">
                                         <span className="truncate">{t.label}</span>
@@ -2840,22 +2808,22 @@ export function HomepageSearchablePortal({
 
                               {(selectedBhk !== 'All' ||
                                 ['typography_asc', 'typography_desc'].includes(sortBy)) && (
-                                <div className="pt-2 mt-2 border-t border-zinc-100 text-right">
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setSelectedBhk('All');
-                                      if (['typography_asc', 'typography_desc'].includes(sortBy)) {
-                                        setSortBy('relevance');
-                                      }
-                                      setActiveHeaderDropdown(null);
-                                    }}
-                                    className="text-[11px] font-bold text-amber-700 hover:text-amber-800 cursor-pointer"
-                                  >
-                                    Reset Filter &amp; Sort
-                                  </button>
-                                </div>
-                              )}
+                                  <div className="pt-2 mt-2 border-t border-zinc-100 text-right">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setSelectedBhk('All');
+                                        if (['typography_asc', 'typography_desc'].includes(sortBy)) {
+                                          setSortBy('relevance');
+                                        }
+                                        setActiveHeaderDropdown(null);
+                                      }}
+                                      className="text-[11px] font-bold text-amber-700 hover:text-amber-800 cursor-pointer"
+                                    >
+                                      Reset Filter &amp; Sort
+                                    </button>
+                                  </div>
+                                )}
                             </div>
                           )}
                         </th>
@@ -2869,17 +2837,15 @@ export function HomepageSearchablePortal({
                                 setActiveHeaderDropdown(activeHeaderDropdown === 'price' ? null : 'price');
                                 setHeaderSearchQuery('');
                               }}
-                              className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
-                                selectedPriceRange !== 'All' || sortBy === 'price_high'
-                                  ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                                  : 'text-zinc-700 hover:bg-zinc-100'
-                              }`}
+                              className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${selectedPriceRange !== 'All' || sortBy === 'price_high'
+                                ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                                : 'text-zinc-700 hover:bg-zinc-100'
+                                }`}
                             >
                               <span>Price</span>
                               <ChevronDown
-                                className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                                  activeHeaderDropdown === 'price' ? 'rotate-180 text-amber-600' : 'text-zinc-500'
-                                }`}
+                                className={`w-3.5 h-3.5 transition-transform duration-200 ${activeHeaderDropdown === 'price' ? 'rotate-180 text-amber-600' : 'text-zinc-500'
+                                  }`}
                               />
                             </button>
 
@@ -2974,11 +2940,10 @@ export function HomepageSearchablePortal({
                                       setSortBy('price_low');
                                       setActiveHeaderDropdown(null);
                                     }}
-                                    className={`px-2.5 py-2 rounded-xl text-left transition flex items-center justify-between cursor-pointer ${
-                                      sortBy === 'price_low'
-                                        ? 'bg-amber-500 font-black text-zinc-950 shadow-xs'
-                                        : 'bg-zinc-50 hover:bg-zinc-100 text-zinc-700 border border-zinc-200/80'
-                                    }`}
+                                    className={`px-2.5 py-2 rounded-xl text-left transition flex items-center justify-between cursor-pointer ${sortBy === 'price_low'
+                                      ? 'bg-amber-500 font-black text-zinc-950 shadow-xs'
+                                      : 'bg-zinc-50 hover:bg-zinc-100 text-zinc-700 border border-zinc-200/80'
+                                      }`}
                                   >
                                     <span>Low to High</span>
                                     {sortBy === 'price_low' && <Check className="w-3.5 h-3.5 text-zinc-950 stroke-[2.5]" />}
@@ -2990,11 +2955,10 @@ export function HomepageSearchablePortal({
                                       setSortBy('price_high');
                                       setActiveHeaderDropdown(null);
                                     }}
-                                    className={`px-2.5 py-2 rounded-xl text-left transition flex items-center justify-between cursor-pointer ${
-                                      sortBy === 'price_high'
-                                        ? 'bg-amber-500 font-black text-zinc-950 shadow-xs'
-                                        : 'bg-zinc-50 hover:bg-zinc-100 text-zinc-700 border border-zinc-200/80'
-                                    }`}
+                                    className={`px-2.5 py-2 rounded-xl text-left transition flex items-center justify-between cursor-pointer ${sortBy === 'price_high'
+                                      ? 'bg-amber-500 font-black text-zinc-950 shadow-xs'
+                                      : 'bg-zinc-50 hover:bg-zinc-100 text-zinc-700 border border-zinc-200/80'
+                                      }`}
                                   >
                                     <span>High to Low</span>
                                     {sortBy === 'price_high' && <Check className="w-3.5 h-3.5 text-zinc-950 stroke-[2.5]" />}
@@ -3015,11 +2979,10 @@ export function HomepageSearchablePortal({
                                         setSelectedPriceRange('All');
                                         setActiveHeaderDropdown(null);
                                       }}
-                                      className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${
-                                        selectedPriceRange === 'All'
-                                          ? 'bg-amber-50 font-bold text-amber-900'
-                                          : 'text-zinc-700 hover:bg-zinc-100'
-                                      }`}
+                                      className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${selectedPriceRange === 'All'
+                                        ? 'bg-amber-50 font-bold text-amber-900'
+                                        : 'text-zinc-700 hover:bg-zinc-100'
+                                        }`}
                                     >
                                       <span>All Budgets (Default)</span>
                                       {selectedPriceRange === 'All' && <Check className="w-3.5 h-3.5 text-amber-600" />}
@@ -3035,11 +2998,10 @@ export function HomepageSearchablePortal({
                                             setSelectedPriceRange(isSelected ? 'All' : range.value);
                                             setActiveHeaderDropdown(null);
                                           }}
-                                          className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${
-                                            isSelected
-                                              ? 'bg-amber-50 font-bold text-amber-900'
-                                              : 'text-zinc-700 hover:bg-zinc-100'
-                                          }`}
+                                          className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${isSelected
+                                            ? 'bg-amber-50 font-bold text-amber-900'
+                                            : 'text-zinc-700 hover:bg-zinc-100'
+                                            }`}
                                         >
                                           <span>{range.label}</span>
                                           {isSelected && <Check className="w-3.5 h-3.5 text-amber-600 shrink-0" />}
@@ -3384,9 +3346,9 @@ export function HomepageSearchablePortal({
                       <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
                         <span
                           className={`text-[10px] font-bold px-2 py-0.5 rounded-md backdrop-blur-md shadow-xs ${hoveredTableProperty.property.isCommercial ||
-                              hoveredTableProperty.property.bhk.includes('Commercial')
-                              ? 'bg-blue-950/90 text-blue-200 border border-blue-400/40'
-                              : 'bg-zinc-950/90 text-amber-300 border border-amber-500/40'
+                            hoveredTableProperty.property.bhk.includes('Commercial')
+                            ? 'bg-blue-950/90 text-blue-200 border border-blue-400/40'
+                            : 'bg-zinc-950/90 text-amber-300 border border-amber-500/40'
                             }`}
                         >
                           {hoveredTableProperty.property.isCommercial ||
@@ -3526,11 +3488,10 @@ export function HomepageSearchablePortal({
                             setActiveHeaderDropdown(activeHeaderDropdown === 'sort_cards' ? null : 'sort_cards');
                             setHeaderSearchQuery('');
                           }}
-                          className={`p-1.5 sm:px-2 sm:py-1.5 rounded-xl transition flex items-center justify-center gap-1 shadow-xs cursor-pointer ${
-                            sortBy !== 'price_low'
-                              ? 'bg-amber-400 text-zinc-950 font-black ring-1 ring-amber-300'
-                              : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-800 border border-zinc-200'
-                          }`}
+                          className={`p-1.5 sm:px-2 sm:py-1.5 rounded-xl transition flex items-center justify-center gap-1 shadow-xs cursor-pointer ${sortBy !== 'price_low'
+                            ? 'bg-amber-400 text-zinc-950 font-black ring-1 ring-amber-300'
+                            : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-800 border border-zinc-200'
+                            }`}
                           title={`Sort properties (Active: ${getSortLabel(sortBy)})`}
                           aria-label="Sort properties"
                         >
@@ -3707,17 +3668,15 @@ export function HomepageSearchablePortal({
                                 setActiveHeaderDropdown(activeHeaderDropdown === 'buyer_locality' ? null : 'buyer_locality');
                                 setHeaderSearchQuery('');
                               }}
-                              className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
-                                buyerLocalityFilter !== 'All' || ['locality_asc', 'locality_desc'].includes(buyerSortBy)
-                                  ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                                  : 'text-zinc-700 hover:bg-zinc-100'
-                              }`}
+                              className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${buyerLocalityFilter !== 'All' || ['locality_asc', 'locality_desc'].includes(buyerSortBy)
+                                ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                                : 'text-zinc-700 hover:bg-zinc-100'
+                                }`}
                             >
                               <span>Target Locality</span>
                               <ChevronDown
-                                className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                                  activeHeaderDropdown === 'buyer_locality' ? 'rotate-180 text-amber-600' : 'text-zinc-500'
-                                }`}
+                                className={`w-3.5 h-3.5 transition-transform duration-200 ${activeHeaderDropdown === 'buyer_locality' ? 'rotate-180 text-amber-600' : 'text-zinc-500'
+                                  }`}
                               />
                             </button>
 
@@ -3777,9 +3736,8 @@ export function HomepageSearchablePortal({
                                       setBuyerSortBy(buyerSortBy === 'locality_asc' ? 'relevance' : 'locality_asc');
                                       setActiveHeaderDropdown(null);
                                     }}
-                                    className={`px-2 py-0.5 rounded text-[10px] font-bold transition cursor-pointer ${
-                                      buyerSortBy === 'locality_asc' ? 'bg-amber-500 text-zinc-950' : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
-                                    }`}
+                                    className={`px-2 py-0.5 rounded text-[10px] font-bold transition cursor-pointer ${buyerSortBy === 'locality_asc' ? 'bg-amber-500 text-zinc-950' : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
+                                      }`}
                                   >
                                     A → Z
                                   </button>
@@ -3789,9 +3747,8 @@ export function HomepageSearchablePortal({
                                       setBuyerSortBy(buyerSortBy === 'locality_desc' ? 'relevance' : 'locality_desc');
                                       setActiveHeaderDropdown(null);
                                     }}
-                                    className={`px-2 py-0.5 rounded text-[10px] font-bold transition cursor-pointer ${
-                                      buyerSortBy === 'locality_desc' ? 'bg-amber-500 text-zinc-950' : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
-                                    }`}
+                                    className={`px-2 py-0.5 rounded text-[10px] font-bold transition cursor-pointer ${buyerSortBy === 'locality_desc' ? 'bg-amber-500 text-zinc-950' : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
+                                      }`}
                                   >
                                     Z → A
                                   </button>
@@ -3807,11 +3764,10 @@ export function HomepageSearchablePortal({
                                       setBuyerLocalityFilter('All');
                                       setActiveHeaderDropdown(null);
                                     }}
-                                    className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${
-                                      buyerLocalityFilter === 'All'
-                                        ? 'bg-amber-50 font-bold text-amber-900'
-                                        : 'text-zinc-700 hover:bg-zinc-100'
-                                    }`}
+                                    className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${buyerLocalityFilter === 'All'
+                                      ? 'bg-amber-50 font-bold text-amber-900'
+                                      : 'text-zinc-700 hover:bg-zinc-100'
+                                      }`}
                                   >
                                     <span>All Locations (Default)</span>
                                     {buyerLocalityFilter === 'All' && <Check className="w-3.5 h-3.5 text-amber-600" />}
@@ -3828,11 +3784,10 @@ export function HomepageSearchablePortal({
                                         setBuyerLocalityFilter(isSelected ? 'All' : loc);
                                         setActiveHeaderDropdown(null);
                                       }}
-                                      className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${
-                                        isSelected
-                                          ? 'bg-amber-50 font-bold text-amber-900'
-                                          : 'text-zinc-700 hover:bg-zinc-100'
-                                      }`}
+                                      className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${isSelected
+                                        ? 'bg-amber-50 font-bold text-amber-900'
+                                        : 'text-zinc-700 hover:bg-zinc-100'
+                                        }`}
                                     >
                                       <span className="truncate">{loc}</span>
                                       {isSelected && <Check className="w-3.5 h-3.5 text-amber-600 shrink-0" />}
@@ -3875,18 +3830,16 @@ export function HomepageSearchablePortal({
                                 setActiveHeaderDropdown(activeHeaderDropdown === 'buyer_typography' ? null : 'buyer_typography');
                                 setHeaderSearchQuery('');
                               }}
-                              className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
-                                buyerBhkFilter !== 'All' ||
+                              className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${buyerBhkFilter !== 'All' ||
                                 ['typography_asc', 'typography_desc', 'bhk_asc', 'bhk_desc'].includes(buyerSortBy)
-                                  ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                                  : 'text-zinc-700 hover:bg-zinc-100'
-                              }`}
+                                ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                                : 'text-zinc-700 hover:bg-zinc-100'
+                                }`}
                             >
                               <span>Typology</span>
                               <ChevronDown
-                                className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                                  activeHeaderDropdown === 'buyer_typography' ? 'rotate-180 text-amber-600' : 'text-zinc-500'
-                                }`}
+                                className={`w-3.5 h-3.5 transition-transform duration-200 ${activeHeaderDropdown === 'buyer_typography' ? 'rotate-180 text-amber-600' : 'text-zinc-500'
+                                  }`}
                               />
                             </button>
 
@@ -3946,9 +3899,8 @@ export function HomepageSearchablePortal({
                                       setBuyerSortBy(buyerSortBy === 'typography_asc' ? 'relevance' : 'typography_asc');
                                       setActiveHeaderDropdown(null);
                                     }}
-                                    className={`px-2 py-0.5 rounded text-[10px] font-bold transition cursor-pointer ${
-                                      buyerSortBy === 'typography_asc' ? 'bg-amber-500 text-zinc-950' : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
-                                    }`}
+                                    className={`px-2 py-0.5 rounded text-[10px] font-bold transition cursor-pointer ${buyerSortBy === 'typography_asc' ? 'bg-amber-500 text-zinc-950' : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
+                                      }`}
                                   >
                                     A → Z
                                   </button>
@@ -3958,9 +3910,8 @@ export function HomepageSearchablePortal({
                                       setBuyerSortBy(buyerSortBy === 'typography_desc' ? 'relevance' : 'typography_desc');
                                       setActiveHeaderDropdown(null);
                                     }}
-                                    className={`px-2 py-0.5 rounded text-[10px] font-bold transition cursor-pointer ${
-                                      buyerSortBy === 'typography_desc' ? 'bg-amber-500 text-zinc-950' : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
-                                    }`}
+                                    className={`px-2 py-0.5 rounded text-[10px] font-bold transition cursor-pointer ${buyerSortBy === 'typography_desc' ? 'bg-amber-500 text-zinc-950' : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
+                                      }`}
                                   >
                                     Z → A
                                   </button>
@@ -3976,11 +3927,10 @@ export function HomepageSearchablePortal({
                                       setBuyerBhkFilter('All');
                                       setActiveHeaderDropdown(null);
                                     }}
-                                    className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${
-                                      buyerBhkFilter === 'All'
-                                        ? 'bg-amber-50 font-bold text-amber-900'
-                                        : 'text-zinc-700 hover:bg-zinc-100'
-                                    }`}
+                                    className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${buyerBhkFilter === 'All'
+                                      ? 'bg-amber-50 font-bold text-amber-900'
+                                      : 'text-zinc-700 hover:bg-zinc-100'
+                                      }`}
                                   >
                                     <span>All Configurations (Default)</span>
                                     {buyerBhkFilter === 'All' && <Check className="w-3.5 h-3.5 text-amber-600" />}
@@ -3997,11 +3947,10 @@ export function HomepageSearchablePortal({
                                         setBuyerBhkFilter(isSelected ? 'All' : item.value);
                                         setActiveHeaderDropdown(null);
                                       }}
-                                      className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${
-                                        isSelected
-                                          ? 'bg-amber-50 font-bold text-amber-900'
-                                          : 'text-zinc-700 hover:bg-zinc-100'
-                                      }`}
+                                      className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${isSelected
+                                        ? 'bg-amber-50 font-bold text-amber-900'
+                                        : 'text-zinc-700 hover:bg-zinc-100'
+                                        }`}
                                     >
                                       <span className="truncate">{item.label}</span>
                                       {isSelected && <Check className="w-3.5 h-3.5 text-amber-600 shrink-0" />}
@@ -4109,18 +4058,16 @@ export function HomepageSearchablePortal({
                           setActiveHeaderDropdown(activeHeaderDropdown === 'buyer_locality' ? null : 'buyer_locality');
                           setHeaderSearchQuery('');
                         }}
-                        className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-                          buyerLocalityFilter !== 'All' || ['locality_asc', 'locality_desc'].includes(buyerSortBy)
-                            ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                            : 'bg-white text-zinc-700 border border-zinc-200/90 shadow-2xs'
-                        }`}
+                        className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${buyerLocalityFilter !== 'All' || ['locality_asc', 'locality_desc'].includes(buyerSortBy)
+                          ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                          : 'bg-white text-zinc-700 border border-zinc-200/90 shadow-2xs'
+                          }`}
                       >
                         <MapPin className="w-3.5 h-3.5 text-amber-600" />
                         <span>{buyerLocalityFilter === 'All' ? 'Target Locality' : buyerLocalityFilter}</span>
                         <ChevronDown
-                          className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                            activeHeaderDropdown === 'buyer_locality' ? 'rotate-180 text-amber-600' : 'text-zinc-400'
-                          }`}
+                          className={`w-3.5 h-3.5 transition-transform duration-200 ${activeHeaderDropdown === 'buyer_locality' ? 'rotate-180 text-amber-600' : 'text-zinc-400'
+                            }`}
                         />
                       </button>
 
@@ -4131,18 +4078,16 @@ export function HomepageSearchablePortal({
                           setActiveHeaderDropdown(activeHeaderDropdown === 'buyer_typography' ? null : 'buyer_typography');
                           setHeaderSearchQuery('');
                         }}
-                        className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-                          buyerBhkFilter !== 'All'
-                            ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                            : 'bg-white text-zinc-700 border border-zinc-200/90 shadow-2xs'
-                        }`}
+                        className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${buyerBhkFilter !== 'All'
+                          ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                          : 'bg-white text-zinc-700 border border-zinc-200/90 shadow-2xs'
+                          }`}
                       >
                         <Home className="w-3.5 h-3.5 text-amber-600" />
                         <span>{buyerBhkFilter === 'All' ? 'Configuration' : buyerBhkFilter}</span>
                         <ChevronDown
-                          className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                            activeHeaderDropdown === 'buyer_typography' ? 'rotate-180 text-amber-600' : 'text-zinc-400'
-                          }`}
+                          className={`w-3.5 h-3.5 transition-transform duration-200 ${activeHeaderDropdown === 'buyer_typography' ? 'rotate-180 text-amber-600' : 'text-zinc-400'
+                            }`}
                         />
                       </button>
 
@@ -4191,9 +4136,8 @@ export function HomepageSearchablePortal({
                                     setBuyerLocalityFilter('All');
                                     setActiveHeaderDropdown(null);
                                   }}
-                                  className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${
-                                    buyerLocalityFilter === 'All' ? 'bg-amber-50 font-bold text-amber-900' : 'text-zinc-700 hover:bg-zinc-100'
-                                  }`}
+                                  className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${buyerLocalityFilter === 'All' ? 'bg-amber-50 font-bold text-amber-900' : 'text-zinc-700 hover:bg-zinc-100'
+                                    }`}
                                 >
                                   <span>All Locations</span>
                                   {buyerLocalityFilter === 'All' && <Check className="w-3.5 h-3.5 text-amber-600 shrink-0" />}
@@ -4209,9 +4153,8 @@ export function HomepageSearchablePortal({
                                       setBuyerLocalityFilter(loc);
                                       setActiveHeaderDropdown(null);
                                     }}
-                                    className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${
-                                      isSelected ? 'bg-amber-50 font-bold text-amber-900' : 'text-zinc-700 hover:bg-zinc-100'
-                                    }`}
+                                    className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${isSelected ? 'bg-amber-50 font-bold text-amber-900' : 'text-zinc-700 hover:bg-zinc-100'
+                                      }`}
                                   >
                                     <span>{loc}</span>
                                     {isSelected && <Check className="w-3.5 h-3.5 text-amber-600 shrink-0" />}
@@ -4235,9 +4178,8 @@ export function HomepageSearchablePortal({
                                     setBuyerBhkFilter('All');
                                     setActiveHeaderDropdown(null);
                                   }}
-                                  className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${
-                                    buyerBhkFilter === 'All' ? 'bg-amber-50 font-bold text-amber-900' : 'text-zinc-700 hover:bg-zinc-100'
-                                  }`}
+                                  className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${buyerBhkFilter === 'All' ? 'bg-amber-50 font-bold text-amber-900' : 'text-zinc-700 hover:bg-zinc-100'
+                                    }`}
                                 >
                                   <span>All Configurations</span>
                                   {buyerBhkFilter === 'All' && <Check className="w-3.5 h-3.5 text-amber-600 shrink-0" />}
@@ -4260,9 +4202,8 @@ export function HomepageSearchablePortal({
                                       setBuyerBhkFilter(item.value);
                                       setActiveHeaderDropdown(null);
                                     }}
-                                    className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${
-                                      isSelected ? 'bg-amber-50 font-bold text-amber-900' : 'text-zinc-700 hover:bg-zinc-100'
-                                    }`}
+                                    className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${isSelected ? 'bg-amber-50 font-bold text-amber-900' : 'text-zinc-700 hover:bg-zinc-100'
+                                      }`}
                                   >
                                     <span>{item.label}</span>
                                     {isSelected && <Check className="w-3.5 h-3.5 text-amber-600 shrink-0" />}
@@ -4354,7 +4295,7 @@ export function HomepageSearchablePortal({
                   )}
                 </div>
 
-                                {sortedBuyerDemands.length > 5 && (
+                {sortedBuyerDemands.length > 5 && (
                   <div className="p-4 bg-zinc-50 border-t border-zinc-200 text-center">
                     <button
                       type="button"
@@ -4570,7 +4511,7 @@ export function HomepageSearchablePortal({
 
       {/* ================= 4. REAL ESTATE BLOGS & INSIGHTS CONNECTED SECTION ================= */}
       <section id="insights-section" className="bg-white border-t border-zinc-200 pt-20 pb-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-1.5 sm:px-3 lg:px-8">
           <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
               <h2 className="text-2xl sm:text-3xl font-black text-zinc-950 tracking-tight">
@@ -4596,8 +4537,8 @@ export function HomepageSearchablePortal({
                       setBlogs(filtered);
                     }}
                     className={`px-3 py-1.5 rounded-lg font-bold transition cursor-pointer ${blogCategory === cat
-                        ? 'bg-zinc-950 text-white shadow-2xs'
-                        : 'bg-zinc-100 text-zinc-600 hover:text-zinc-950'
+                      ? 'bg-zinc-950 text-white shadow-2xs'
+                      : 'bg-zinc-100 text-zinc-600 hover:text-zinc-950'
                       }`}
                   >
                     {cat}
