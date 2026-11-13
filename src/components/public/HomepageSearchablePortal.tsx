@@ -2164,11 +2164,11 @@ export function HomepageSearchablePortal({
               </div>
             </div>
 
-            {/* Real-time Counts & View Mode Switcher */}
-            <div className="mt-2.5 sm:mt-3 pt-2.5 sm:pt-3 border-t border-zinc-100 flex items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5 sm:gap-2.5 text-xs min-w-0">
+            {/* Real-time Counts & View Mode Switcher Row */}
+            <div className="mt-2 sm:mt-2.5 lg:mt-3 pt-2 sm:pt-2.5 lg:pt-3 border-t border-zinc-100 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2 text-xs shrink-0">
                 <span
-                  className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold bg-zinc-950 text-white select-none cursor-default shadow-xs shrink-0"
+                  className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 lg:px-3 py-1 sm:py-1 lg:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold bg-zinc-950 text-white select-none cursor-default shadow-xs shrink-0"
                   title={`${sortedProperties.length} Verified Properties`}
                   aria-label={`${sortedProperties.length} Properties`}
                 >
@@ -2180,7 +2180,7 @@ export function HomepageSearchablePortal({
                 </span>
 
                 <span
-                  className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold bg-amber-500 text-zinc-950 select-none cursor-default shadow-xs shrink-0"
+                  className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 lg:px-3 py-1 sm:py-1 lg:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold bg-amber-500 text-zinc-950 select-none cursor-default shadow-xs shrink-0"
                   title={`${filteredCatalogueBuyerDemands.length} Verified Buyers`}
                   aria-label={`${filteredCatalogueBuyerDemands.length} Buyers`}
                 >
@@ -2197,11 +2197,10 @@ export function HomepageSearchablePortal({
                 <button
                   type="button"
                   onClick={() => setPropertyViewMode('table')}
-                  className={`p-1.5 lg:px-3 lg:py-1.5 rounded-md sm:rounded-lg text-[11px] sm:text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
-                    propertyViewMode === 'table'
-                      ? 'bg-zinc-950 text-white shadow-xs font-black'
-                      : 'text-zinc-600 hover:text-zinc-950 hover:bg-white/80'
-                  }`}
+                  className={`p-1.5 lg:px-3 lg:py-1.5 rounded-md sm:rounded-lg text-[11px] sm:text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${propertyViewMode === 'table'
+                    ? 'bg-zinc-950 text-white shadow-xs font-black'
+                    : 'text-zinc-600 hover:text-zinc-950 hover:bg-white/80'
+                    }`}
                   title="View as List"
                   aria-label="View as List"
                 >
@@ -2211,11 +2210,10 @@ export function HomepageSearchablePortal({
                 <button
                   type="button"
                   onClick={() => setPropertyViewMode('paragraph')}
-                  className={`p-1.5 lg:px-3 lg:py-1.5 rounded-md sm:rounded-lg text-[11px] sm:text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
-                    propertyViewMode === 'paragraph'
-                      ? 'bg-zinc-950 text-white shadow-xs font-black'
-                      : 'text-zinc-600 hover:text-zinc-950 hover:bg-white/80'
-                  }`}
+                  className={`p-1.5 lg:px-3 lg:py-1.5 rounded-md sm:rounded-lg text-[11px] sm:text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${propertyViewMode === 'paragraph'
+                    ? 'bg-zinc-950 text-white shadow-xs font-black'
+                    : 'text-zinc-600 hover:text-zinc-950 hover:bg-white/80'
+                    }`}
                   title="View as Cards"
                   aria-label="View as Cards"
                 >
@@ -2223,14 +2221,22 @@ export function HomepageSearchablePortal({
                   <span className="hidden lg:inline">Cards</span>
                 </button>
               </div>
-
-              {isUserSeller(catalogueSearch || searchQuery) && (
-                <div className="w-full text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-300/80 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 animate-in fade-in select-none cursor-default">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                  <span>Showing registered buyers for your property query</span>
-                </div>
-              )}
             </div>
+
+            {/* Seller Query Detected Alert Banner - Outside the controls row */}
+            {isUserSeller(catalogueSearch || searchQuery) && (
+              <div className="mt-2.5 w-full text-[11px] sm:text-xs font-bold text-amber-900 bg-amber-50/90 border border-amber-300 rounded-xl p-2 sm:px-3 sm:py-2 flex items-center gap-2 shadow-2xs animate-in fade-in select-none">
+                <div className="w-5 h-5 rounded-lg bg-amber-400 text-zinc-950 flex items-center justify-center shrink-0 font-black">
+                  <Sparkles className="w-3.5 h-3.5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <span className="font-extrabold text-zinc-950">Seller Query Detected:</span>{' '}
+                  <span className="text-amber-900 font-medium">
+                    Showing verified registered buyers matching your property query
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* ================= SECTION 1: VERIFIED PROPERTIES ================= */}
