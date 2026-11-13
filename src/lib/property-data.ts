@@ -50,7 +50,7 @@ export async function fetchAllProperties(forceFresh = false): Promise<PropertyIt
       const propIds = dbProps.map((p: any) => p.id);
       const purposesMap = await getPurposesForProperties(propIds);
 
-      const mapped: PropertyItem[] = dbProps.map((p: any) => {
+      const mapped = dbProps.map((p: any) => {
         const numPrice = Number(p.price) || 15000000;
         const formattedPrice =
           numPrice >= 10000000

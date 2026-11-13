@@ -551,30 +551,30 @@ export function PropertyDetailPageClient({
               <div>
                 {property.developer &&
                   !/anv\s*(signature\s*partner|verified\s*developer|partner\s*developer)/i.test(property.developer) && (
-                  <div className="text-xs sm:text-sm text-amber-600 font-extrabold uppercase tracking-wider mb-1.5">
+                  <div className="text-[10px] sm:text-xs text-amber-600 font-extrabold uppercase tracking-wider mb-1">
                     {property.developer}
                   </div>
                 )}
 
-                <div className="flex items-center gap-2.5 flex-wrap">
-                  <h1 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight text-zinc-950 leading-tight">
+                <div className="flex items-start gap-2 flex-wrap">
+                  <h1 className="text-[15px] sm:text-lg md:text-2xl font-bold sm:font-extrabold tracking-tight text-zinc-950 leading-snug">
                     {property.name}
                   </h1>
                   {property.hideName && (
-                    <span className="px-2.5 py-0.5 rounded-lg text-xs font-bold bg-amber-400 text-black border border-amber-300 shadow-xs inline-flex items-center gap-1">
-                      Private &amp; Confidential Listing
+                    <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-amber-400 text-black border border-amber-300 shadow-xs inline-flex items-center gap-1 shrink-0 mt-0.5">
+                      Confidential
                     </span>
                   )}
                 </div>
-                <p className="text-xs sm:text-sm text-zinc-500 flex items-center gap-1.5 mt-1.5 font-medium">
-                  <MapPin className="w-4 h-4 text-amber-500 shrink-0" />
+                <p className="text-[11px] sm:text-xs text-zinc-500 flex items-center gap-1 mt-1 font-medium">
+                  <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-500 shrink-0" />
                   <span>{property.location}</span>
                 </p>
               </div>
 
               {/* Media View & Fullscreen Controls - OUTSIDE the photo */}
               <div className="flex items-center gap-2 w-full md:w-auto shrink-0">
-                <div className="flex items-center bg-zinc-100 p-1 rounded-xl sm:rounded-2xl border border-zinc-200 shadow-xs w-full sm:w-auto">
+                <div className="flex items-center bg-zinc-100 p-0.5 sm:p-1 rounded-lg sm:rounded-xl border border-zinc-200 shadow-xs w-full sm:w-auto">
                   {mediaImages.length > 0 && (
                     <button
                       type="button"
@@ -582,16 +582,16 @@ export function PropertyDetailPageClient({
                         setMediaMode('photos');
                         setIsLightboxOpen(true);
                       }}
-                      className={`flex-1 sm:flex-initial justify-center px-3 py-1.5 rounded-lg sm:rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                      className={`flex-1 sm:flex-initial justify-center px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md sm:rounded-xl text-[11px] sm:text-xs font-bold transition flex items-center gap-1 sm:gap-1.5 cursor-pointer ${
                         mediaMode === 'photos'
                           ? 'bg-amber-400 text-black font-extrabold shadow-xs hover:bg-amber-300'
                           : 'text-zinc-700 hover:text-black hover:bg-white'
                       }`}
                       title="Open Fullscreen Photos"
                     >
-                      <ImageIcon className="w-3.5 h-3.5" />
+                      <ImageIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                       <span>Photos ({mediaImages.length})</span>
-                      <Maximize2 className="w-3 h-3 ml-0.5 opacity-70" />
+                      <Maximize2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 ml-0.5 opacity-70" />
                     </button>
                   )}
 
@@ -601,16 +601,16 @@ export function PropertyDetailPageClient({
                       setMediaMode('video');
                       setIsLightboxOpen(true);
                     }}
-                    className={`flex-1 sm:flex-initial justify-center px-3 py-1.5 rounded-lg sm:rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                    className={`flex-1 sm:flex-initial justify-center px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md sm:rounded-xl text-[11px] sm:text-xs font-bold transition flex items-center gap-1 sm:gap-1.5 cursor-pointer ${
                       mediaMode === 'video'
                         ? 'bg-amber-400 text-black font-extrabold shadow-xs hover:bg-amber-300'
                         : 'text-zinc-700 hover:text-black hover:bg-white'
                     }`}
                     title="Open Fullscreen Video Tour"
                   >
-                    <Video className="w-3.5 h-3.5" />
+                    <Video className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                     <span>Video Tour</span>
-                    <Maximize2 className="w-3 h-3 ml-0.5 opacity-70" />
+                    <Maximize2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 ml-0.5 opacity-70" />
                   </button>
                 </div>
               </div>
@@ -824,46 +824,108 @@ export function PropertyDetailPageClient({
               </div>
 
               {/* TAB CONTENT */}
-              {activeTab === 'overview' && (
-                <div className="bg-white rounded-2xl sm:rounded-3xl border border-zinc-200 p-4 sm:p-8 space-y-5 sm:space-y-6 shadow-xs">
-                  <div>
-                    <h3 className="text-base sm:text-lg font-black text-zinc-950 mb-2">Architectural Narrative &amp; Orientation</h3>
-                    <p className="text-xs sm:text-sm text-zinc-600 leading-relaxed whitespace-pre-line break-words">
-                      {cleanDescription || formatPropertyDescription(property.description)}
-                    </p>
+              {activeTab === 'overview' && (() => {
+                // Parse # Field: Value lines from cleanDescription in Excel sequence order
+                const descRaw = cleanDescription || property.description || '';
+                const FIELD_ORDER = [
+                  'Posted Date','Property Title','Landmark, City','Property Age','Possession',
+                  'Expected Price','JV Ratio','Transaction','Ownership','Building Name',
+                  'Property/Developer Name','Area : Carpet : Saleable','No of Bedroom','Parking Spaces',
+                  'Furnishing','H : W : D','Total Floors','Property on Floor','Suitable For',
+                  'Unique Feature','Lease Period (Month)','Lock-in Period (Year)','Rent Start Date',
+                  'Rent Per Month','Rent Escalation %','Maintenance Charges','Security Deposit',
+                  'Property Tax','ROI %','Facing','Lifts','Flooring','Power (kVA)',
+                  'Backup Power (kVA)','Pollution Color Zone','Racking Capacity (EOT) - tonnes',
+                  'Floor Strength - ton per meter cube','STP/ETP Capacity - litres',
+                  'No of loading bays','Canopy Details (Length - Width)','Fire NOC','Dock Levellers'
+                ];
+                // Parse all # Key: Value lines
+                const lineMap: Record<string, string> = {};
+                let tagsBlock = '';
+                descRaw.split('\n').forEach(line => {
+                  const trimmed = line.trim();
+                  if (!trimmed.startsWith('#')) { tagsBlock += ' ' + trimmed; return; }
+                  const withoutHash = trimmed.replace(/^#+\s*/, '');
+                  const colonIdx = withoutHash.indexOf(':');
+                  if (colonIdx === -1) { lineMap['_extra_' + Math.random()] = withoutHash; return; }
+                  const key = withoutHash.slice(0, colonIdx).trim();
+                  const val = withoutHash.slice(colonIdx + 1).trim();
+                  if (key && val) lineMap[key.toLowerCase()] = val;
+                });
+                // Build ordered rows — only fields with values
+                const rows: { label: string; value: string }[] = [];
+                FIELD_ORDER.forEach(field => {
+                  const v = lineMap[field.toLowerCase()];
+                  if (v) rows.push({ label: field, value: v });
+                });
+                // Any remaining keys not in FIELD_ORDER
+                Object.keys(lineMap).forEach(k => {
+                  if (!k.startsWith('_extra_') && !FIELD_ORDER.map(f => f.toLowerCase()).includes(k)) {
+                    rows.push({ label: k, value: lineMap[k] });
+                  }
+                });
+                // Tags line (pipe-separated values without key)
+                const tagLine = tagsBlock.replace(/\s+/g, ' ').trim();
+                const tags = tagLine ? tagLine.split('|').map(t => t.trim()).filter(Boolean) : [];
+
+                return (
+                  <div className="bg-white rounded-2xl sm:rounded-3xl border border-zinc-200 p-4 sm:p-6 shadow-xs space-y-4">
+                    {/* Property Details — structured field rows */}
+                    {rows.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-black text-zinc-950 mb-3 uppercase tracking-wider">Property Details</h3>
+                        <div className="divide-y divide-zinc-100 rounded-xl border border-zinc-200 overflow-hidden text-xs">
+                          {rows.map(({ label, value }, idx) => (
+                            <div key={idx} className="flex items-start gap-3 px-3 sm:px-4 py-2.5 sm:py-3 hover:bg-zinc-50/60 transition-colors">
+                              <span className="text-zinc-500 font-semibold shrink-0 w-[130px] sm:w-[180px] leading-relaxed">{label}</span>
+                              <span className="text-zinc-800 font-medium leading-relaxed break-words min-w-0 flex-1">{value}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Tags / keywords line */}
+                    {tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {tags.map((tag, i) => (
+                          <span key={i} className="px-2.5 py-1 bg-zinc-100 text-zinc-600 rounded-lg text-[11px] font-medium border border-zinc-200">{tag}</span>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Engineering & Connectivity Highlights */}
+                    {((!hideHighlights && highlights.length > 0) || (!hideConnectivity && connectivity.length > 0)) && (
+                      <div className={`grid gap-3 sm:gap-4 ${
+                        (!hideHighlights && highlights.length > 0) && (!hideConnectivity && connectivity.length > 0)
+                          ? 'grid-cols-1 sm:grid-cols-2'
+                          : 'grid-cols-1'
+                      }`}>
+                        {!hideHighlights && highlights.length > 0 && (
+                          <div className="p-3.5 sm:p-4 bg-zinc-50 rounded-2xl border border-zinc-200">
+                            <span className="text-xs font-bold text-zinc-900 block mb-2">Engineering &amp; Architectural Highlights</span>
+                            <ul className="space-y-1.5 text-xs text-zinc-600 list-disc list-inside">
+                              {highlights.map((hl, idx) => (
+                                <li key={idx} className="break-words">{hl}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {!hideConnectivity && connectivity.length > 0 && (
+                          <div className="p-3.5 sm:p-4 bg-zinc-50 rounded-2xl border border-zinc-200">
+                            <span className="text-xs font-bold text-zinc-900 block mb-2">Location Connectivity Advantage</span>
+                            <ul className="space-y-1.5 text-xs text-zinc-600 list-disc list-inside">
+                              {connectivity.map((cn, idx) => (
+                                <li key={idx} className="break-words">{cn}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-
-                  {((!hideHighlights && highlights.length > 0) || (!hideConnectivity && connectivity.length > 0)) && (
-                    <div className={`grid gap-3 sm:gap-4 pt-1 sm:pt-2 ${
-                      (!hideHighlights && highlights.length > 0) && (!hideConnectivity && connectivity.length > 0)
-                        ? 'grid-cols-1 sm:grid-cols-2'
-                        : 'grid-cols-1'
-                    }`}>
-                      {!hideHighlights && highlights.length > 0 && (
-                        <div className="p-3.5 sm:p-4 bg-zinc-50 rounded-2xl border border-zinc-200">
-                          <span className="text-xs font-bold text-zinc-900 block mb-2">Engineering &amp; Architectural Highlights</span>
-                          <ul className="space-y-1.5 text-xs text-zinc-600 list-disc list-inside">
-                            {highlights.map((hl, idx) => (
-                              <li key={idx} className="break-words">{hl}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-
-                      {!hideConnectivity && connectivity.length > 0 && (
-                        <div className="p-3.5 sm:p-4 bg-zinc-50 rounded-2xl border border-zinc-200">
-                          <span className="text-xs font-bold text-zinc-900 block mb-2">Location Connectivity Advantage</span>
-                          <ul className="space-y-1.5 text-xs text-zinc-600 list-disc list-inside">
-                            {connectivity.map((cn, idx) => (
-                              <li key={idx} className="break-words">{cn}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
+                );
+              })()}
 
               {activeTab === 'financials' && (
                 <div className="bg-white rounded-2xl sm:rounded-3xl border border-zinc-200 p-4 sm:p-8 space-y-5 sm:space-y-6 shadow-xs">

@@ -171,10 +171,10 @@ export interface HomepageSearchablePortalProps {
 export function isZeroPrice(val: string | number | undefined | null): boolean {
   if (!val) return true;
   const str = String(val).trim();
-  if (/on request|request/i.test(str)) return true;
+  if (/on request|request|confidential/i.test(str)) return true;
+  if (/^₹?\s*0+(\.0+)?\s*(lakh|cr|crore|lac|k)?(\s*\/\s*(mo|month))?$/i.test(str)) return true;
   const num = Number(str.replace(/[^0-9.]/g, ''));
   if (isNaN(num) || num <= 0) return true;
-  if (/^₹?\s*0+(\.0+)?\s*(lakh|cr|crore|lac)?$/i.test(str)) return true;
   return false;
 }
 
@@ -182,9 +182,10 @@ export function formatPriceDisplay(val: string | number | undefined | null): str
   if (!val) return 'Price on Request';
   if (isZeroPrice(val)) return 'Price on Request';
   const str = String(val).trim();
+  if (isZeroPrice(str)) return 'Price on Request';
   if (str.startsWith('₹') || /cr|lakh|crore/i.test(str)) return str;
   const num = Number(str.replace(/[^0-9.]/g, ''));
-  if (isNaN(num) || num <= 0) return str || 'Price on Request';
+  if (isNaN(num) || num <= 0) return 'Price on Request';
   if (num >= 10000000) {
     const cr = (num / 10000000).toFixed(2).replace(/\.00$/, '');
     return `₹${cr} Cr`;
@@ -379,7 +380,7 @@ const PropertyCard = React.memo(function PropertyCard({
 
             {/* Prominent Price Box */}
             <div className="text-left sm:text-right shrink-0 bg-amber-50/50 sm:bg-transparent p-2 sm:p-0 rounded-lg sm:rounded-xl">
-              {formatPriceDisplay(property.price) === 'Price on Request' || property.hidePrice ? (
+              {formatPriceDisplay(property.price) === 'Price on Request' || isZeroPrice(property.price) || property.hidePrice ? (
                 <button
                   type="button"
                   onClick={(e) => {
@@ -413,10 +414,11 @@ const PropertyCard = React.memo(function PropertyCard({
                 Configuration
               </span>
               <span
-                className={`font-extrabold mt-0.5 block truncate text-[11px] sm:text-xs ${property.isCommercial || property.bhk.includes('Commercial')
+                className={`font-extrabold mt-0.5 block line-clamp-2 break-words text-[11px] sm:text-xs leading-tight ${property.isCommercial || property.bhk.includes('Commercial')
                   ? 'text-blue-950 font-black'
                   : 'text-zinc-900'
                   }`}
+                title={property.bhk}
               >
                 {property.bhk}
               </span>
@@ -4756,7 +4758,7 @@ export function HomepageSearchablePortal({
         <button
           type="button"
           onClick={scrollToTop}
-          className="fixed bottom-[66px] sm:bottom-[72px] lg:bottom-6 right-2.5 sm:right-3.5 lg:right-6 z-40 w-8.5 h-8.5 sm:w-9.5 sm:h-9.5 lg:w-11 lg:h-11 rounded-full bg-gradient-to-tr from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-zinc-950 shadow-[0_4px_16px_rgba(245,158,11,0.35)] hover:shadow-[0_8px_20px_rgba(245,158,11,0.5)] flex items-center justify-center transition-all duration-300 cursor-pointer active:scale-90 hover:-translate-y-0.5 border border-amber-300/60 animate-in fade-in slide-in-from-bottom-2 group"
+          className="fixed bottom-4 sm:bottom-5 lg:bottom-6 right-3 sm:right-4 lg:right-6 z-40 w-8 h-8 sm:w-9 sm:h-9 lg:w-11 lg:h-11 rounded-full bg-gradient-to-tr from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-zinc-950 shadow-[0_4px_16px_rgba(245,158,11,0.35)] hover:shadow-[0_8px_20px_rgba(245,158,11,0.5)] flex items-center justify-center transition-all duration-300 cursor-pointer active:scale-90 hover:-translate-y-0.5 border border-amber-300/60 animate-in fade-in slide-in-from-bottom-2 group"
           title="Go to top"
           aria-label="Go to top"
         >

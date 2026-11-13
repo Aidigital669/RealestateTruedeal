@@ -20,7 +20,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ExternalLink,
-  X
+  X,
+  UploadCloud
 } from 'lucide-react';
 
 interface CrmSidebarProps {
@@ -30,6 +31,7 @@ interface CrmSidebarProps {
   onLogout: () => void;
   mobileOpen?: boolean;
   onMobileClose?: () => void;
+  onOpenUploadBuyers?: () => void;
 }
 
 export function CrmSidebar({
@@ -38,7 +40,8 @@ export function CrmSidebar({
   onOpenAddLead,
   onLogout,
   mobileOpen = false,
-  onMobileClose
+  onMobileClose,
+  onOpenUploadBuyers
 }: CrmSidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [currentUser, setCurrentUser] = useState({
@@ -164,6 +167,16 @@ export function CrmSidebar({
             <CalendarCheck className="w-4 h-4 text-white shrink-0" />
             {(!isCollapsed || mobileOpen) && <span>Schedule Site Visit</span>}
           </button>
+          {onOpenUploadBuyers && (
+            <button
+              onClick={onOpenUploadBuyers}
+              title="Upload Buyers via Excel"
+              className={`w-full mt-2 py-2 ${isCollapsed ? 'px-0 lg:justify-center' : 'px-3 justify-center gap-2'} bg-amber-500/10 hover:bg-amber-500/20 text-amber-800 border border-amber-300 rounded-lg text-xs font-bold transition flex items-center cursor-pointer`}
+            >
+              <UploadCloud className="w-4 h-4 shrink-0" />
+              {(!isCollapsed || mobileOpen) && <span>Upload Buyers</span>}
+            </button>
+          )}
         </div>
 
         {/* Nav Menu */}

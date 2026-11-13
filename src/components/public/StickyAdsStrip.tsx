@@ -150,25 +150,26 @@ export function StickyAdsStrip() {
         ) : (
           /* Full Sticky Strip - Slim and Narrow on Mobile/Tablet */
           <div className="relative bg-zinc-950/95 backdrop-blur-xl border border-zinc-800/90 rounded-2xl shadow-[0_10px_35px_rgba(0,0,0,0.6)] p-1 sm:p-1.5 lg:p-2.5 flex items-center gap-1 sm:gap-2 transition-all max-w-[calc(100vw-16px)] sm:max-w-none">
-            {/* Left Header Image Badge: Gold Crown with Premium Royal Background */}
+            {/* Left Header Image Badge: Gold Crown — compact logo badge */}
             <div className="flex items-center justify-center shrink-0 pr-1 sm:pr-1.5 border-r border-zinc-800/80">
               <div
-                className="relative px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-xl bg-gradient-to-b from-[#2e050f] via-[#420816] to-[#1f030a] border border-amber-400/70 shadow-[0_0_12px_rgba(245,158,11,0.35)] flex items-center justify-center shrink-0 group/crown"
+                className="relative px-1 py-0.5 sm:px-1.5 sm:py-0.5 rounded-lg bg-gradient-to-b from-[#2e050f] via-[#420816] to-[#1f030a] border border-amber-400/70 shadow-[0_0_8px_rgba(245,158,11,0.35)] flex flex-col items-center justify-center shrink-0 group/crown gap-0"
                 title={config.crownTitle || 'Premium Collection'}
               >
                 {/* Subtle Amber Glow Behind the Crown */}
-                <div className="absolute inset-0 rounded-xl bg-[radial-gradient(ellipse_at_center,_rgba(245,158,11,0.25)_0%,_transparent_70%)] pointer-events-none" />
+                <div className="absolute inset-0 rounded-lg bg-[radial-gradient(ellipse_at_center,_rgba(245,158,11,0.25)_0%,_transparent_70%)] pointer-events-none" />
 
-                <div className="relative w-12 h-6 sm:w-14 sm:h-7 lg:w-16 lg:h-8 shrink-0">
+                <div className="relative w-7 h-3.5 sm:w-9 sm:h-4.5 lg:w-11 lg:h-5.5 shrink-0">
                   <Image
                     src={config.crownImage || '/premium-crown.png'}
                     alt={config.crownTitle || 'Premium'}
                     fill
                     unoptimized
                     priority
-                    className="object-contain drop-shadow-[0_2px_6px_rgba(0,0,0,0.8)] group-hover/crown:scale-105 transition-transform duration-200"
+                    className="object-contain drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)] group-hover/crown:scale-105 transition-transform duration-200"
                   />
                 </div>
+                <span className="relative text-[7px] sm:text-[8px] font-black text-amber-400 tracking-widest uppercase leading-none mt-0.5">ANV</span>
               </div>
             </div>
 

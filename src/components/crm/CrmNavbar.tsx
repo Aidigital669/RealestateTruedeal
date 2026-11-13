@@ -9,7 +9,8 @@ import {
   PlusCircle,
   Menu,
   Plus,
-  UserPlus
+  UserPlus,
+  UploadCloud
 } from 'lucide-react';
 
 interface CrmNavbarProps {
@@ -21,6 +22,7 @@ interface CrmNavbarProps {
   onSearchChange: (val: string) => void;
   onOpenMobileSidebar?: () => void;
   onOpenMobileMenu?: () => void;
+  onOpenUploadBuyers?: () => void;
 }
 
 export function CrmNavbar({
@@ -31,7 +33,8 @@ export function CrmNavbar({
   searchTerm,
   onSearchChange,
   onOpenMobileSidebar,
-  onOpenMobileMenu
+  onOpenMobileMenu,
+  onOpenUploadBuyers
 }: CrmNavbarProps) {
   const handleOpenSidebar = onOpenMobileSidebar || onOpenMobileMenu;
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -361,6 +364,16 @@ export function CrmNavbar({
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        {onOpenUploadBuyers && currentTab === 'leads' && (
+          <button
+            onClick={onOpenUploadBuyers}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-zinc-950 rounded-lg text-xs font-bold transition cursor-pointer shadow-xs"
+            title="Import Buyers via Excel"
+          >
+            <UploadCloud className="w-3.5 h-3.5 shrink-0" />
+            <span className="hidden sm:inline">Upload Buyers</span>
+          </button>
+        )}
         <button
           onClick={onOpenAddAction}
           className="px-2.5 sm:px-3.5 py-1.5 bg-black hover:bg-zinc-800 text-white rounded-full text-xs font-semibold transition flex items-center gap-1.5 shadow-2xs cursor-pointer"

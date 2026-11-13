@@ -22,7 +22,7 @@ import {
   PhoneCall,
   Briefcase
 } from 'lucide-react';
-import type { PropertyItem } from '@/components/public/HomepageSearchablePortal';
+import { type PropertyItem, isZeroPrice, formatPriceDisplay } from '@/components/public/HomepageSearchablePortal';
 import { usePropertyComparison } from '@/context/PropertyComparisonContext';
 import { InstantEnquiryModal } from '@/components/public/InstantEnquiryModal';
 import { getClientSession } from '@/lib/user-auth';
@@ -217,7 +217,7 @@ export function PropertyDetailsModal({
                     <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">
                       All-Inclusive Pricing
                     </span>
-                    {property.hidePrice || !property.price || property.price.toLowerCase().includes('request') || property.price === '₹0' ? (
+                    {property.hidePrice || !property.price || isZeroPrice(property.price) || formatPriceDisplay(property.price) === 'Price on Request' ? (
                       <div className="mt-1 flex items-center gap-1.5">
                         <span className="text-xl sm:text-2xl font-black text-zinc-900">
                           Price on Request
@@ -226,7 +226,7 @@ export function PropertyDetailsModal({
                     ) : (
                       <>
                         <span className="text-2xl sm:text-3xl font-black text-zinc-950">
-                          {property.price}
+                          {formatPriceDisplay(property.price)}
                         </span>
                         <span className="text-[11px] text-zinc-500 font-semibold block mt-0.5">
                           {property.priceSuffix || 'All Inclusive'}
@@ -235,7 +235,7 @@ export function PropertyDetailsModal({
                     )}
                   </div>
 
-                  {(property.hidePrice || !property.price || property.price.toLowerCase().includes('request') || property.price === '₹0') && (
+                  {(property.hidePrice || !property.price || isZeroPrice(property.price) || formatPriceDisplay(property.price) === 'Price on Request') && (
                     <button
                       type="button"
                       onClick={() => {

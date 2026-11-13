@@ -14,6 +14,7 @@ import { CrmLeadDossier } from '@/components/crm/CrmLeadDossier';
 import { CrmTelephonyBanner } from '@/components/crm/CrmTelephonyBanner';
 import { CrmPropertiesTab } from '@/components/crm/CrmPropertiesTab';
 import { CrmAddLeadModal } from '@/components/crm/CrmAddLeadModal';
+import { CrmBuyerUploadModal } from '@/components/crm/CrmBuyerUploadModal';
 import { CRM_LEADS_DATA, CrmLead } from '@/lib/crm-data';
 import { X } from 'lucide-react';
 
@@ -31,6 +32,7 @@ export default function CrmPage() {
   const [isDossierOpen, setIsDossierOpen] = useState(false);
   const [isAddLeadOpen, setIsAddLeadOpen] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [buyerUploadOpen, setBuyerUploadOpen] = useState(false);
 
   const fetchLeads = async () => {
     try {
@@ -246,6 +248,7 @@ export default function CrmPage() {
         onTabChange={handleSidebarTabChange}
         onOpenAddLead={() => setIsAddLeadOpen(true)}
         onLogout={handleLogout}
+        onOpenUploadBuyers={() => setBuyerUploadOpen(true)}
         mobileOpen={mobileSidebarOpen}
         onMobileClose={() => setMobileSidebarOpen(false)}
       />
@@ -261,6 +264,7 @@ export default function CrmPage() {
           searchTerm={searchTerm}
           onSearchChange={(val) => setSearchTerm(val)}
           onOpenMobileSidebar={() => setMobileSidebarOpen(true)}
+          onOpenUploadBuyers={() => setBuyerUploadOpen(true)}
         />
 
         {/* Scrollable CRM Body */}
@@ -271,6 +275,7 @@ export default function CrmPage() {
               leads={leads}
               onOpenAddLead={() => setIsAddLeadOpen(true)}
               onSelectLead={handleSelectLeadFromTable}
+              onOpenUploadBuyers={() => setBuyerUploadOpen(true)}
               selectedLeadId={selectedLead?.id}
             />
           )}
@@ -390,6 +395,13 @@ export default function CrmPage() {
           </div>
         </div>
       )}
+
+      {/* Buyer Excel Upload Modal */}
+      <CrmBuyerUploadModal
+        isOpen={buyerUploadOpen}
+        onClose={() => setBuyerUploadOpen(false)}
+        onImportComplete={() => { fetchLeads(); }}
+      />
 
       {/* Interactive + Add Lead Modal */}
       <CrmAddLeadModal
