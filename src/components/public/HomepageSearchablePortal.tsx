@@ -2030,6 +2030,7 @@ export function HomepageSearchablePortal({
                     }
                   }}
                   onKeyDown={handleSearchKeyDown}
+                  suppressHydrationWarning
                   placeholder={
                     isMobile
                       ? "Search properties & buyers by location, budget..."
@@ -2165,7 +2166,7 @@ export function HomepageSearchablePortal({
             </div>
 
             {/* Real-time Counts & View Mode Switcher Row */}
-            <div className="mt-2 sm:mt-2.5 lg:mt-3 pt-2 sm:pt-2.5 lg:pt-3 border-t border-zinc-100 flex items-center justify-between gap-2">
+            <div className="mt-2 sm:mt-2.5 lg:mt-3 pt-2 sm:pt-2.5 lg:pt-3 border-t border-zinc-100 flex items-center justify-between gap-2" suppressHydrationWarning>
               <div className="flex items-center gap-1.5 sm:gap-2 text-xs shrink-0">
                 <span
                   className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 lg:px-3 py-1 sm:py-1 lg:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold bg-zinc-950 text-white select-none cursor-default shadow-xs shrink-0"

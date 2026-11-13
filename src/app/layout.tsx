@@ -66,6 +66,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} min-h-full antialiased w-full`}
     >
       <head>
@@ -74,7 +75,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://www.googletagmanager.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
       </head>
-      <body className="min-h-full flex flex-col w-full max-w-full">
+      <body className="min-h-full flex flex-col w-full max-w-full" suppressHydrationWarning>
         {/* Google tag (gtag.js) */}
         <Script
           strategy="afterInteractive"
