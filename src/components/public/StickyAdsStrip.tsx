@@ -131,10 +131,10 @@ export function StickyAdsStrip() {
           <button
             type="button"
             onClick={() => setIsMinimized(false)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-zinc-950 via-[#2e050f] to-zinc-950 hover:from-zinc-900 hover:to-[#420816] text-white border border-amber-500/50 shadow-xl backdrop-blur-md transition-all hover:scale-105 cursor-pointer shadow-[0_0_14px_rgba(245,158,11,0.3)]"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gradient-to-r from-zinc-950 via-[#2e050f] to-zinc-950 hover:from-zinc-900 hover:to-[#420816] text-white border border-amber-500/50 shadow-xl backdrop-blur-md transition-all hover:scale-105 cursor-pointer shadow-[0_0_14px_rgba(245,158,11,0.3)]"
             title="Expand Premium"
           >
-            <div className="relative w-7 h-4 shrink-0">
+            <div className="relative w-4 h-2.5 sm:w-5 sm:h-3 shrink-0">
               <Image
                 src={config.crownImage || '/premium-crown.png'}
                 alt={config.crownTitle || 'Premium'}
@@ -143,34 +143,31 @@ export function StickyAdsStrip() {
                 className="object-contain drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]"
               />
             </div>
-            <span className="text-[10px] text-amber-300 font-bold bg-amber-950/80 border border-amber-500/40 px-1.5 py-0.2 rounded-full">
+            <span className="text-[9px] text-amber-300 font-bold bg-amber-950/80 border border-amber-500/40 px-1 py-0.2 rounded-full leading-none">
               {adItems.length}
             </span>
           </button>
         ) : (
-          /* Full Sticky Strip - Slim and Narrow on Mobile/Tablet */
-          <div className="relative bg-zinc-950/95 backdrop-blur-xl border border-zinc-800/90 rounded-2xl shadow-[0_10px_35px_rgba(0,0,0,0.6)] p-1 sm:p-1.5 lg:p-2.5 flex items-center gap-1 sm:gap-2 transition-all max-w-[calc(100vw-16px)] sm:max-w-none">
-            {/* Left Header Image Badge: Gold Crown — compact logo badge */}
-            <div className="flex items-center justify-center shrink-0 pr-1 sm:pr-1.5 border-r border-zinc-800/80">
-              <div
-                className="relative px-1 py-0.5 sm:px-1.5 sm:py-0.5 rounded-lg bg-gradient-to-b from-[#2e050f] via-[#420816] to-[#1f030a] border border-amber-400/70 shadow-[0_0_8px_rgba(245,158,11,0.35)] flex flex-col items-center justify-center shrink-0 group/crown gap-0"
-                title={config.crownTitle || 'Premium Collection'}
-              >
-                {/* Subtle Amber Glow Behind the Crown */}
-                <div className="absolute inset-0 rounded-lg bg-[radial-gradient(ellipse_at_center,_rgba(245,158,11,0.25)_0%,_transparent_70%)] pointer-events-none" />
-
-                <div className="relative w-7 h-3.5 sm:w-9 sm:h-4.5 lg:w-11 lg:h-5.5 shrink-0">
-                  <Image
-                    src={config.crownImage || '/premium-crown.png'}
-                    alt={config.crownTitle || 'Premium'}
-                    fill
-                    unoptimized
-                    priority
-                    className="object-contain drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)] group-hover/crown:scale-105 transition-transform duration-200"
-                  />
-                </div>
-                <span className="relative text-[7px] sm:text-[8px] font-black text-amber-400 tracking-widest uppercase leading-none mt-0.5">ANV</span>
+          /* Full Sticky Strip - Slim, Narrow and Compact on Mobile/Tablet */
+          <div className="relative bg-zinc-950/95 backdrop-blur-xl border border-zinc-800/90 rounded-2xl shadow-[0_10px_35px_rgba(0,0,0,0.6)] px-1.5 sm:px-2 py-1.5 sm:py-1.5 pt-2 sm:pt-2 flex items-center gap-1 sm:gap-1.5 transition-all max-w-[calc(100vw-16px)] sm:max-w-none">
+            {/* Small Premium Crown Logo set on the top border */}
+            <div
+              className="absolute -top-2.5 left-3 sm:left-4 z-20 px-1.5 py-0.5 rounded-full bg-gradient-to-r from-zinc-950 via-[#3a0815] to-zinc-950 border border-amber-400/80 shadow-[0_2px_8px_rgba(0,0,0,0.8)] flex items-center gap-1 group/crown pointer-events-none select-none"
+              title={config.crownTitle || 'Premium Collection'}
+            >
+              <div className="relative w-3.5 h-2 sm:w-4 sm:h-2.5 shrink-0">
+                <Image
+                  src={config.crownImage || '/premium-crown.png'}
+                  alt={config.crownTitle || 'Premium'}
+                  fill
+                  unoptimized
+                  priority
+                  className="object-contain drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]"
+                />
               </div>
+              <span className="text-[7.5px] sm:text-[8px] font-black text-amber-300 tracking-wider uppercase leading-none">
+                PREMIUM
+              </span>
             </div>
 
             {/* Left Scroll Arrow */}
