@@ -4758,7 +4758,7 @@ export function HomepageSearchablePortal({
         <button
           type="button"
           onClick={scrollToTop}
-          className="fixed bottom-[80px] sm:bottom-[88px] lg:bottom-6 right-3 sm:right-4 lg:right-6 z-40 w-8 h-8 sm:w-9 sm:h-9 lg:w-11 lg:h-11 rounded-full bg-gradient-to-tr from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-zinc-950 shadow-[0_4px_16px_rgba(245,158,11,0.35)] hover:shadow-[0_8px_20px_rgba(245,158,11,0.5)] flex items-center justify-center transition-all duration-300 cursor-pointer active:scale-90 hover:-translate-y-0.5 border border-amber-300/60 animate-in fade-in slide-in-from-bottom-2 group"
+          className="fixed bottom-[64px] sm:bottom-[70px] lg:bottom-6 right-3 sm:right-4 lg:right-6 z-40 w-7.5 h-7.5 sm:w-8.5 sm:h-8.5 lg:w-10 lg:h-10 rounded-full bg-gradient-to-tr from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-zinc-950 shadow-[0_4px_16px_rgba(245,158,11,0.35)] hover:shadow-[0_8px_20px_rgba(245,158,11,0.5)] flex items-center justify-center transition-all duration-300 cursor-pointer active:scale-90 hover:-translate-y-0.5 border border-amber-300/60 animate-in fade-in slide-in-from-bottom-2 group"
           title="Go to top"
           aria-label="Go to top"
         >
