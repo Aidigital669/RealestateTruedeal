@@ -30,7 +30,7 @@ export function PublicFooter() {
   );
 
   return (
-    <footer className="bg-zinc-950 text-zinc-300 pt-16 pb-12 border-t border-zinc-800" role="contentinfo">
+    <footer className="bg-zinc-950 text-zinc-300 pt-16 pb-12 border-t border-zinc-800" role="contentinfo" suppressHydrationWarning>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Top Grid: Brand, Categories Columns, Contact */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-8 pb-12 border-b border-zinc-800/80">
@@ -172,11 +172,11 @@ export function PublicFooter() {
         </div>
 
         {/* Bottom Bar: Copyright & Compliance */}
-        <div className="pt-8 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-zinc-500">
-          <p>
+        <div className="pt-8 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-zinc-500" suppressHydrationWarning>
+          <div className="text-xs text-zinc-500 text-center sm:text-left" suppressHydrationWarning>
             &copy; {currentYear} ANV REEALTY. Institutional Real Estate Advisory. All rights reserved.
-          </p>
-          <div className="flex flex-wrap items-center gap-4 text-[11px] text-zinc-500">
+          </div>
+          <div className="flex flex-wrap items-center gap-4 text-[11px] text-zinc-500" suppressHydrationWarning>
             <span>Verified Portfolio</span>
             <span>&bull;</span>
             <span>Institutional Due Diligence</span>

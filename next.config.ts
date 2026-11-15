@@ -3,7 +3,6 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   devIndicators: false,
   output: "standalone",
-  compress: true,
   poweredByHeader: false,
   trailingSlash: false,
   serverExternalPackages: ['pdf-parse', '@napi-rs/canvas', 'pg'],
@@ -61,15 +60,6 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/:all*(svg|jpg|png|webp|avif|ico)',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-        ],
-      },
-      {
-        source: '/_next/static/:path*',
         headers: [
           {
             key: 'Cache-Control',
