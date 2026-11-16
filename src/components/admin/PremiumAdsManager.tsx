@@ -312,29 +312,31 @@ export function PremiumAdsManager({ showToast }: PremiumAdsManagerProps) {
 
         {/* Floating Simulator Container */}
         <div className="py-4 flex items-center justify-center bg-zinc-900/60 rounded-2xl border border-zinc-800/80 min-h-[90px] overflow-x-auto">
-          <div className="relative bg-zinc-950/95 backdrop-blur-xl border border-zinc-800/90 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.6)] p-2 sm:p-2.5 flex items-center gap-2 sm:gap-2.5">
-            {/* Crown Logo Badge */}
-            <div className="flex items-center justify-center shrink-0 pr-2 border-r border-zinc-800/80">
+          {/* Live Mockup Match Container */}
+          <div className="relative bg-[#0a0a0c]/98 backdrop-blur-xl border border-zinc-800/80 rounded-[32px] sm:rounded-[38px] shadow-[0_20px_50px_rgba(0,0,0,0.85)] px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-4 sm:gap-7 lg:gap-10 transition-all max-w-[calc(100vw-32px)]">
+            {/* Left Corner: Crown Badge */}
+            <div className="shrink-0 self-start mt-0.5">
               <div
-                className="relative px-2 py-1 rounded-xl bg-gradient-to-b from-[#2e050f] via-[#420816] to-[#1f030a] border border-amber-400/70 shadow-[0_0_16px_rgba(245,158,11,0.35)] flex items-center justify-center shrink-0"
+                className="relative px-2 sm:px-2.5 py-1 rounded-xl bg-gradient-to-b from-[#2e050f] via-[#420816] to-[#1f030a] border border-amber-400/80 shadow-[0_0_10px_rgba(245,158,11,0.35)] flex items-center justify-center"
                 title={config.crownTitle}
               >
-                <div className="relative w-14 h-7 sm:w-16 sm:h-8 shrink-0">
+                <div className="relative w-8 h-4 sm:w-10 sm:h-5 shrink-0">
                   <Image
                     src={config.crownImage || '/premium-crown.png'}
                     alt="Premium Crown"
                     fill
                     unoptimized
-                    className="object-contain drop-shadow-[0_2px_6px_rgba(0,0,0,0.8)]"
+                    className="object-contain drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]"
                   />
                 </div>
               </div>
             </div>
 
-            {/* Circles Preview Rail */}
-            <div className="flex items-center gap-2 overflow-x-auto scrollbar-none py-1 px-0.5">
+            {/* Center: 3 Circular Ad Avatars with Gold Rings and Labels */}
+            <div className="flex items-center justify-center gap-3 sm:gap-6 lg:gap-8">
               {config.ads
                 .filter((a) => a.isActive !== false)
+                .slice(0, 3)
                 .map((ad) => (
                   <button
                     key={ad.id}
@@ -343,34 +345,32 @@ export function PremiumAdsManager({ showToast }: PremiumAdsManagerProps) {
                       setPreviewAd(ad);
                       setPreviewMuted(true);
                     }}
-                    className="flex flex-col items-center gap-1 shrink-0 group cursor-pointer w-[48px] sm:w-[56px]"
+                    className="flex flex-col items-center group cursor-pointer focus:outline-none"
                     title={`Preview ${ad.name}`}
                   >
-                    <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full p-[2px] bg-gradient-to-tr from-amber-500 via-yellow-300 to-amber-600 shadow-md group-hover:scale-105 transition-transform duration-200">
-                      <div className="w-full h-full rounded-full overflow-hidden relative bg-black">
-                        <Image
-                          src={ad.image || '/opus-thumb.jpg'}
-                          alt={ad.name}
-                          fill
-                          unoptimized
-                          className="object-cover"
-                        />
-                      </div>
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-full border-[3px] border-amber-400 overflow-hidden relative shadow-[0_0_12px_rgba(245,158,11,0.4)] group-hover:scale-105 transition-transform duration-200 bg-black">
+                      <Image
+                        src={ad.image || '/opus-thumb.jpg'}
+                        alt={ad.name}
+                        fill
+                        unoptimized
+                        className="object-cover"
+                      />
                     </div>
-                    <span className="text-[10px] font-medium text-zinc-200 group-hover:text-amber-400 truncate max-w-[56px] text-center">
+                    <span className="text-[11px] sm:text-xs font-semibold text-white group-hover:text-amber-400 transition-colors mt-1.5 text-center truncate max-w-[60px] sm:max-w-[76px] leading-tight">
                       {ad.name}
                     </span>
                   </button>
                 ))}
+            </div>
 
-              {/* Promote button */}
-              <div className="flex flex-col items-center gap-1 shrink-0 w-[48px] sm:w-[56px]">
-                <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full border-2 border-dashed border-zinc-700 bg-zinc-900/80 text-zinc-400 flex items-center justify-center">
-                  <Plus className="w-4 h-4" />
-                </div>
-                <span className="text-[10px] text-zinc-500 truncate max-w-[50px] text-center">
-                  Promote
-                </span>
+            {/* Right Side: Next Arrow + Close Button */}
+            <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-zinc-800 text-white flex items-center justify-center shadow-md">
+                <ChevronRight className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+              </div>
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-zinc-800 text-white flex items-center justify-center shadow-md">
+                <X className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
               </div>
             </div>
           </div>
