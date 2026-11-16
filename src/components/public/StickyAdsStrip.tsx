@@ -4,19 +4,67 @@ import React, { useState, useRef, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import {
-  Sparkles,
-  ChevronRight,
-  X,
-  Volume2,
-  VolumeX,
-  ExternalLink
-} from 'lucide-react';
-import {
   PremiumAdItem,
   PremiumAdsConfig,
   DEFAULT_PREMIUM_CONFIG
 } from '@/lib/premium-ads-constants';
 import { usePropertyComparison } from '@/context/PropertyComparisonContext';
+
+// Self-contained inline SVG icons to eliminate external chunk cache desyncs
+function ChevronRightIcon({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <polyline points="9 18 15 12 9 6" />
+    </svg>
+  );
+}
+
+function CloseIcon({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  );
+}
+
+function Volume2Icon({ className = 'w-3.5 h-3.5' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+      <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+      <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+    </svg>
+  );
+}
+
+function VolumeXIcon({ className = 'w-3.5 h-3.5' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+      <line x1="23" y1="9" x2="17" y2="15" />
+      <line x1="17" y1="9" x2="23" y2="15" />
+    </svg>
+  );
+}
+
+function ExternalLinkIcon({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+      <polyline points="15 3 21 3 21 9" />
+      <line x1="10" y1="14" x2="21" y2="3" />
+    </svg>
+  );
+}
+
+function SparklesIcon({ className = 'w-3.5 h-3.5' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
+    </svg>
+  );
+}
 
 export type AdItem = PremiumAdItem;
 
@@ -192,7 +240,7 @@ export function StickyAdsStrip() {
                   title="Next ad"
                   aria-label="Next ad"
                 >
-                  <ChevronRight className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+                  <ChevronRightIcon className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
                 </button>
               )}
 
@@ -204,7 +252,7 @@ export function StickyAdsStrip() {
                 title="Close ads strip"
                 aria-label="Close ads strip"
               >
-                <X className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+                <CloseIcon className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
               </button>
             </div>
           </div>
@@ -246,7 +294,7 @@ export function StickyAdsStrip() {
                 className="w-8 h-8 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white flex items-center justify-center transition cursor-pointer shrink-0"
                 title="Close ad"
               >
-                <X className="w-4 h-4" />
+                <CloseIcon className="w-4 h-4" />
               </button>
             </div>
 
@@ -275,9 +323,9 @@ export function StickyAdsStrip() {
                     className="absolute bottom-3 right-3 px-2.5 py-1.5 rounded-xl bg-black/75 hover:bg-black text-white text-xs font-bold border border-white/20 backdrop-blur-sm flex items-center gap-1.5 transition cursor-pointer"
                   >
                     {isVideoMuted ? (
-                      <VolumeX className="w-3.5 h-3.5" />
+                      <VolumeXIcon className="w-3.5 h-3.5" />
                     ) : (
-                      <Volume2 className="w-3.5 h-3.5 text-amber-400" />
+                      <Volume2Icon className="w-3.5 h-3.5 text-amber-400" />
                     )}
                     <span>{isVideoMuted ? 'Unmute' : 'Audio On'}</span>
                   </button>
@@ -311,14 +359,14 @@ export function StickyAdsStrip() {
                   className="w-full sm:flex-1 py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition shadow-md cursor-pointer"
                 >
                   <span>{activeAd.ctaText}</span>
-                  <ExternalLink className="w-4 h-4" />
+                  <ExternalLinkIcon className="w-4 h-4" />
                 </button>
                 <button
                   type="button"
                   onClick={handlePromoteClick}
                   className="w-full sm:w-auto py-3 px-4 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                  <SparklesIcon className="w-3.5 h-3.5 text-amber-500" />
                   <span>Promote Your Ad</span>
                 </button>
               </div>
