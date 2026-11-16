@@ -182,7 +182,7 @@ export function CategoryDetailPageClient({
                   onClick={() => setIsModalOpen(true)}
                   className="w-full py-2.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-xs font-medium text-white transition text-center block cursor-pointer"
                 >
-                  Schedule Private Site Visit
+                  Schedule Site Visit
                 </button>
               </div>
             </div>
