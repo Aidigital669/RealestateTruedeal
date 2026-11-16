@@ -10,15 +10,7 @@ import {
 } from '@/lib/premium-ads-constants';
 
 // Self-contained inline SVG icons to eliminate Turbopack module chunk cache desyncs
-function ChevronLeftIcon({ className = 'w-3 h-3' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <polyline points="15 18 9 12 15 6" />
-    </svg>
-  );
-}
-
-function ChevronRightIcon({ className = 'w-3 h-3' }: { className?: string }) {
+function ChevronRightIcon({ className = 'w-3.5 h-3.5' }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
       <polyline points="9 18 15 12 9 6" />
@@ -26,16 +18,7 @@ function ChevronRightIcon({ className = 'w-3 h-3' }: { className?: string }) {
   );
 }
 
-function PlusIcon({ className = 'w-4 h-4' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <line x1="12" y1="5" x2="12" y2="19" />
-      <line x1="5" y1="12" x2="19" y2="12" />
-    </svg>
-  );
-}
-
-function CloseIcon({ className = 'w-3 h-3' }: { className?: string }) {
+function CloseIcon({ className = 'w-3.5 h-3.5' }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
       <line x1="18" y1="6" x2="6" y2="18" />
@@ -91,11 +74,9 @@ export function FeaturedAdsBar() {
   const [config, setConfig] = useState<PremiumAdsConfig>(DEFAULT_PREMIUM_CONFIG);
   const [activeAd, setActiveAd] = useState<PremiumAdItem | null>(null);
   const [isMinimized, setIsMinimized] = useState(false);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(true);
-  const [isVideoMuted, setIsVideoMuted] = useState(true);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [isVideoMuted, setIsVideoMuted] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -138,46 +119,20 @@ export function FeaturedAdsBar() {
 
   const adItems = config.ads.filter((ad) => ad.isActive !== false);
 
-  const checkScroll = () => {
-    if (!scrollRef.current) return;
-    const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
-    setCanScrollLeft(scrollLeft > 4);
-    setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 4);
-  };
-
-  useEffect(() => {
-    if (pathname?.startsWith('/admin') || pathname?.startsWith('/crm')) {
-      return;
-    }
-    checkScroll();
-  }, [pathname, mounted, adItems.length]);
-
-  // Gentle auto-rotation through the ads every 3.8s when not hovered or active
+  // Auto-advance by 1 ad every 3.8s when not hovered or active
   useEffect(() => {
     if (!mounted || activeAd || isMinimized || isHovered || adItems.length <= 3) return;
 
     const timer = setInterval(() => {
-      if (!scrollRef.current) return;
-      const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
-      if (scrollLeft + clientWidth >= scrollWidth - 8) {
-        scrollRef.current.scrollTo({ left: 0, behavior: 'smooth' });
-      } else {
-        scrollRef.current.scrollBy({ left: 62, behavior: 'smooth' });
-      }
-      setTimeout(checkScroll, 250);
+      setCurrentIndex((prev) => (prev + 1) % adItems.length);
     }, 3800);
 
     return () => clearInterval(timer);
   }, [mounted, activeAd, isMinimized, isHovered, adItems.length]);
 
-  const handleScroll = (direction: 'left' | 'right') => {
-    if (!scrollRef.current) return;
-    const scrollAmount = scrollRef.current.clientWidth || 188;
-    scrollRef.current.scrollBy({
-      left: direction === 'left' ? -scrollAmount : scrollAmount,
-      behavior: 'smooth'
-    });
-    setTimeout(checkScroll, 200);
+  const handleNext = () => {
+    if (adItems.length <= 1) return;
+    setCurrentIndex((prev) => (prev + 1) % adItems.length);
   };
 
   const handleOpenAd = (ad: PremiumAdItem) => {
@@ -214,9 +169,15 @@ export function FeaturedAdsBar() {
     return null;
   }
 
+  // EXACTLY 3 ads on the front at any time
+  const displayCount = Math.min(3, adItems.length);
+  const visibleAds = Array.from({ length: displayCount }).map((_, idx) => {
+    return adItems[(currentIndex + idx) % adItems.length];
+  });
+
   return (
     <>
-      {/* ================= STICKY ADS STRIP (EXACT SCREENSHOT MATCH) ================= */}
+      {/* ================= FEATURED ADS BAR (EXACT MATCH WITH DESIGN MOCKUP) ================= */}
       <aside
         aria-label="Sponsored Partners and Ads"
         className={`fixed ${
@@ -247,13 +208,13 @@ export function FeaturedAdsBar() {
             </span>
           </button>
         ) : (
-          /* Full Sticky Strip - Exact Match with Original Visual Design */
+          /* Full Sticky Strip - Exact Match with User Design (Black background, exactly 3 ads, Next & Cross buttons) */
           <div
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
-            className="relative bg-[#0d0d10]/95 backdrop-blur-xl border border-zinc-800/90 rounded-[22px] sm:rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.7)] px-2 py-2 sm:px-3 sm:py-2.5 flex items-center gap-2 sm:gap-2.5 transition-all max-w-[calc(100vw-16px)] sm:max-w-none"
+            className="relative bg-[#0d0d10] border border-zinc-800/90 rounded-[22px] sm:rounded-2xl shadow-[0_14px_45px_rgba(0,0,0,0.85)] px-2.5 py-2 sm:px-3 sm:py-2.5 flex items-center gap-2 sm:gap-2.5 transition-all max-w-[calc(100vw-16px)] sm:max-w-none"
           >
-            {/* Left Header Image Badge: Gold Crown with Premium Royal Background */}
+            {/* Left Header Image Badge: Gold Crown with Premium Royal Wine Background */}
             <div className="flex items-center justify-center shrink-0 pr-1.5 border-r border-zinc-800/80">
               <div
                 className="relative px-2 py-1 rounded-xl bg-gradient-to-b from-[#2e050f] via-[#420816] to-[#1f030a] border border-amber-400/70 shadow-[0_0_16px_rgba(245,158,11,0.35)] flex items-center justify-center shrink-0 group/crown"
@@ -275,33 +236,15 @@ export function FeaturedAdsBar() {
               </div>
             </div>
 
-            {/* Left Scroll Arrow */}
-            {canScrollLeft && (
-              <button
-                type="button"
-                onClick={() => handleScroll('left')}
-                className="w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-full bg-[#1e1e24] hover:bg-zinc-700 text-zinc-300 hover:text-white flex items-center justify-center transition shrink-0 cursor-pointer shadow-sm"
-                title="Scroll previous ads"
-              >
-                <ChevronLeftIcon className="w-3.5 h-3.5" />
-              </button>
-            )}
-
-            {/* Circles Rail: Shows exactly 3 Ads at a time, horizontal scrolling reveals more */}
-            <div
-              ref={scrollRef}
-              onScroll={checkScroll}
-              className="flex items-center gap-2 sm:gap-2.5 overflow-x-auto scrollbar-none py-1 px-0.5 w-[164px] sm:w-[190px] max-w-[164px] sm:max-w-[190px] scroll-smooth"
-              style={{ scrollSnapType: 'x mandatory' }}
-            >
-              {adItems.map((ad) => (
+            {/* Center: EXACTLY 3 Ad Avatars Visible on the Front */}
+            <div className="flex items-center gap-2 sm:gap-2.5 py-0.5 px-0.5">
+              {visibleAds.map((ad, idx) => (
                 <button
-                  key={ad.id}
+                  key={`${ad.id}-${currentIndex}-${idx}`}
                   type="button"
                   onClick={() => handleOpenAd(ad)}
-                  className="flex flex-col items-center gap-1 shrink-0 group/circle cursor-pointer focus:outline-none w-[48px] sm:w-[56px]"
+                  className="flex flex-col items-center gap-1 shrink-0 group/circle cursor-pointer focus:outline-none w-[48px] sm:w-[56px] transition-transform duration-200"
                   title={`${ad.name} - ${ad.tagline}`}
-                  style={{ scrollSnapAlign: 'start' }}
                 >
                   {/* Circular Avatar Container with Gold Luxury Border */}
                   <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full p-[2px] bg-gradient-to-tr from-amber-500 via-yellow-300 to-amber-600 shadow-[0_0_12px_rgba(245,158,11,0.55)] group-hover/circle:shadow-[0_0_18px_rgba(245,158,11,0.85)] group-hover/circle:scale-105 transition-all duration-200">
@@ -322,46 +265,32 @@ export function FeaturedAdsBar() {
                   </span>
                 </button>
               ))}
-
-              {/* "+ Promote" Circle Button at the end */}
-              <button
-                type="button"
-                onClick={handlePromoteClick}
-                className="flex flex-col items-center gap-1 shrink-0 group/promote cursor-pointer focus:outline-none w-[48px] sm:w-[56px]"
-                title="Advertise your business here on ANV Realty"
-                style={{ scrollSnapAlign: 'start' }}
-              >
-                <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full border-2 border-dashed border-zinc-700 hover:border-amber-400 bg-zinc-900/80 hover:bg-zinc-800 text-zinc-400 hover:text-amber-400 flex items-center justify-center transition-all group-hover/promote:scale-105">
-                  <PlusIcon className="w-4 h-4" />
-                </div>
-                <span className="text-[10.5px] font-medium text-zinc-400 group-hover/promote:text-amber-400 transition-colors truncate max-w-[50px] text-center leading-tight">
-                  Promote
-                </span>
-              </button>
             </div>
 
-            {/* Right Scroll Arrow */}
-            {canScrollRight && (
+            {/* Right Side: Next Arrow + Cross / Close Buttons side by side */}
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 pl-0.5">
+              {/* Next Button `>` */}
               <button
                 type="button"
-                onClick={() => handleScroll('right')}
-                className="w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-full bg-[#1e1e24] hover:bg-zinc-700 text-zinc-300 hover:text-white flex items-center justify-center transition shrink-0 cursor-pointer shadow-sm"
-                title="Scroll more ads"
+                onClick={handleNext}
+                className="w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-full bg-[#1e1e24] hover:bg-zinc-700 active:scale-95 text-zinc-300 hover:text-white flex items-center justify-center transition shrink-0 cursor-pointer shadow-sm"
+                title="Next ad"
+                aria-label="Next ad"
               >
                 <ChevronRightIcon className="w-3.5 h-3.5" />
               </button>
-            )}
 
-            {/* Quick Minimize X Button */}
-            <button
-              type="button"
-              onClick={() => setIsMinimized(true)}
-              className="w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-full bg-[#1e1e24] hover:bg-zinc-700 text-zinc-300 hover:text-white flex items-center justify-center transition shrink-0 cursor-pointer shadow-sm ml-0.5"
-              title="Minimize ads"
-              aria-label="Minimize ads"
-            >
-              <CloseIcon className="w-3.5 h-3.5" />
-            </button>
+              {/* Cross / Close Button `✕` */}
+              <button
+                type="button"
+                onClick={() => setIsMinimized(true)}
+                className="w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-full bg-[#1e1e24] hover:bg-zinc-700 active:scale-95 text-zinc-300 hover:text-white flex items-center justify-center transition shrink-0 cursor-pointer shadow-sm"
+                title="Close ads"
+                aria-label="Close ads"
+              >
+                <CloseIcon className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
         )}
       </aside>
