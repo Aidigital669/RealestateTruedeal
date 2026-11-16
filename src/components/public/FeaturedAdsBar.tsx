@@ -208,16 +208,17 @@ export function FeaturedAdsBar() {
             </span>
           </button>
         ) : (
-          /* Full Sticky Strip - Exact Match with User Design (Black background, exactly 3 ads, Next & Cross buttons) */
+          /* Full Sticky Strip - Exact Match with User Design (Pitch Black #000000 background, exactly 3 ads, Next & Cross buttons) */
           <div
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
-            className="relative bg-[#0d0d10] border border-zinc-800/90 rounded-[22px] sm:rounded-2xl shadow-[0_14px_45px_rgba(0,0,0,0.85)] px-2.5 py-2 sm:px-3 sm:py-2.5 flex items-center gap-2 sm:gap-2.5 transition-all max-w-[calc(100vw-16px)] sm:max-w-none"
+            style={{ backgroundColor: '#000000' }}
+            className="relative bg-black border border-zinc-800/90 rounded-[26px] sm:rounded-3xl shadow-[0_16px_50px_rgba(0,0,0,0.95)] px-3 py-2.5 sm:px-4 sm:py-3 flex items-center gap-2.5 sm:gap-3 transition-all max-w-[calc(100vw-16px)] sm:max-w-none"
           >
             {/* Left Header Image Badge: Gold Crown with Premium Royal Wine Background */}
-            <div className="flex items-center justify-center shrink-0 pr-1.5 border-r border-zinc-800/80">
+            <div className="flex items-center justify-center shrink-0 pr-2 border-r border-zinc-800/90">
               <div
-                className="relative px-2 py-1 rounded-xl bg-gradient-to-b from-[#2e050f] via-[#420816] to-[#1f030a] border border-amber-400/70 shadow-[0_0_16px_rgba(245,158,11,0.35)] flex items-center justify-center shrink-0 group/crown"
+                className="relative px-2.5 py-1 rounded-xl bg-gradient-to-b from-[#2e050f] via-[#420816] to-[#1f030a] border border-amber-400/80 shadow-[0_0_16px_rgba(245,158,11,0.4)] flex items-center justify-center shrink-0 group/crown"
                 title={config.crownTitle || 'Premium Collection'}
               >
                 {/* Subtle Amber Glow Behind the Crown */}
@@ -237,17 +238,17 @@ export function FeaturedAdsBar() {
             </div>
 
             {/* Center: EXACTLY 3 Ad Avatars Visible on the Front */}
-            <div className="flex items-center gap-2 sm:gap-2.5 py-0.5 px-0.5">
+            <div className="flex items-center gap-2.5 sm:gap-3 py-0.5 px-0.5">
               {visibleAds.map((ad, idx) => (
                 <button
                   key={`${ad.id}-${currentIndex}-${idx}`}
                   type="button"
                   onClick={() => handleOpenAd(ad)}
-                  className="flex flex-col items-center gap-1 shrink-0 group/circle cursor-pointer focus:outline-none w-[48px] sm:w-[56px] transition-transform duration-200"
+                  className="flex flex-col items-center gap-1 shrink-0 group/circle cursor-pointer focus:outline-none w-[50px] sm:w-[58px] transition-transform duration-200"
                   title={`${ad.name} - ${ad.tagline}`}
                 >
                   {/* Circular Avatar Container with Gold Luxury Border */}
-                  <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full p-[2px] bg-gradient-to-tr from-amber-500 via-yellow-300 to-amber-600 shadow-[0_0_12px_rgba(245,158,11,0.55)] group-hover/circle:shadow-[0_0_18px_rgba(245,158,11,0.85)] group-hover/circle:scale-105 transition-all duration-200">
+                  <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full p-[2px] bg-gradient-to-tr from-amber-500 via-yellow-300 to-amber-600 shadow-[0_0_12px_rgba(245,158,11,0.6)] group-hover/circle:shadow-[0_0_18px_rgba(245,158,11,0.9)] group-hover/circle:scale-105 transition-all duration-200">
                     <div className="w-full h-full rounded-full overflow-hidden relative bg-black">
                       <Image
                         src={ad.image || '/opus-thumb.jpg'}
@@ -260,7 +261,7 @@ export function FeaturedAdsBar() {
                   </div>
 
                   {/* Name Label underneath */}
-                  <span className="text-[11px] font-medium text-white group-hover/circle:text-amber-300 transition-colors truncate max-w-[56px] text-center leading-tight">
+                  <span className="text-[11px] sm:text-xs font-medium text-white group-hover/circle:text-amber-300 transition-colors truncate max-w-[58px] text-center leading-tight mt-0.5">
                     {ad.name}
                   </span>
                 </button>
@@ -268,12 +269,12 @@ export function FeaturedAdsBar() {
             </div>
 
             {/* Right Side: Next Arrow + Cross / Close Buttons side by side */}
-            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 pl-0.5">
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 pl-1">
               {/* Next Button `>` */}
               <button
                 type="button"
                 onClick={handleNext}
-                className="w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-full bg-[#1e1e24] hover:bg-zinc-700 active:scale-95 text-zinc-300 hover:text-white flex items-center justify-center transition shrink-0 cursor-pointer shadow-sm"
+                className="w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-full bg-[#1e1e24] hover:bg-zinc-700 active:scale-95 text-zinc-300 hover:text-white flex items-center justify-center transition shrink-0 cursor-pointer shadow-sm"
                 title="Next ad"
                 aria-label="Next ad"
               >
@@ -284,7 +285,7 @@ export function FeaturedAdsBar() {
               <button
                 type="button"
                 onClick={() => setIsMinimized(true)}
-                className="w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-full bg-[#1e1e24] hover:bg-zinc-700 active:scale-95 text-zinc-300 hover:text-white flex items-center justify-center transition shrink-0 cursor-pointer shadow-sm"
+                className="w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-full bg-[#1e1e24] hover:bg-zinc-700 active:scale-95 text-zinc-300 hover:text-white flex items-center justify-center transition shrink-0 cursor-pointer shadow-sm"
                 title="Close ads"
                 aria-label="Close ads"
               >
