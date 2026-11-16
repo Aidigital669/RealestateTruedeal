@@ -75,6 +75,7 @@ export function LuxuryAdsStrip() {
   const [activeAd, setActiveAd] = useState<PremiumAdItem | null>(null);
   const [isMinimized, setIsMinimized] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
   const [isVideoMuted, setIsVideoMuted] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -118,6 +119,15 @@ export function LuxuryAdsStrip() {
 
   const adItems = config.ads.filter((ad) => ad.isActive !== false);
 
+  // Auto-rotate ads every 3.5 seconds smoothly (paused on hover)
+  useEffect(() => {
+    if (adItems.length <= 3 || isPaused || isMinimized) return;
+    const interval = setInterval(() => {
+      setPageIndex((prev) => (prev + 1) % adItems.length);
+    }, 3500);
+    return () => clearInterval(interval);
+  }, [adItems.length, isPaused, isMinimized]);
+
   const handleNextAds = () => {
     if (adItems.length === 0) return;
     setPageIndex((prev) => (prev + 1) % adItems.length);
@@ -157,7 +167,7 @@ export function LuxuryAdsStrip() {
     return null;
   }
 
-  // Exactly 3 ads visible at a time, cycling smoothly with Next button
+  // Exactly 3 ads visible at a time, cycling smoothly with Next button or auto-rotate
   const displayCount = Math.min(3, adItems.length);
   const visibleAds = Array.from({ length: displayCount }).map((_, idx) => {
     return adItems[(pageIndex + idx) % adItems.length];
@@ -165,7 +175,7 @@ export function LuxuryAdsStrip() {
 
   return (
     <>
-      {/* ================= STICKY ADS STRIP (EXACT MOCKUP MATCH) ================= */}
+      {/* ================= STICKY ADS STRIP (EXACT MATCH WITH DESIGN MOCKUP) ================= */}
       <aside
         aria-label="Sponsored Partners and Ads"
         className={`fixed ${
@@ -196,12 +206,16 @@ export function LuxuryAdsStrip() {
             </span>
           </button>
         ) : (
-          /* Full Sticky Strip - Exact Match with Design Mockup */
-          <div className="relative bg-[#0a0a0c]/98 backdrop-blur-xl border border-zinc-800/80 rounded-[32px] sm:rounded-[38px] shadow-[0_20px_50px_rgba(0,0,0,0.85)] px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-4 sm:gap-7 lg:gap-10 transition-all max-w-[calc(100vw-16px)] sm:max-w-none">
-            {/* Left Corner: Small Crown Badge */}
-            <div className="shrink-0 self-start mt-0.5">
+          /* Full Sticky Strip - Exact Match with Second Design Mockup */
+          <div
+            onMouseEnter={() => setIsPaused(true)}
+            onMouseLeave={() => setIsPaused(false)}
+            className="relative bg-[#08080a] rounded-[32px] sm:rounded-[36px] shadow-[0_15px_45px_rgba(0,0,0,0.9)] px-4 sm:px-6 py-3 sm:py-3.5 flex items-center justify-between gap-3 sm:gap-6 lg:gap-8 transition-all max-w-[calc(100vw-16px)] sm:max-w-none"
+          >
+            {/* Left Corner: Glowing Burgundy Crown Badge */}
+            <div className="shrink-0 self-start mt-0.5 sm:mt-1">
               <div
-                className="relative px-2 sm:px-2.5 py-1 rounded-xl bg-gradient-to-b from-[#2e050f] via-[#420816] to-[#1f030a] border border-amber-400/80 shadow-[0_0_10px_rgba(245,158,11,0.35)] flex items-center justify-center group/crown"
+                className="relative px-2 sm:px-2.5 py-1 rounded-2xl bg-gradient-to-b from-[#3a0614] via-[#52091c] to-[#25030c] border-[1.5px] border-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.45)] flex items-center justify-center group/crown"
                 title={config.crownTitle || 'Premium Collection'}
               >
                 <div className="relative w-8 h-4 sm:w-10 sm:h-5 shrink-0">
@@ -218,28 +232,30 @@ export function LuxuryAdsStrip() {
             </div>
 
             {/* Center: 3 Circular Ad Avatars with Thick Golden Rings and Clean White Labels */}
-            <div className="flex items-center justify-center gap-3 sm:gap-6 lg:gap-8">
+            <div className="flex items-center justify-center gap-3 sm:gap-6 lg:gap-7">
               {visibleAds.map((ad, idx) => (
                 <button
-                  key={`${ad.id}-${idx}`}
+                  key={`${ad.id}-${pageIndex}-${idx}`}
                   type="button"
                   onClick={() => handleOpenAd(ad)}
-                  className="flex flex-col items-center group cursor-pointer focus:outline-none"
+                  className="flex flex-col items-center group cursor-pointer focus:outline-none animate-in fade-in zoom-in-95 duration-300"
                   title={`${ad.name} - ${ad.tagline}`}
                 >
-                  {/* Circular Avatar Container with Thick Golden Border */}
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-full border-[3px] border-amber-400 overflow-hidden relative shadow-[0_0_12px_rgba(245,158,11,0.4)] group-hover:scale-105 group-hover:shadow-[0_0_18px_rgba(245,158,11,0.7)] transition-all duration-200 bg-black">
-                    <Image
-                      src={ad.image || '/opus-thumb.jpg'}
-                      alt={ad.name}
-                      fill
-                      unoptimized
-                      className="object-cover group-hover:scale-110 transition-transform duration-300"
-                    />
+                  {/* Thick Golden Ring Frame: Solid vibrant amber ring */}
+                  <div className="w-13 h-13 sm:w-15 sm:h-15 lg:w-16 lg:h-16 rounded-full p-[3px] bg-[#f59e0b] shadow-[0_0_12px_rgba(245,158,11,0.5)] group-hover:scale-105 group-hover:shadow-[0_0_18px_rgba(245,158,11,0.8)] transition-all duration-200 shrink-0">
+                    <div className="w-full h-full rounded-full overflow-hidden relative bg-black">
+                      <Image
+                        src={ad.image || '/opus-thumb.jpg'}
+                        alt={ad.name}
+                        fill
+                        unoptimized
+                        className="object-cover group-hover:scale-110 transition-transform duration-300"
+                      />
+                    </div>
                   </div>
 
                   {/* Clean White Label Underneath */}
-                  <span className="text-[11px] sm:text-xs font-semibold text-white group-hover:text-amber-400 transition-colors mt-1.5 text-center truncate max-w-[60px] sm:max-w-[76px] leading-tight">
+                  <span className="text-[11px] sm:text-xs font-semibold text-white group-hover:text-amber-400 transition-colors mt-1.5 text-center truncate max-w-[62px] sm:max-w-[76px] leading-tight">
                     {ad.name}
                   </span>
                 </button>
@@ -253,8 +269,8 @@ export function LuxuryAdsStrip() {
                 <button
                   type="button"
                   onClick={handleNextAds}
-                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-zinc-800/90 hover:bg-zinc-700 active:scale-95 text-white flex items-center justify-center transition cursor-pointer shadow-md"
-                  title="Next ad"
+                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#1e1e24] hover:bg-[#2c2c34] active:scale-95 text-white flex items-center justify-center transition cursor-pointer shadow-md"
+                  title="Next ad (Click to rotate)"
                   aria-label="Next ad"
                 >
                   <ChevronRightIcon className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
@@ -265,7 +281,7 @@ export function LuxuryAdsStrip() {
               <button
                 type="button"
                 onClick={() => setIsMinimized(true)}
-                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-zinc-800/90 hover:bg-zinc-700 active:scale-95 text-white flex items-center justify-center transition cursor-pointer shadow-md"
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#1e1e24] hover:bg-[#2c2c34] active:scale-95 text-white flex items-center justify-center transition cursor-pointer shadow-md"
                 title="Close ads strip"
                 aria-label="Close ads strip"
               >
