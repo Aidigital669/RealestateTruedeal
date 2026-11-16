@@ -84,7 +84,7 @@ function SparklesIcon({ className = 'w-3.5 h-3.5' }: { className?: string }) {
 
 export type AdItem = PremiumAdItem;
 
-export function StickyAdsStrip() {
+export function FeaturedAdsBar() {
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
   const [hasCompareBar, setHasCompareBar] = useState(false);

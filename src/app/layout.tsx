@@ -55,7 +55,7 @@ export const metadata: Metadata = {
 import dynamic from 'next/dynamic';
 import { PropertyComparisonProvider } from "@/context/PropertyComparisonContext";
 import { SavedPropertiesProvider } from "@/context/SavedPropertiesContext";
-import { StickyAdsStrip } from "@/components/public/StickyAdsStrip";
+import { FeaturedAdsBar } from "@/components/public/FeaturedAdsBar";
 
 const FloatingCompareBar = dynamic(
   () => import('@/components/public/FloatingCompareBar').then((m) => m.FloatingCompareBar)
@@ -106,7 +106,7 @@ export default function RootLayout({
           <PropertyComparisonProvider>
             {children}
             <FloatingCompareBar />
-            <StickyAdsStrip />
+            <FeaturedAdsBar />
             <TimedEnquiryModal />
           </PropertyComparisonProvider>
         </SavedPropertiesProvider>
