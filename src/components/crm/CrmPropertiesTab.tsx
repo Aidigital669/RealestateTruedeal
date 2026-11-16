@@ -16,7 +16,8 @@ import {
   CheckCircle2,
   Shield,
   ShieldCheck,
-  ShieldAlert
+  ShieldAlert,
+  EyeOff
 } from 'lucide-react';
 import Image from 'next/image';
 import { AddPropertyModal, EditPropertyModal } from '@/components/admin/Modals';
@@ -765,6 +766,12 @@ export function CrmPropertiesTab() {
                     <div className="px-2 py-1 bg-emerald-600 text-white rounded-md text-[10px] font-black shadow-xs flex items-center gap-1 border border-emerald-400">
                       <ShieldCheck className="w-3 h-3 text-emerald-200" />
                       Safe
+                    </div>
+                  )}
+                  {prop.hideDirectContact && (
+                    <div className="px-2 py-1 bg-zinc-900/90 text-amber-300 rounded-md text-[10px] font-bold shadow-xs flex items-center gap-1 border border-amber-400/30">
+                      <EyeOff className="w-2.5 h-2.5 text-amber-400" />
+                      Desk Hidden
                     </div>
                   )}
                 </div>

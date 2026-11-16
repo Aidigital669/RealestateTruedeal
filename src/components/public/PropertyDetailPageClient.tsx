@@ -77,7 +77,6 @@ export function PropertyDetailPageClient({
   const [preferredSlot, setPreferredSlot] = useState('This Saturday (04:00 PM)');
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [showDirectConnect, setShowDirectConnect] = useState(false);
 
   // Client-side fetch & slug canonical URL replacement
   useEffect(() => {
@@ -1269,8 +1268,8 @@ export function PropertyDetailPageClient({
                       <ArrowRight className="w-4 h-4 text-black" />
                     </button>
 
-                    {/* Direct Connect & WhatsApp: Hidden by default until unhidden */}
-                    {showDirectConnect ? (
+                    {/* Direct Connect & WhatsApp: Controlled by Admin/Seller */}
+                    {!property.hideDirectContact && (
                       <div className="space-y-4 pt-2 animate-in fade-in duration-200">
                         <div className="relative flex items-center justify-center py-0.5">
                           <div className="border-t border-zinc-800 w-full" />
@@ -1328,25 +1327,6 @@ export function PropertyDetailPageClient({
                             </a>
                           </div>
                         </div>
-
-                        <button
-                          type="button"
-                          onClick={() => setShowDirectConnect(false)}
-                          className="text-[11px] text-zinc-500 hover:text-zinc-400 font-semibold text-center block w-full pt-1 cursor-pointer"
-                        >
-                          Hide direct connect options ▲
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="pt-2 text-center">
-                        <button
-                          type="button"
-                          onClick={() => setShowDirectConnect(true)}
-                          className="text-[11px] text-zinc-500 hover:text-amber-400 font-semibold transition cursor-pointer inline-flex items-center gap-1"
-                        >
-                          <span>Direct Advisor Contact &amp; WhatsApp Desk</span>
-                          <span className="text-[10px] text-amber-500/80">(Click to Unhide) ▼</span>
-                        </button>
                       </div>
                     )}
                   </form>
@@ -1387,25 +1367,29 @@ export function PropertyDetailPageClient({
                 <span>Book Visit</span>
               </button>
 
-              <a
-                href={getWhatsAppEnquiryUrl()}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="p-2 rounded-xl bg-[#25D366] hover:bg-[#20bd5a] text-white shadow-xs transition cursor-pointer flex items-center justify-center active:scale-95"
-                title="Chat on WhatsApp"
-              >
-                <svg viewBox="0 0 32 32" className="w-4 h-4 fill-white" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M16 2C8.28 2 2 8.28 2 16c0 2.66.75 5.15 2.05 7.29L2.3 29.7l6.63-1.74A13.9 13.9 0 0016 30c7.72 0 14-6.28 14-14S23.72 2 16 2zm8.17 19.83c-.34.96-1.7 1.76-2.76 1.99-.73.16-1.68.29-4.88-1.04-4.09-1.69-6.72-5.83-6.93-6.1-.2-.28-1.67-2.22-1.67-4.23s1.05-3.01 1.43-3.42c.38-.41.82-.51 1.1-.51.27 0 .55 0 .79.02.25.01.59-.1.92.7.34.82 1.16 2.83 1.26 3.04.1.2.17.44.03.71-.13.27-.2.44-.4.68-.2.24-.43.53-.61.71-.21.21-.43.44-.19.86.25.41 1.09 1.8 2.34 2.91 1.61 1.43 2.97 1.88 3.39 2.09.42.2.67.18.92-.1.25-.28 1.07-1.24 1.35-1.67.28-.43.56-.36.94-.22.38.14 2.42 1.14 2.83 1.35.41.2.69.31.79.48.1.18.1 1.02-.24 1.98z" />
-                </svg>
-              </a>
+              {!property.hideDirectContact && (
+                <>
+                  <a
+                    href={getWhatsAppEnquiryUrl()}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-2 rounded-xl bg-[#25D366] hover:bg-[#20bd5a] text-white shadow-xs transition cursor-pointer flex items-center justify-center active:scale-95"
+                    title="Chat on WhatsApp"
+                  >
+                    <svg viewBox="0 0 32 32" className="w-4 h-4 fill-white" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M16 2C8.28 2 2 8.28 2 16c0 2.66.75 5.15 2.05 7.29L2.3 29.7l6.63-1.74A13.9 13.9 0 0016 30c7.72 0 14-6.28 14-14S23.72 2 16 2zm8.17 19.83c-.34.96-1.7 1.76-2.76 1.99-.73.16-1.68.29-4.88-1.04-4.09-1.69-6.72-5.83-6.93-6.1-.2-.28-1.67-2.22-1.67-4.23s1.05-3.01 1.43-3.42c.38-.41.82-.51 1.1-.51.27 0 .55 0 .79.02.25.01.59-.1.92.7.34.82 1.16 2.83 1.26 3.04.1.2.17.44.03.71-.13.27-.2.44-.4.68-.2.24-.43.53-.61.71-.21.21-.43.44-.19.86.25.41 1.09 1.8 2.34 2.91 1.61 1.43 2.97 1.88 3.39 2.09.42.2.67.18.92-.1.25-.28 1.07-1.24 1.35-1.67.28-.43.56-.36.94-.22.38.14 2.42 1.14 2.83 1.35.41.2.69.31.79.48.1.18.1 1.02-.24 1.98z" />
+                    </svg>
+                  </a>
 
-              <a
-                href="tel:+919373020701"
-                className="p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-amber-400 shadow-xs transition cursor-pointer flex items-center justify-center active:scale-95"
-                title="Direct Phone Desk (+91 93730 20701)"
-              >
-                <Phone className="w-4 h-4" />
-              </a>
+                  <a
+                    href="tel:+919373020701"
+                    className="p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-amber-400 shadow-xs transition cursor-pointer flex items-center justify-center active:scale-95"
+                    title="Direct Phone Desk (+91 93730 20701)"
+                  >
+                    <Phone className="w-4 h-4" />
+                  </a>
+                </>
+              )}
             </div>
           </div>
         </div>

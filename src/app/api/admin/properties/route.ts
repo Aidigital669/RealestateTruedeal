@@ -79,6 +79,7 @@ export async function GET(req: NextRequest) {
           hideAmenities: Boolean(dossier.hideAmenities),
           hideHighlights: Boolean(dossier.hideHighlights),
           hideConnectivity: Boolean(dossier.hideConnectivity),
+          hideDirectContact: Boolean(dossier.hideDirectContact),
           customCostSheet: dossier.customCostSheet,
           legalVettingText: dossier.legalVettingText || '',
           isSafe: Boolean(dossier.isSafe),
@@ -118,7 +119,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const {
       title, location, developer, price, bhk, configuration, sqft, status, publishStatus, description, imageUrl, images, videoUrl, propertyType, listingType, businessPurposeIds, businessPurposes,
-      hideName, hidePrice, hideRera, hideComplianceTab, hideCostSheet, hideAmenities, hideHighlights, hideConnectivity, customCostSheet, legalVettingText,
+      hideName, hidePrice, hideRera, hideComplianceTab, hideCostSheet, hideAmenities, hideHighlights, hideConnectivity, hideDirectContact, customCostSheet, legalVettingText,
       highlights, connectivity, amenitiesList, reraNumber, possession, rpsStatus
     } = body;
 
@@ -265,6 +266,7 @@ export async function POST(req: NextRequest) {
         hideAmenities: Boolean(hideAmenities),
         hideHighlights: Boolean(hideHighlights),
         hideConnectivity: Boolean(hideConnectivity),
+        hideDirectContact: Boolean(hideDirectContact),
         suitableFor: Array.isArray(businessPurposeIds) ? businessPurposeIds : (Array.isArray(businessPurposes) ? businessPurposes : undefined),
         customCostSheet: customCostSheet && typeof customCostSheet === 'object' ? customCostSheet : undefined,
       }

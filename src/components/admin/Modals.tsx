@@ -200,6 +200,7 @@ export function AddPropertyModal({
   const [hideComplianceTab, setHideComplianceTab] = useState(false);
   const [hideCostSheet, setHideCostSheet] = useState(false);
   const [hideAmenities, setHideAmenities] = useState(false);
+  const [hideDirectContact, setHideDirectContact] = useState(false);
   const [reraNumber, setReraNumber] = useState('');
   const [rpsStatus, setRpsStatus] = useState('100% Clear Title • Zero Encumbrances');
   const [isAiStructuring, setIsAiStructuring] = useState(false);
@@ -595,6 +596,21 @@ export function AddPropertyModal({
                   {hideComplianceTab ? '🔒 Tab Hidden' : '👁️ Tab Visible'}
                 </span>
               </button>
+
+              <button
+                type="button"
+                onClick={() => setHideDirectContact(!hideDirectContact)}
+                className={`flex items-center justify-between p-2 rounded-lg border text-left cursor-pointer transition sm:col-span-2 ${
+                  hideDirectContact
+                    ? 'bg-amber-100 border-amber-400 text-amber-950 font-bold'
+                    : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50'
+                }`}
+              >
+                <span className="text-[11px]">Hide Direct Advisor &amp; WhatsApp Desk</span>
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/80 border border-zinc-200">
+                  {hideDirectContact ? '🔒 Hidden' : '👁️ Visible'}
+                </span>
+              </button>
             </div>
           </div>
 
@@ -812,6 +828,7 @@ export function AddPropertyModal({
                 hideComplianceTab,
                 hideCostSheet,
                 hideAmenities,
+                hideDirectContact,
                 suitableFor: selectedPurposes.map(String)
               });
 
@@ -824,6 +841,7 @@ export function AddPropertyModal({
                 hideComplianceTab,
                 hideCostSheet,
                 hideAmenities,
+                hideDirectContact,
                 reraNumber: reraNumber.trim(),
                 rpsStatus: rpsStatus.trim(),
                 developer, 
@@ -908,6 +926,7 @@ export function EditPropertyModal({
   const [hideComplianceTab, setHideComplianceTab] = useState(false);
   const [hideCostSheet, setHideCostSheet] = useState(false);
   const [hideAmenities, setHideAmenities] = useState(false);
+  const [hideDirectContact, setHideDirectContact] = useState(false);
   const [hideHighlights, setHideHighlights] = useState(false);
   const [hideConnectivity, setHideConnectivity] = useState(false);
 
@@ -998,6 +1017,7 @@ export function EditPropertyModal({
       setHideAmenities(Boolean(property.hideAmenities ?? dossier.hideAmenities));
       setHideHighlights(Boolean(property.hideHighlights ?? dossier.hideHighlights));
       setHideConnectivity(Boolean(property.hideConnectivity ?? dossier.hideConnectivity));
+      setHideDirectContact(Boolean(property.hideDirectContact ?? dossier.hideDirectContact));
 
       // Highlights
       let initHl: string[] = [];
@@ -1224,6 +1244,7 @@ export function EditPropertyModal({
         hideAmenities: Boolean(hideAmenities),
         hideHighlights: Boolean(hideHighlights),
         hideConnectivity: Boolean(hideConnectivity),
+        hideDirectContact: Boolean(hideDirectContact),
         customCostSheet: costSheetMode === 'custom' ? customCostSheet : undefined
       });
 
@@ -1238,6 +1259,7 @@ export function EditPropertyModal({
         hideAmenities: Boolean(hideAmenities),
         hideHighlights: Boolean(hideHighlights),
         hideConnectivity: Boolean(hideConnectivity),
+        hideDirectContact: Boolean(hideDirectContact),
         customCostSheet: costSheetMode === 'custom' ? customCostSheet : undefined,
         developer: developer.trim(),
         location: location.trim(),
@@ -1643,7 +1665,7 @@ export function EditPropertyModal({
                 <button
                   type="button"
                   onClick={() => setHideComplianceTab(!hideComplianceTab)}
-                  className={`flex items-center justify-between p-2 rounded-lg border text-left cursor-pointer transition sm:col-span-2 ${
+                  className={`flex items-center justify-between p-2 rounded-lg border text-left cursor-pointer transition ${
                     hideComplianceTab
                       ? 'bg-amber-100 border-amber-400 text-amber-950 font-bold'
                       : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50'
@@ -1652,6 +1674,22 @@ export function EditPropertyModal({
                   <span className="text-[11px]">Hide MahaRERA &amp; Legal Clearance Tab</span>
                   <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/80 border border-zinc-200">
                     {hideComplianceTab ? '🔒 Tab Hidden' : '👁️ Tab Visible'}
+                  </span>
+                </button>
+
+                {/* Toggle 6: Hide Direct Advisor & WhatsApp Desk */}
+                <button
+                  type="button"
+                  onClick={() => setHideDirectContact(!hideDirectContact)}
+                  className={`flex items-center justify-between p-2 rounded-lg border text-left cursor-pointer transition ${
+                    hideDirectContact
+                      ? 'bg-amber-100 border-amber-400 text-amber-950 font-bold'
+                      : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50'
+                  }`}
+                >
+                  <span className="text-[11px]">Hide Direct Advisor &amp; WhatsApp Desk</span>
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/80 border border-zinc-200">
+                    {hideDirectContact ? '🔒 Hidden' : '👁️ Visible'}
                   </span>
                 </button>
               </div>
