@@ -4026,7 +4026,7 @@ export function HomepageSearchablePortal({
                         </th>
 
                         {/* 6. Action */}
-                        <th className="px-5 py-3 text-right font-bold text-zinc-700 whitespace-nowrap">Match / Connect</th>
+                        <th className="px-5 py-3 text-right font-bold text-zinc-700 whitespace-nowrap">Direct Action</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-zinc-100">
@@ -4061,32 +4061,22 @@ export function HomepageSearchablePortal({
                                 href={`https://wa.me/919373020701?text=${encodeURIComponent(`Hello ANV Realty Desk, I am contacting you regarding Verified Buyer Ref: ${demand.referenceCode} (${demand.bhk} in ${demand.locality}, Budget: ${demand.budget}). Please connect me.`)}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="w-7 h-7 rounded-lg bg-[#25D366]/15 hover:bg-[#25D366] text-[#25D366] hover:text-zinc-950 transition flex items-center justify-center cursor-pointer"
+                                className="bg-[#25D366] hover:bg-[#20ba59] active:scale-95 text-zinc-950 font-bold px-2.5 py-1.5 rounded-lg text-xs transition inline-flex items-center gap-1 shadow-xs cursor-pointer"
                                 title="Connect on WhatsApp (+91 93730 20701)"
                               >
                                 <svg viewBox="0 0 32 32" className="w-3.5 h-3.5 fill-current" xmlns="http://www.w3.org/2000/svg">
                                   <path d="M16 2C8.28 2 2 8.28 2 16c0 2.66.75 5.15 2.05 7.29L2.3 29.7l6.63-1.74A13.9 13.9 0 0016 30c7.72 0 14-6.28 14-14S23.72 2 16 2zm8.17 19.83c-.34.96-1.7 1.76-2.76 1.99-.73.16-1.68.29-4.88-1.04-4.09-1.69-6.72-5.83-6.93-6.1-.2-.28-1.67-2.22-1.67-4.23s1.05-3.01 1.43-3.42c.38-.41.82-.51 1.1-.51.27 0 .55 0 .79.02.25.01.59-.1.92.7.34.82 1.16 2.83 1.26 3.04.1.2.17.44.03.71-.13.27-.2.44-.4.68-.2.24-.43.53-.61.71-.21.21-.43.44-.19.86.25.41 1.09 1.8 2.34 2.91 1.61 1.43 2.97 1.88 3.39 2.09.42.2.67.18.92-.1.25-.28 1.07-1.24 1.35-1.67.28-.43.56-.36.94-.22.38.14 2.42 1.14 2.83 1.35.41.2.69.31.79.48.1.18.1 1.02-.24 1.98z" />
                                 </svg>
+                                <span>WhatsApp</span>
                               </a>
                               <a
                                 href="tel:+919373020701"
-                                className="w-7 h-7 rounded-lg bg-amber-500/15 hover:bg-amber-500 text-amber-500 hover:text-zinc-950 transition flex items-center justify-center cursor-pointer"
+                                className="bg-amber-500 hover:bg-amber-400 active:scale-95 text-zinc-950 font-bold px-2.5 py-1.5 rounded-lg text-xs transition inline-flex items-center gap-1 shadow-xs cursor-pointer"
                                 title="Call Senior Desk (+91 93730 20701)"
                               >
                                 <Phone className="w-3.5 h-3.5" />
+                                <span>Call</span>
                               </a>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setSelectedBuyerRefForConnect(demand.referenceCode);
-                                  setSelectedBuyerSummaryForConnect(`${demand.bhk} in ${demand.locality} (${demand.budget})`);
-                                  setSellerModalOpen(true);
-                                }}
-                                className="bg-zinc-950 hover:bg-amber-600 hover:text-zinc-950 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition inline-flex items-center gap-1 shadow-xs cursor-pointer active:scale-95"
-                              >
-                                <span>Connect</span>
-                                <ArrowRight className="w-3 h-3 text-amber-400" />
-                              </button>
                             </div>
                           </td>
                         </tr>
@@ -4324,38 +4314,26 @@ export function HomepageSearchablePortal({
                           </p>
                         )}
 
-                        {/* 4. Connect Buttons: WhatsApp, Call, or Details */}
-                        <div className="grid grid-cols-3 gap-2 pt-0.5">
+                        {/* 4. Action Buttons: WhatsApp & Call Desk */}
+                        <div className="grid grid-cols-2 gap-2.5 pt-0.5">
                           <a
                             href={`https://wa.me/919373020701?text=${encodeURIComponent(`Hello ANV Realty Desk, I am contacting you regarding Verified Buyer Ref: ${demand.referenceCode} (${demand.bhk} in ${demand.locality}, Budget: ${demand.budget}). Please connect me.`)}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="bg-[#25D366] hover:bg-[#20ba59] text-zinc-950 font-black py-2.5 px-2 rounded-xl text-xs transition inline-flex items-center justify-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
+                            className="bg-[#25D366] hover:bg-[#20ba59] active:scale-95 text-zinc-950 font-black py-2.5 px-3 rounded-xl text-xs transition inline-flex items-center justify-center gap-2 shadow-xs cursor-pointer"
                           >
-                            <svg viewBox="0 0 32 32" className="w-3.5 h-3.5 fill-current shrink-0" xmlns="http://www.w3.org/2000/svg">
+                            <svg viewBox="0 0 32 32" className="w-4 h-4 fill-current shrink-0" xmlns="http://www.w3.org/2000/svg">
                               <path d="M16 2C8.28 2 2 8.28 2 16c0 2.66.75 5.15 2.05 7.29L2.3 29.7l6.63-1.74A13.9 13.9 0 0016 30c7.72 0 14-6.28 14-14S23.72 2 16 2zm8.17 19.83c-.34.96-1.7 1.76-2.76 1.99-.73.16-1.68.29-4.88-1.04-4.09-1.69-6.72-5.83-6.93-6.1-.2-.28-1.67-2.22-1.67-4.23s1.05-3.01 1.43-3.42c.38-.41.82-.51 1.1-.51.27 0 .55 0 .79.02.25.01.59-.1.92.7.34.82 1.16 2.83 1.26 3.04.1.2.17.44.03.71-.13.27-.2.44-.4.68-.2.24-.43.53-.61.71-.21.21-.43.44-.19.86.25.41 1.09 1.8 2.34 2.91 1.61 1.43 2.97 1.88 3.39 2.09.42.2.67.18.92-.1.25-.28 1.07-1.24 1.35-1.67.28-.43.56-.36.94-.22.38.14 2.42 1.14 2.83 1.35.41.2.69.31.79.48.1.18.1 1.02-.24 1.98z" />
                             </svg>
                             <span>WhatsApp</span>
                           </a>
                           <a
                             href="tel:+919373020701"
-                            className="bg-amber-500 hover:bg-amber-400 text-zinc-950 font-black py-2.5 px-2 rounded-xl text-xs transition inline-flex items-center justify-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
+                            className="bg-amber-500 hover:bg-amber-400 active:scale-95 text-zinc-950 font-black py-2.5 px-3 rounded-xl text-xs transition inline-flex items-center justify-center gap-2 shadow-xs cursor-pointer"
                           >
-                            <Phone className="w-3.5 h-3.5 shrink-0" />
-                            <span>Call</span>
+                            <Phone className="w-4 h-4 shrink-0" />
+                            <span>Call Desk</span>
                           </a>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedBuyerRefForConnect(demand.referenceCode);
-                              setSelectedBuyerSummaryForConnect(`${demand.bhk} in ${demand.locality} (${demand.budget})`);
-                              setSellerModalOpen(true);
-                            }}
-                            className="bg-zinc-950 hover:bg-zinc-800 text-white font-bold py-2.5 px-2 rounded-xl text-xs transition inline-flex items-center justify-center gap-1 shadow-xs cursor-pointer active:scale-95"
-                          >
-                            <span>Details</span>
-                            <ArrowRight className="w-3 h-3 text-amber-400" />
-                          </button>
                         </div>
                       </div>
                     ))
@@ -4532,38 +4510,26 @@ export function HomepageSearchablePortal({
                         </div>
                       </div>
 
-                      {/* Card Bottom CTA */}
+                      {/* Card Bottom CTA: Only WhatsApp and Call Desk */}
                       <div className="p-3.5 sm:p-4 lg:p-5 pt-2.5 sm:pt-3 border-t border-zinc-100 bg-zinc-50/70">
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedBuyerRefForConnect(demand.referenceCode);
-                              setSelectedBuyerSummaryForConnect(`${demand.bhk} in ${demand.locality} (${demand.budget})`);
-                              setSellerModalOpen(true);
-                            }}
-                            className="flex-1 bg-zinc-950 hover:bg-amber-600 hover:text-zinc-950 active:scale-[0.98] text-white font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg sm:rounded-xl text-xs transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
-                          >
-                            <span>Connect with Buyer</span>
-                            <ArrowRight className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                          </button>
+                        <div className="grid grid-cols-2 gap-2.5">
                           <a
                             href={`https://wa.me/919373020701?text=${encodeURIComponent(`Hello ANV Realty Desk, I am contacting you regarding Verified Buyer Ref: ${demand.referenceCode} (${demand.bhk} in ${demand.locality}, Budget: ${demand.budget}). Please connect me.`)}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="p-2 sm:p-2.5 rounded-lg sm:rounded-xl bg-[#25D366]/15 hover:bg-[#25D366] text-[#25D366] hover:text-zinc-950 transition flex items-center justify-center cursor-pointer shadow-xs"
-                            title="Connect on WhatsApp (+91 93730 20701)"
+                            className="bg-[#25D366] hover:bg-[#20ba59] active:scale-95 text-zinc-950 font-black py-2.5 px-3 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-xs cursor-pointer"
                           >
-                            <svg viewBox="0 0 32 32" className="w-4 h-4 fill-current" xmlns="http://www.w3.org/2000/svg">
+                            <svg viewBox="0 0 32 32" className="w-4 h-4 fill-current shrink-0" xmlns="http://www.w3.org/2000/svg">
                               <path d="M16 2C8.28 2 2 8.28 2 16c0 2.66.75 5.15 2.05 7.29L2.3 29.7l6.63-1.74A13.9 13.9 0 0016 30c7.72 0 14-6.28 14-14S23.72 2 16 2zm8.17 19.83c-.34.96-1.7 1.76-2.76 1.99-.73.16-1.68.29-4.88-1.04-4.09-1.69-6.72-5.83-6.93-6.1-.2-.28-1.67-2.22-1.67-4.23s1.05-3.01 1.43-3.42c.38-.41.82-.51 1.1-.51.27 0 .55 0 .79.02.25.01.59-.1.92.7.34.82 1.16 2.83 1.26 3.04.1.2.17.44.03.71-.13.27-.2.44-.4.68-.2.24-.43.53-.61.71-.21.21-.43.44-.19.86.25.41 1.09 1.8 2.34 2.91 1.61 1.43 2.97 1.88 3.39 2.09.42.2.67.18.92-.1.25-.28 1.07-1.24 1.35-1.67.28-.43.56-.36.94-.22.38.14 2.42 1.14 2.83 1.35.41.2.69.31.79.48.1.18.1 1.02-.24 1.98z" />
                             </svg>
+                            <span>WhatsApp</span>
                           </a>
                           <a
                             href="tel:+919373020701"
-                            className="p-2 sm:p-2.5 rounded-lg sm:rounded-xl bg-amber-500/15 hover:bg-amber-500 text-amber-500 hover:text-zinc-950 transition flex items-center justify-center cursor-pointer shadow-xs"
-                            title="Call Senior Desk (+91 93730 20701)"
+                            className="bg-amber-500 hover:bg-amber-400 active:scale-95 text-zinc-950 font-black py-2.5 px-3 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-xs cursor-pointer"
                           >
-                            <Phone className="w-4 h-4" />
+                            <Phone className="w-4 h-4 shrink-0" />
+                            <span>Call Desk</span>
                           </a>
                         </div>
                       </div>
