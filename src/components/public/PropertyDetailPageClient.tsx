@@ -467,6 +467,80 @@ export function PropertyDetailPageClient({
 
   const isCompared = isInCompare(property.id);
 
+  const renderPriceCard = () => (
+    <div className="bg-white rounded-2xl sm:rounded-3xl border border-zinc-200 p-5 sm:p-6 shadow-sm">
+      <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">
+        All-Inclusive Quoted Valuation
+      </span>
+      {property.hidePrice || isZeroPrice(property.price) ? (
+        <div className="mt-2 space-y-2.5">
+          <div className="text-xl sm:text-2xl font-black text-zinc-900 flex items-center gap-2">
+            <ShieldCheck className="w-5 h-5 text-amber-600" />
+            <span>Price on Request</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              const target = document.getElementById('visit-booking-section') || document.getElementById('enquiry-form-section');
+              if (target) {
+                target.scrollIntoView({ behavior: 'smooth' });
+              }
+            }}
+            className="w-full py-2.5 px-4 bg-amber-500 hover:bg-amber-400 text-zinc-950 font-black text-xs rounded-xl flex items-center justify-center gap-2 transition shadow-xs cursor-pointer"
+          >
+            <span>Request Official Price &amp; Brochure</span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+      ) : (
+        <>
+          <div className="text-2xl sm:text-4xl font-black text-zinc-950 mt-1">
+            {formatPriceDisplay(property.price)}
+          </div>
+          <div className="text-xs text-zinc-500 font-semibold mt-1 flex items-center">
+            <span>{property.priceSuffix || 'All Inclusive'}</span>
+          </div>
+        </>
+      )}
+
+      <div className="mt-4 pt-4 border-t border-zinc-100 flex items-center justify-between text-xs">
+        <span className="text-zinc-500">Estimated Rate:</span>
+        <span className="font-bold text-zinc-900">
+          {property.hidePrice || isZeroPrice(property.price) ? 'Rate on Request' : `₹${Math.round(priceRaw / (property.sqftNum || 1100)).toLocaleString('en-IN')} / sq.ft`}
+        </span>
+      </div>
+
+      {/* Quick Save & Compare Actions inside Price Card */}
+      <div className="mt-4 pt-4 border-t border-zinc-100 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={handleToggleSave}
+          className={`flex-1 py-2.5 px-3 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
+            saved
+              ? 'bg-rose-50 border-rose-300 text-rose-600 shadow-xs'
+              : 'bg-zinc-50 hover:bg-zinc-100 border-zinc-200 text-zinc-700 hover:text-rose-600'
+          }`}
+        >
+          <Heart className={`w-4 h-4 ${saved ? 'fill-rose-500 text-rose-500' : ''}`} />
+          <span>{saved ? 'Shortlisted ✓' : 'Save'}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => toggleCompare(property)}
+          className={`flex-1 py-2.5 px-3 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
+            isCompared
+              ? 'bg-amber-400 border-amber-400 text-black font-extrabold shadow-xs'
+              : 'bg-zinc-50 hover:bg-zinc-100 border-zinc-200 text-zinc-700'
+          }`}
+        >
+          <Scale className="w-4 h-4 text-zinc-500" />
+          <span>{isCompared ? 'Compared ✓' : 'Compare'}</span>
+        </button>
+      </div>
+    </div>
+  );
+
   return (
     <>
       {toastMsg && (
@@ -780,6 +854,11 @@ export function PropertyDetailPageClient({
                 </div>
               </div>
 
+              {/* MOBILE & TABLET PRICING CARD (Directly after Core Stats on < lg screens) */}
+              <div className="block lg:hidden">
+                {renderPriceCard()}
+              </div>
+
               {/* SUITABLE FOR BUSINESS PURPOSES */}
               {suitableForList.length > 0 && (
                 <div className="bg-white rounded-2xl border border-amber-200/80 p-3.5 sm:p-5 shadow-xs space-y-2 bg-gradient-to-br from-white to-amber-50/30">
@@ -1067,77 +1146,9 @@ export function PropertyDetailPageClient({
 
             {/* STICKY RIGHT COLUMN: PRICE & INSTANT ENQUIRY / VISIT BOOKING */}
             <div className="lg:col-span-4 space-y-5">
-              {/* PRICE CARD */}
-              <div className="bg-white rounded-2xl sm:rounded-3xl border border-zinc-200 p-5 sm:p-6 shadow-sm">
-                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">
-                  All-Inclusive Quoted Valuation
-                </span>
-                {property.hidePrice || isZeroPrice(property.price) ? (
-                  <div className="mt-2 space-y-2.5">
-                    <div className="text-xl sm:text-2xl font-black text-zinc-900 flex items-center gap-2">
-                      <ShieldCheck className="w-5 h-5 text-amber-600" />
-                      <span>Price on Request</span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const target = document.getElementById('enquiry-form-section');
-                        if (target) {
-                          target.scrollIntoView({ behavior: 'smooth' });
-                        }
-                      }}
-                      className="w-full py-2.5 px-4 bg-amber-500 hover:bg-amber-400 text-zinc-950 font-black text-xs rounded-xl flex items-center justify-center gap-2 transition shadow-xs cursor-pointer"
-                    >
-                      <span>Request Official Price &amp; Brochure</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    <div className="text-2xl sm:text-4xl font-black text-zinc-950 mt-1">
-                      {formatPriceDisplay(property.price)}
-                    </div>
-                    <div className="text-xs text-zinc-500 font-semibold mt-1 flex items-center">
-                      <span>{property.priceSuffix || 'All Inclusive'}</span>
-                    </div>
-                  </>
-                )}
-
-                <div className="mt-4 pt-4 border-t border-zinc-100 flex items-center justify-between text-xs">
-                  <span className="text-zinc-500">Estimated Rate:</span>
-                  <span className="font-bold text-zinc-900">
-                    {property.hidePrice || isZeroPrice(property.price) ? 'Rate on Request' : `₹${Math.round(priceRaw / (property.sqftNum || 1100)).toLocaleString('en-IN')} / sq.ft`}
-                  </span>
-                </div>
-
-                {/* Quick Save & Compare Actions inside Price Card */}
-                <div className="mt-4 pt-4 border-t border-zinc-100 flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={handleToggleSave}
-                    className={`flex-1 py-2.5 px-3 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
-                      saved
-                        ? 'bg-rose-50 border-rose-300 text-rose-600 shadow-xs'
-                        : 'bg-zinc-50 hover:bg-zinc-100 border-zinc-200 text-zinc-700 hover:text-rose-600'
-                    }`}
-                  >
-                    <Heart className={`w-4 h-4 ${saved ? 'fill-rose-500 text-rose-500' : ''}`} />
-                    <span>{saved ? 'Shortlisted ✓' : 'Save'}</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => toggleCompare(property)}
-                    className={`flex-1 py-2.5 px-3 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
-                      isCompared
-                        ? 'bg-amber-400 border-amber-400 text-black font-extrabold shadow-xs'
-                        : 'bg-zinc-50 hover:bg-zinc-100 border-zinc-200 text-zinc-700'
-                    }`}
-                  >
-                    <Scale className="w-4 h-4 text-zinc-500" />
-                    <span>{isCompared ? 'Compared ✓' : 'Compare'}</span>
-                  </button>
-                </div>
+              {/* DESKTOP PRICE CARD */}
+              <div className="hidden lg:block">
+                {renderPriceCard()}
               </div>
 
               {/* SITE VISIT & ENQUIRY FORM */}
