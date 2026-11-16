@@ -117,13 +117,13 @@ export function StickyAdsStrip() {
 
   return (
     <>
-      {/* ================= STICKY ADS STRIP (CENTERED BOTTOM AREA) ================= */}
+      {/* ================= STICKY ADS STRIP (EXACT DESIGN MATCH) ================= */}
       <aside
         aria-label="Sponsored Partners and Ads"
         className={`fixed ${
           hasCompareBar
             ? 'bottom-[84px] lg:bottom-24'
-            : 'bottom-2 sm:bottom-2.5 lg:bottom-5'
+            : 'bottom-3 sm:bottom-4 lg:bottom-6'
         } left-1/2 -translate-x-1/2 z-40 select-none animate-in fade-in slide-in-from-bottom-3 duration-300`}
       >
         {isMinimized ? (
@@ -148,47 +148,48 @@ export function StickyAdsStrip() {
             </span>
           </button>
         ) : (
-          /* Full Sticky Strip - Restored with full luxury avatars, images & badge */
-          <div className="relative bg-zinc-950/95 backdrop-blur-xl border border-zinc-800/90 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.6)] p-1.5 sm:p-2.5 flex items-center gap-1.5 sm:gap-2.5 transition-all max-w-[calc(100vw-16px)] sm:max-w-none">
-            {/* Left Header Image Badge: Gold Crown with Premium Royal Background */}
-            <div className="flex items-center justify-center shrink-0 pr-1.5 border-r border-zinc-800/80">
+          /* Full Sticky Strip - Exact Match with User Design (media_1794823588567_af47e828.jpg) */
+          <div className="relative bg-[#0c0c0e]/95 backdrop-blur-xl border border-zinc-800/80 rounded-[28px] sm:rounded-[32px] shadow-[0_16px_50px_rgba(0,0,0,0.7)] px-3 sm:px-5 py-2.5 sm:py-3.5 flex items-center gap-2.5 sm:gap-4 lg:gap-6 transition-all max-w-[calc(100vw-16px)] sm:max-w-none">
+            {/* Left Corner: Small Premium Crown Badge (No dividing line, sitting comfortably in top-left) */}
+            <div className="shrink-0 self-start sm:self-center">
               <div
-                className="relative px-2 py-1 rounded-xl bg-gradient-to-b from-[#2e050f] via-[#420816] to-[#1f030a] border border-amber-400/70 shadow-[0_0_16px_rgba(245,158,11,0.35)] flex items-center justify-center shrink-0 group/crown"
+                className="relative px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg bg-gradient-to-b from-[#2e050f] via-[#420816] to-[#1f030a] border border-amber-400/80 shadow-[0_0_10px_rgba(245,158,11,0.3)] flex items-center justify-center group/crown"
                 title={config.crownTitle || 'Premium Collection'}
               >
                 {/* Subtle Amber Glow Behind the Crown */}
-                <div className="absolute inset-0 rounded-xl bg-[radial-gradient(ellipse_at_center,_rgba(245,158,11,0.25)_0%,_transparent_70%)] pointer-events-none" />
+                <div className="absolute inset-0 rounded-lg bg-[radial-gradient(ellipse_at_center,_rgba(245,158,11,0.25)_0%,_transparent_70%)] pointer-events-none" />
 
-                <div className="relative w-14 h-7 sm:w-16 sm:h-8 shrink-0">
+                <div className="relative w-8 h-4 sm:w-10 sm:h-5 shrink-0">
                   <Image
                     src={config.crownImage || '/premium-crown.png'}
                     alt={config.crownTitle || 'Premium'}
                     fill
                     unoptimized
                     priority
-                    className="object-contain drop-shadow-[0_2px_6px_rgba(0,0,0,0.8)] group-hover/crown:scale-105 transition-transform duration-200"
+                    className="object-contain drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)] group-hover/crown:scale-105 transition-transform duration-200"
                   />
                 </div>
               </div>
             </div>
 
-            {/* Left Scroll Arrow */}
+            {/* Previous Arrow Button (Only if scrolled) */}
             {canScrollLeft && (
               <button
                 type="button"
                 onClick={() => handleScroll('left')}
-                className="w-5 h-5 rounded-full bg-zinc-800/90 hover:bg-zinc-700 text-zinc-200 flex items-center justify-center transition shrink-0 cursor-pointer shadow-xs"
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-zinc-800/90 hover:bg-zinc-700 text-white flex items-center justify-center transition shrink-0 cursor-pointer shadow-md"
                 title="Scroll previous ads"
+                aria-label="Previous ads"
               >
-                <ChevronLeft className="w-3 h-3" />
+                <ChevronLeft className="w-4 h-4" />
               </button>
             )}
 
-            {/* Circles Rail: Shows exactly 3 Ads at a time, horizontal scrolling reveals more */}
+            {/* Center Circles Rail: Shows exactly 3 Ads at a time with clear labels underneath */}
             <div
               ref={scrollRef}
               onScroll={checkScroll}
-              className="flex items-center gap-2 sm:gap-2.5 overflow-x-auto scrollbar-none py-1 px-0.5 w-[164px] sm:w-[190px] max-w-[164px] sm:max-w-[190px] scroll-smooth"
+              className="flex items-center gap-3 sm:gap-4 lg:gap-5 overflow-x-auto scrollbar-none py-1 px-1 w-[205px] sm:w-[245px] lg:w-[265px] max-w-[205px] sm:max-w-[245px] lg:max-w-[265px] scroll-smooth"
               style={{ scrollSnapType: 'x mandatory' }}
             >
               {adItems.map((ad) => (
@@ -196,12 +197,12 @@ export function StickyAdsStrip() {
                   key={ad.id}
                   type="button"
                   onClick={() => handleOpenAd(ad)}
-                  className="flex flex-col items-center gap-1 shrink-0 group/circle cursor-pointer focus:outline-none w-[48px] sm:w-[56px]"
+                  className="flex flex-col items-center gap-1.5 shrink-0 group/circle cursor-pointer focus:outline-none w-[56px] sm:w-[68px]"
                   title={`${ad.name} - ${ad.tagline}`}
                   style={{ scrollSnapAlign: 'start' }}
                 >
-                  {/* Circular Avatar Container with Gold Luxury Border */}
-                  <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full p-[2px] bg-gradient-to-tr from-amber-500 via-yellow-300 to-amber-600 shadow-[0_0_10px_rgba(245,158,11,0.35)] group-hover/circle:shadow-[0_0_16px_rgba(245,158,11,0.65)] group-hover/circle:scale-105 transition-all duration-200">
+                  {/* Circular Avatar Container with Golden Ring */}
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-full p-[2.5px] bg-gradient-to-tr from-amber-500 via-yellow-400 to-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.35)] group-hover/circle:shadow-[0_0_18px_rgba(245,158,11,0.7)] group-hover/circle:scale-105 transition-all duration-200">
                     <div className="w-full h-full rounded-full overflow-hidden relative bg-black">
                       <Image
                         src={ad.image || '/opus-thumb.jpg'}
@@ -213,52 +214,56 @@ export function StickyAdsStrip() {
                     </div>
                   </div>
 
-                  {/* Name Label: Only on sm and above, on mobile show icons only */}
-                  <span className="hidden sm:block text-[10.5px] font-medium text-zinc-200 group-hover/circle:text-amber-400 transition-colors truncate max-w-[56px] text-center leading-tight">
+                  {/* Clean White Label Underneath */}
+                  <span className="text-[11px] sm:text-xs font-semibold text-white group-hover/circle:text-amber-400 transition-colors truncate max-w-[56px] sm:max-w-[68px] text-center leading-tight">
                     {ad.name}
                   </span>
                 </button>
               ))}
 
-              {/* "+ Promote" Circle Button at the end */}
+              {/* "+ Promote" Circle Button at the end of the rail */}
               <button
                 type="button"
                 onClick={handlePromoteClick}
-                className="flex flex-col items-center gap-1 shrink-0 group/promote cursor-pointer focus:outline-none w-[48px] sm:w-[56px]"
+                className="flex flex-col items-center gap-1.5 shrink-0 group/promote cursor-pointer focus:outline-none w-[56px] sm:w-[68px]"
                 title="Advertise your business here on ANV Realty"
                 style={{ scrollSnapAlign: 'start' }}
               >
-                <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full border-2 border-dashed border-zinc-700 hover:border-amber-400 bg-zinc-900/80 hover:bg-zinc-800 text-zinc-400 hover:text-amber-400 flex items-center justify-center transition-all group-hover/promote:scale-105">
-                  <Plus className="w-4 h-4" />
+                <div className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-full border-2 border-dashed border-zinc-600 hover:border-amber-400 bg-zinc-900/80 hover:bg-zinc-800 text-zinc-400 hover:text-amber-400 flex items-center justify-center transition-all group-hover/promote:scale-105">
+                  <Plus className="w-5 h-5" />
                 </div>
-                <span className="hidden sm:block text-[10.5px] font-medium text-zinc-400 group-hover/promote:text-amber-400 transition-colors truncate max-w-[50px] text-center leading-tight">
+                <span className="text-[11px] sm:text-xs font-semibold text-zinc-400 group-hover/promote:text-amber-400 transition-colors truncate max-w-[56px] sm:max-w-[68px] text-center leading-tight">
                   Promote
                 </span>
               </button>
             </div>
 
-            {/* Right Scroll Arrow */}
-            {canScrollRight && (
+            {/* Right Side Navigation Controls (Arrow + Close button side-by-side) */}
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+              {/* Next Arrow Button */}
+              {canScrollRight && (
+                <button
+                  type="button"
+                  onClick={() => handleScroll('right')}
+                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-zinc-800/90 hover:bg-zinc-700 text-white flex items-center justify-center transition shrink-0 cursor-pointer shadow-md"
+                  title="Scroll more ads"
+                  aria-label="Scroll more ads"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              )}
+
+              {/* Close / Minimize Button */}
               <button
                 type="button"
-                onClick={() => handleScroll('right')}
-                className="w-5 h-5 rounded-full bg-zinc-800/90 hover:bg-zinc-700 text-zinc-200 flex items-center justify-center transition shrink-0 cursor-pointer shadow-xs"
-                title="Scroll more ads"
+                onClick={() => setIsMinimized(true)}
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-zinc-800/90 hover:bg-zinc-700 text-white flex items-center justify-center transition shrink-0 cursor-pointer shadow-md"
+                title="Close ads strip"
+                aria-label="Close ads strip"
               >
-                <ChevronRight className="w-3 h-3" />
+                <X className="w-4 h-4" />
               </button>
-            )}
-
-            {/* Quick Minimize X Button */}
-            <button
-              type="button"
-              onClick={() => setIsMinimized(true)}
-              className="w-5 h-5 rounded-full bg-zinc-800/80 hover:bg-zinc-700 text-zinc-400 hover:text-white flex items-center justify-center transition shrink-0 cursor-pointer ml-0.5"
-              title="Minimize ads"
-              aria-label="Minimize ads"
-            >
-              <X className="w-3 h-3" />
-            </button>
+            </div>
           </div>
         )}
       </aside>
