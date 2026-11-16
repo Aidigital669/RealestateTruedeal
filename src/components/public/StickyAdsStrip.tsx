@@ -8,7 +8,6 @@ import {
   PremiumAdsConfig,
   DEFAULT_PREMIUM_CONFIG
 } from '@/lib/premium-ads-constants';
-import { usePropertyComparison } from '@/context/PropertyComparisonContext';
 
 // Self-contained inline SVG icons to eliminate external chunk cache desyncs
 function ChevronRightIcon({ className = 'w-4 h-4' }: { className?: string }) {
@@ -70,8 +69,8 @@ export type AdItem = PremiumAdItem;
 
 export function StickyAdsStrip() {
   const pathname = usePathname();
-  const { compareList } = usePropertyComparison();
   const [mounted, setMounted] = useState(false);
+  const [hasCompareBar, setHasCompareBar] = useState(false);
   const [config, setConfig] = useState<PremiumAdsConfig>(DEFAULT_PREMIUM_CONFIG);
   const [activeAd, setActiveAd] = useState<PremiumAdItem | null>(null);
   const [isMinimized, setIsMinimized] = useState(false);
@@ -82,6 +81,26 @@ export function StickyAdsStrip() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Listen to comparison list changes in localStorage without tight coupling
+  useEffect(() => {
+    const checkCompare = () => {
+      try {
+        const stored = localStorage.getItem('anv_compare_properties');
+        if (stored) {
+          const list = JSON.parse(stored);
+          setHasCompareBar(Array.isArray(list) && list.length > 0 && pathname !== '/compare');
+        } else {
+          setHasCompareBar(false);
+        }
+      } catch {
+        setHasCompareBar(false);
+      }
+    };
+    checkCompare();
+    window.addEventListener('storage', checkCompare);
+    return () => window.removeEventListener('storage', checkCompare);
+  }, [pathname]);
 
   // Fetch dynamic ads from backend
   useEffect(() => {
@@ -137,8 +156,6 @@ export function StickyAdsStrip() {
   if (adItems.length === 0) {
     return null;
   }
-
-  const hasCompareBar = mounted && compareList && compareList.length > 0 && pathname !== '/compare';
 
   // Exactly 3 ads visible, cycling smoothly with Next button
   const displayCount = Math.min(3, adItems.length);
