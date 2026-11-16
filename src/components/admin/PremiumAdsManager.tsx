@@ -313,22 +313,19 @@ export function PremiumAdsManager({ showToast }: PremiumAdsManagerProps) {
         {/* Floating Simulator Container */}
         <div className="py-4 flex items-center justify-center bg-zinc-900/60 rounded-2xl border border-zinc-800/80 min-h-[90px] overflow-x-auto">
           <div className="relative bg-zinc-950/95 backdrop-blur-xl border border-zinc-800/90 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.6)] p-2 sm:p-2.5 flex items-center gap-2 sm:gap-2.5">
-            {/* Crown Logo Badge - Sleek & Decreased Size without changing outer area */}
+            {/* Crown Logo Badge */}
             <div className="flex items-center justify-center shrink-0 pr-2 border-r border-zinc-800/80">
               <div
-                className="relative px-1.5 py-0.5 rounded-lg bg-gradient-to-b from-[#2e050f] via-[#420816] to-[#1f030a] border border-amber-400/60 shadow-[0_0_8px_rgba(245,158,11,0.25)] flex items-center justify-center shrink-0 group/crown"
+                className="relative px-2 py-1 rounded-xl bg-gradient-to-b from-[#2e050f] via-[#420816] to-[#1f030a] border border-amber-400/70 shadow-[0_0_16px_rgba(245,158,11,0.35)] flex items-center justify-center shrink-0"
                 title={config.crownTitle}
               >
-                {/* Subtle Amber Glow Behind the Crown */}
-                <div className="absolute inset-0 rounded-lg bg-[radial-gradient(ellipse_at_center,_rgba(245,158,11,0.2)_0%,_transparent_70%)] pointer-events-none" />
-
-                <div className="relative w-7 h-3.5 sm:w-8 sm:h-4 shrink-0">
+                <div className="relative w-14 h-7 sm:w-16 sm:h-8 shrink-0">
                   <Image
                     src={config.crownImage || '/premium-crown.png'}
                     alt="Premium Crown"
                     fill
                     unoptimized
-                    className="object-contain drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]"
+                    className="object-contain drop-shadow-[0_2px_6px_rgba(0,0,0,0.8)]"
                   />
                 </div>
               </div>
