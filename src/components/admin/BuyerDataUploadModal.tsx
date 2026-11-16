@@ -204,18 +204,92 @@ export function BuyerDataUploadModal({
       }
 
       const rows: ParsedBuyerRow[] = rawRows.map((r, idx) => {
-        const name = getField(r, ['buyername', 'name', 'clientname', 'client', 'customer', 'contactname']) || `Verified Buyer ${idx + 1}`;
+        const title = getField(r, ['title', 'heading', 'requirementtitle', 'subject']);
+        const wantTo = getField(r, ['wanttotext', 'wantto', 'intent', 'buyingintent', 'purpose', 'buyingpurpose', 'usecase', 'use']);
+        const propertyType = getField(r, ['propertytypename', 'propertytype', 'typology', 'unittype', 'type', 'category']);
+        const locationName = getField(r, ['locationname', 'preferredlocation', 'targetlocality', 'locality', 'location', 'area', 'corridor']);
+        const cityName = getField(r, ['cityname', 'city']);
+        const areaFrom = getField(r, ['areafromsqft', 'areafrom', 'minarea', 'carpetfrom', 'fromsqft']);
+        const areaTo = getField(r, ['areatosqft', 'areato', 'maxarea', 'carpetto', 'tosqft', 'carpetsqft', 'area']);
+        const budgetRaw = getField(r, ['budgetto', 'targetbudget', 'budget', 'budgetcr', 'budgetrange', 'pricerange', 'price', 'maxbudget']);
+        const description = getField(r, ['description', 'notes', 'remarks', 'requirements', 'clientnotes', 'message', 'criteria']);
+        const transactionName = getField(r, ['transactionname', 'transaction', 'dealtype', 'statusname']);
+        const bedRoom = getField(r, ['bedroom', 'bedrooms', 'bhk', 'rooms']);
+        const createDate = getField(r, ['createdate', 'date', 'timeline', 'possessiontimeline', 'possession']);
+
+        const rawName = getField(r, ['buyername', 'fullname', 'name', 'clientname', 'client', 'customer', 'contactname']);
         const phone = getField(r, ['contactphone', 'phone', 'mobile', 'mobilenumber', 'contact', 'cell']) || '9373020701';
         const email = getField(r, ['email', 'emailid', 'mail', 'contactemail']) || 'leads@anvrealty.com';
-        const locality = getField(r, ['targetlocality', 'locality', 'location', 'preferredlocation', 'area', 'corridor']) || 'Pune Prime';
-        const bhk = getField(r, ['typology', 'bhk', 'configuration', 'propertytype', 'unittype']) || '3 BHK';
-        const budget = getField(r, ['budgetrange', 'budget', 'targetbudget', 'pricerange', 'price']) || '₹1.50 Cr - ₹2.50 Cr';
-        const purpose = getField(r, ['buyingpurpose', 'purpose', 'intent', 'buyingintent', 'use']) || 'Self-Use';
-        const timeline = getField(r, ['timeline', 'timeframe', 'possession', 'possessionrequired']) || 'Ready to Move / 60 Days';
-        const requirements = getField(r, ['requirements', 'notes', 'remarks', 'criteria', 'description', 'message']) ||
-          `Looking for ${bhk} in ${locality} with budget ${budget}.`;
-        const status = getField(r, ['verificationstatus', 'status', 'tier', 'category']) || 'Verified Active Buyer';
 
+        // Clean Locality
+        let locality = locationName;
+        if (cityName && !locality.toLowerCase().includes(cityName.toLowerCase())) {
+          locality = locality ? `${locality}, ${cityName}` : cityName;
+        }
+        if (!locality) locality = 'Pune Prime';
+
+        // Clean BHK / Typology
+        let bhk = '';
+        if (bedRoom && propertyType) {
+          bhk = `${bedRoom} BHK ${propertyType}`.trim();
+        } else if (bedRoom) {
+          bhk = `${bedRoom} BHK`.trim();
+        } else if (propertyType) {
+          bhk = propertyType;
+        } else {
+          bhk = getField(r, ['bhkconfiguration', 'configuration']) || 'Commercial / Residence';
+        }
+
+        let areaStr = '';
+        if (areaFrom && areaTo && areaFrom !== areaTo) {
+          areaStr = `${areaFrom} - ${areaTo} Sq.Ft.`;
+        } else if (areaTo || areaFrom) {
+          areaStr = `${areaTo || areaFrom} Sq.Ft.`;
+        }
+        if (areaStr) bhk = `${bhk} (${areaStr})`;
+
+        // Clean Budget
+        let budget = budgetRaw || '₹1.50 Cr - ₹2.50 Cr';
+        if (budget && !budget.startsWith('₹') && !budget.toLowerCase().startsWith('rs')) {
+          budget = `₹${budget}`;
+        }
+
+        // Clean Purpose
+        let purpose = '';
+        if (wantTo) {
+          if (wantTo.toLowerCase() === 'rent') purpose = 'Rent / Lease';
+          else if (wantTo.toLowerCase() === 'buy') purpose = 'Purchase / Buy';
+          else if (wantTo.toLowerCase().includes('joint')) purpose = 'Joint Development / JV';
+          else purpose = wantTo;
+        } else {
+          purpose = 'Self-Use / Investment';
+        }
+        if (transactionName && !purpose.toLowerCase().includes(transactionName.toLowerCase())) {
+          purpose = `${purpose} (${transactionName})`;
+        }
+
+        const timeline = createDate ? `Active Demand (${createDate})` : (getField(r, ['timeline', 'timeframe']) || 'Ready to Move / 60 Days');
+
+        // Clean Name
+        let name = rawName;
+        if (!name || name.length < 2) {
+          const locFirst = locality.split(',')[0].trim();
+          const typeLabel = propertyType || bhk.split('(')[0].trim() || 'Client';
+          name = `Client (${typeLabel} - ${locFirst})`;
+        }
+
+        // Clean Requirements / Notes
+        const notesParts: string[] = [];
+        if (title) notesParts.push(title);
+        if (areaStr) notesParts.push(`Area: ${areaStr}`);
+        if (purpose) notesParts.push(`Intent: ${purpose}`);
+        if (budget) notesParts.push(`Budget: ${budget}`);
+        if (transactionName) notesParts.push(`Type: ${transactionName}`);
+        if (description) notesParts.push(description);
+        if (createDate) notesParts.push(`Date: ${createDate}`);
+        const requirements = notesParts.join(' | ') || `Looking for ${bhk} in ${locality} with budget ${budget}.`;
+
+        const status = getField(r, ['verificationstatus', 'status', 'tier', 'category']) || 'Verified Active Buyer';
         const isValid = Boolean(name && (locality || bhk || budget));
 
         return {
@@ -227,7 +301,7 @@ export function BuyerDataUploadModal({
           email,
           locality,
           bhk,
-          budget: budget.startsWith('₹') ? budget : `₹${budget}`,
+          budget,
           purpose,
           timeline,
           requirements,
