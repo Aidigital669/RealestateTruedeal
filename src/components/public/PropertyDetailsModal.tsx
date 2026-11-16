@@ -149,9 +149,9 @@ export function PropertyDetailsModal({
           onClick={(e) => e.stopPropagation()}
         >
           {/* HEADER BAR */}
-          <div className="bg-zinc-950 px-6 py-4 text-white flex items-center justify-between border-b border-zinc-800 shrink-0">
-            <div className="flex items-center gap-3">
-              <span className="bg-amber-500/20 text-amber-400 border border-amber-500/40 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md">
+          <div className="bg-zinc-950 px-4 sm:px-6 py-3.5 sm:py-4 text-white flex items-center justify-between border-b border-zinc-800 shrink-0">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <span className="bg-amber-500/20 text-amber-400 border border-amber-500/40 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md">
                 Institutional Dossier
               </span>
               <span className="text-xs text-zinc-400 hidden sm:inline">
@@ -160,7 +160,7 @@ export function PropertyDetailsModal({
             </div>
             <button
               onClick={onClose}
-              className="text-zinc-400 hover:text-white p-1 rounded-lg hover:bg-zinc-800 transition"
+              className="text-zinc-400 hover:text-white p-1.5 rounded-lg hover:bg-zinc-800 transition cursor-pointer"
               aria-label="Close"
             >
               <X className="w-5 h-5" />
@@ -206,7 +206,7 @@ export function PropertyDetailsModal({
                       <span>{property.location}</span>
                     </span>
                   </div>
-                  <h2 className="text-2xl sm:text-3xl font-black text-zinc-950 tracking-tight">
+                  <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-zinc-950 tracking-tight break-words">
                     {property.name}
                   </h2>
                 </div>
