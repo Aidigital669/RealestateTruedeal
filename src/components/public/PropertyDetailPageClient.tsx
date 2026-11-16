@@ -662,39 +662,41 @@ export function PropertyDetailPageClient({
                   {mediaImages.length > 0 && (
                     <button
                       type="button"
-                      onClick={() => {
-                        setMediaMode('photos');
-                        setIsLightboxOpen(true);
-                      }}
+                      onClick={() => setMediaMode('photos')}
                       className={`flex-1 sm:flex-initial justify-center px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md sm:rounded-xl text-[11px] sm:text-xs font-bold transition flex items-center gap-1 sm:gap-1.5 cursor-pointer ${
                         mediaMode === 'photos'
                           ? 'bg-amber-400 text-black font-extrabold shadow-xs hover:bg-amber-300'
                           : 'text-zinc-700 hover:text-black hover:bg-white'
                       }`}
-                      title="Open Fullscreen Photos"
+                      title="Switch to Photos"
                     >
                       <ImageIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                       <span>Photos ({mediaImages.length})</span>
-                      <Maximize2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 ml-0.5 opacity-70" />
                     </button>
                   )}
 
                   <button
                     type="button"
-                    onClick={() => {
-                      setMediaMode('video');
-                      setIsLightboxOpen(true);
-                    }}
+                    onClick={() => setMediaMode('video')}
                     className={`flex-1 sm:flex-initial justify-center px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md sm:rounded-xl text-[11px] sm:text-xs font-bold transition flex items-center gap-1 sm:gap-1.5 cursor-pointer ${
                       mediaMode === 'video'
                         ? 'bg-amber-400 text-black font-extrabold shadow-xs hover:bg-amber-300'
                         : 'text-zinc-700 hover:text-black hover:bg-white'
                     }`}
-                    title="Open Fullscreen Video Tour"
+                    title="Switch to Video Tour"
                   >
                     <Video className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                     <span>Video Tour</span>
-                    <Maximize2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 ml-0.5 opacity-70" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsLightboxOpen(true)}
+                    className="p-1 sm:p-1.5 rounded-md sm:rounded-xl text-zinc-600 hover:text-black hover:bg-white transition cursor-pointer flex items-center justify-center shrink-0 ml-0.5"
+                    title="Open Fullscreen"
+                    aria-label="Open Fullscreen"
+                  >
+                    <Maximize2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
