@@ -18,6 +18,7 @@ import {
   Video,
   Image as ImageIcon,
   ChevronRight,
+  ChevronLeft,
   X,
   Volume2,
   VolumeX,

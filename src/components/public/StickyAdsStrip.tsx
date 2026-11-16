@@ -4,6 +4,15 @@ import React, { useState, useRef, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import {
+  ChevronLeft,
+  ChevronRight,
+  X,
+  Volume2,
+  VolumeX,
+  ExternalLink,
+  Sparkles
+} from 'lucide-react';
+import {
   PremiumAdItem,
   PremiumAdsConfig,
   DEFAULT_PREMIUM_CONFIG
@@ -67,6 +76,11 @@ function SparklesIcon({ className = 'w-3.5 h-3.5' }: { className?: string }) {
 }
 
 export type AdItem = PremiumAdItem;
+
+// Ensure ChevronLeft is referenced in module evaluation to prevent Turbopack factory cache desync
+if (typeof ChevronLeft !== 'undefined') {
+  void ChevronLeft;
+}
 
 export function StickyAdsStrip() {
   const pathname = usePathname();
