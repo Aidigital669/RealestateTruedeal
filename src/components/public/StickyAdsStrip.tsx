@@ -150,16 +150,16 @@ export function StickyAdsStrip() {
         ) : (
           /* Full Sticky Strip - Ultra Slim, Compact & Narrow */
           <div className="relative bg-zinc-950/95 backdrop-blur-xl border border-zinc-800/90 rounded-2xl shadow-[0_8px_25px_rgba(0,0,0,0.6)] px-1 sm:px-1.5 py-1 sm:py-1 flex items-center gap-1 sm:gap-1.5 transition-all max-w-[calc(100vw-16px)] sm:max-w-none">
-            {/* Left side corner: Small Premium Crown Badge */}
+            {/* Left side corner: Small Premium Crown Badge - Decreased size without changing outer area */}
             <div className="flex items-center justify-center shrink-0 pl-0.5 pr-1 sm:pr-1.5 border-r border-zinc-800/80">
               <div
-                className="relative px-1 py-0.5 rounded-md bg-gradient-to-b from-[#2e050f] via-[#420816] to-[#1f030a] border border-amber-400/60 shadow-[0_0_6px_rgba(245,158,11,0.25)] flex items-center justify-center shrink-0 group/crown"
+                className="relative px-1 py-0.5 rounded-md bg-gradient-to-b from-[#2e050f] via-[#420816] to-[#1f030a] border border-amber-400/60 shadow-[0_0_5px_rgba(245,158,11,0.2)] flex items-center justify-center shrink-0 group/crown"
                 title={config.crownTitle || 'Premium Collection'}
               >
                 {/* Subtle Amber Glow Behind the Crown */}
                 <div className="absolute inset-0 rounded-md bg-[radial-gradient(ellipse_at_center,_rgba(245,158,11,0.2)_0%,_transparent_70%)] pointer-events-none" />
 
-                <div className="relative w-4 h-2 sm:w-4.5 sm:h-2.5 shrink-0">
+                <div className="relative w-3.5 h-[7px] sm:w-4 sm:h-2 shrink-0">
                   <Image
                     src={config.crownImage || '/premium-crown.png'}
                     alt={config.crownTitle || 'Premium'}
