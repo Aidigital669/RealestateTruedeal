@@ -201,6 +201,7 @@ export function AddPropertyModal({
   const [hideCostSheet, setHideCostSheet] = useState(false);
   const [hideAmenities, setHideAmenities] = useState(false);
   const [hideDirectContact, setHideDirectContact] = useState(false);
+  const [hideBreadcrumbs, setHideBreadcrumbs] = useState(true);
   const [reraNumber, setReraNumber] = useState('');
   const [rpsStatus, setRpsStatus] = useState('100% Clear Title • Zero Encumbrances');
   const [isAiStructuring, setIsAiStructuring] = useState(false);
@@ -611,6 +612,21 @@ export function AddPropertyModal({
                   {hideDirectContact ? '🔒 Hidden' : '👁️ Visible'}
                 </span>
               </button>
+
+              <button
+                type="button"
+                onClick={() => setHideBreadcrumbs(!hideBreadcrumbs)}
+                className={`flex items-center justify-between p-2 rounded-lg border text-left cursor-pointer transition sm:col-span-2 ${
+                  hideBreadcrumbs
+                    ? 'bg-amber-100 border-amber-400 text-amber-950 font-bold'
+                    : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50'
+                }`}
+              >
+                <span className="text-[11px]">Hide Breadcrumbs Navigation (Home / Properties / ...)</span>
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/80 border border-zinc-200">
+                  {hideBreadcrumbs ? '🔒 Hidden' : '👁️ Visible'}
+                </span>
+              </button>
             </div>
           </div>
 
@@ -829,6 +845,7 @@ export function AddPropertyModal({
                 hideCostSheet,
                 hideAmenities,
                 hideDirectContact,
+                hideBreadcrumbs,
                 suitableFor: selectedPurposes.map(String)
               });
 
@@ -842,6 +859,7 @@ export function AddPropertyModal({
                 hideCostSheet,
                 hideAmenities,
                 hideDirectContact,
+                hideBreadcrumbs,
                 reraNumber: reraNumber.trim(),
                 rpsStatus: rpsStatus.trim(),
                 developer, 
@@ -927,6 +945,7 @@ export function EditPropertyModal({
   const [hideCostSheet, setHideCostSheet] = useState(false);
   const [hideAmenities, setHideAmenities] = useState(false);
   const [hideDirectContact, setHideDirectContact] = useState(false);
+  const [hideBreadcrumbs, setHideBreadcrumbs] = useState(true);
   const [hideHighlights, setHideHighlights] = useState(false);
   const [hideConnectivity, setHideConnectivity] = useState(false);
 
@@ -1018,6 +1037,7 @@ export function EditPropertyModal({
       setHideHighlights(Boolean(property.hideHighlights ?? dossier.hideHighlights));
       setHideConnectivity(Boolean(property.hideConnectivity ?? dossier.hideConnectivity));
       setHideDirectContact(Boolean(property.hideDirectContact ?? dossier.hideDirectContact));
+      setHideBreadcrumbs(property.hideBreadcrumbs === undefined ? (dossier.hideBreadcrumbs === undefined ? true : Boolean(dossier.hideBreadcrumbs)) : Boolean(property.hideBreadcrumbs));
 
       // Highlights
       let initHl: string[] = [];
@@ -1245,6 +1265,7 @@ export function EditPropertyModal({
         hideHighlights: Boolean(hideHighlights),
         hideConnectivity: Boolean(hideConnectivity),
         hideDirectContact: Boolean(hideDirectContact),
+        hideBreadcrumbs: Boolean(hideBreadcrumbs),
         customCostSheet: costSheetMode === 'custom' ? customCostSheet : undefined
       });
 
@@ -1260,6 +1281,7 @@ export function EditPropertyModal({
         hideHighlights: Boolean(hideHighlights),
         hideConnectivity: Boolean(hideConnectivity),
         hideDirectContact: Boolean(hideDirectContact),
+        hideBreadcrumbs: Boolean(hideBreadcrumbs),
         customCostSheet: costSheetMode === 'custom' ? customCostSheet : undefined,
         developer: developer.trim(),
         location: location.trim(),
@@ -1690,6 +1712,22 @@ export function EditPropertyModal({
                   <span className="text-[11px]">Hide Direct Advisor &amp; WhatsApp Desk</span>
                   <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/80 border border-zinc-200">
                     {hideDirectContact ? '🔒 Hidden' : '👁️ Visible'}
+                  </span>
+                </button>
+
+                {/* Toggle 7: Hide Breadcrumbs Navigation */}
+                <button
+                  type="button"
+                  onClick={() => setHideBreadcrumbs(!hideBreadcrumbs)}
+                  className={`flex items-center justify-between p-2 rounded-lg border text-left cursor-pointer transition sm:col-span-2 ${
+                    hideBreadcrumbs
+                      ? 'bg-amber-100 border-amber-400 text-amber-950 font-bold'
+                      : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50'
+                  }`}
+                >
+                  <span className="text-[11px]">Hide Breadcrumbs Navigation (Home / Properties / ...)</span>
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/80 border border-zinc-200">
+                    {hideBreadcrumbs ? '🔒 Hidden' : '👁️ Visible'}
                   </span>
                 </button>
               </div>

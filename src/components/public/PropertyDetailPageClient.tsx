@@ -562,29 +562,31 @@ export function PropertyDetailPageClient({
       <main className="min-h-screen bg-zinc-50 text-zinc-900 pb-28 lg:pb-20">
         {/* BREADCRUMB & TOP CONTROLS */}
         <div className="bg-white border-b border-zinc-200">
-          <div className="max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 py-2.5 sm:py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3">
-            <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-zinc-500 min-w-0 overflow-x-auto scrollbar-none whitespace-nowrap py-0.5">
-              <Link href="/" className="hover:text-amber-600 transition flex items-center gap-1 font-semibold shrink-0">
-                <span>Home</span>
-              </Link>
-              <span className="text-zinc-300">/</span>
-              <Link href="/properties" className="hover:text-amber-600 transition font-semibold shrink-0">
-                <span>Properties</span>
-              </Link>
-              <span className="text-zinc-300">/</span>
-              <Link href={`/properties?locality=${encodeURIComponent(property.locality || 'Pune')}`} className="hover:text-amber-600 transition shrink-0">
-                {property.locality || 'Pune'}
-              </Link>
-              <span className="text-zinc-300">/</span>
-              <span className="font-bold text-zinc-900 truncate max-w-[180px] sm:max-w-xs md:max-w-none inline-flex items-center gap-1.5">
-                <span>{property.name}</span>
-                {property.hideName && (
-                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
-                    Confidential
-                  </span>
-                )}
-              </span>
-            </nav>
+          <div className={`max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 py-2.5 sm:py-3 flex items-center ${!property.hideBreadcrumbs ? 'flex-col sm:flex-row justify-between gap-2.5 sm:gap-3' : 'justify-end'}`}>
+            {!property.hideBreadcrumbs && (
+              <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-zinc-500 min-w-0 overflow-x-auto scrollbar-none whitespace-nowrap py-0.5">
+                <Link href="/" className="hover:text-amber-600 transition flex items-center gap-1 font-semibold shrink-0">
+                  <span>Home</span>
+                </Link>
+                <span className="text-zinc-300">/</span>
+                <Link href="/properties" className="hover:text-amber-600 transition font-semibold shrink-0">
+                  <span>Properties</span>
+                </Link>
+                <span className="text-zinc-300">/</span>
+                <Link href={`/properties?locality=${encodeURIComponent(property.locality || 'Pune')}`} className="hover:text-amber-600 transition shrink-0">
+                  {property.locality || 'Pune'}
+                </Link>
+                <span className="text-zinc-300">/</span>
+                <span className="font-bold text-zinc-900 truncate max-w-[180px] sm:max-w-xs md:max-w-none inline-flex items-center gap-1.5">
+                  <span>{property.name}</span>
+                  {property.hideName && (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                      Confidential
+                    </span>
+                  )}
+                </span>
+              </nav>
+            )}
 
             {/* Quick Action Buttons */}
             <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">

@@ -38,6 +38,7 @@ export interface DossierData {
   hideHighlights?: boolean;
   hideConnectivity?: boolean;
   hideDirectContact?: boolean;
+  hideBreadcrumbs?: boolean;
 
   // Custom cost sheet values (optional manual override)
   customCostSheet?: CustomCostSheet;

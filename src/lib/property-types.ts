@@ -42,6 +42,7 @@ export interface PropertyItem {
   hideHighlights?: boolean;
   hideConnectivity?: boolean;
   hideDirectContact?: boolean;
+  hideBreadcrumbs?: boolean;
   customCostSheet?: {
     baseAgreementValue?: string;
     stampDuty?: string;

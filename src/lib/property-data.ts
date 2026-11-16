@@ -143,6 +143,7 @@ export async function fetchAllProperties(forceFresh = false): Promise<PropertyIt
           hideHighlights: Boolean(dossier.hideHighlights),
           hideConnectivity: Boolean(dossier.hideConnectivity),
           hideDirectContact: Boolean(dossier.hideDirectContact),
+          hideBreadcrumbs: dossier.hideBreadcrumbs === undefined ? true : Boolean(dossier.hideBreadcrumbs),
           customCostSheet: dossier.customCostSheet,
           legalVettingText,
           developer: p.developer,

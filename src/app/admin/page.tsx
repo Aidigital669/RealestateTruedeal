@@ -706,8 +706,8 @@ export default function AdminPage() {
     }
   };
 
-  const handleTogglePropertyPrivacy = async (p: any, field: 'hideName' | 'hidePrice' | 'hideDirectContact') => {
-    const currentVal = Boolean(p[field]);
+  const handleTogglePropertyPrivacy = async (p: any, field: 'hideName' | 'hidePrice' | 'hideDirectContact' | 'hideBreadcrumbs') => {
+    const currentVal = p[field] === undefined ? true : Boolean(p[field]);
     const newVal = !currentVal;
     try {
       // Optimistic update
@@ -726,7 +726,9 @@ export default function AdminPage() {
             ? (newVal ? 'Property Name is now Hidden from customers' : 'Property Name is now Visible')
             : field === 'hidePrice'
             ? (newVal ? 'Property Price is now Hidden ("Price on Request")' : 'Property Price is now Visible')
-            : (newVal ? 'Direct Advisor & WhatsApp Desk is now Hidden' : 'Direct Advisor & WhatsApp Desk is now Visible')
+            : field === 'hideDirectContact'
+            ? (newVal ? 'Direct Advisor & WhatsApp Desk is now Hidden' : 'Direct Advisor & WhatsApp Desk is now Visible')
+            : (newVal ? 'Breadcrumbs Bar is now Hidden' : 'Breadcrumbs Bar is now Visible')
         );
         fetchAllAdminData();
       } else {
