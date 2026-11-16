@@ -9,8 +9,16 @@ import {
   DEFAULT_PREMIUM_CONFIG
 } from '@/lib/premium-ads-constants';
 
-// Self-contained inline SVG icons to eliminate all chunk factory desyncs
-function ChevronRightIcon({ className = 'w-4 h-4' }: { className?: string }) {
+// Self-contained inline SVG icons to eliminate Turbopack module chunk cache desyncs
+function ChevronLeftIcon({ className = 'w-3 h-3' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <polyline points="15 18 9 12 15 6" />
+    </svg>
+  );
+}
+
+function ChevronRightIcon({ className = 'w-3 h-3' }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
       <polyline points="9 18 15 12 9 6" />
@@ -18,7 +26,16 @@ function ChevronRightIcon({ className = 'w-4 h-4' }: { className?: string }) {
   );
 }
 
-function CloseIcon({ className = 'w-4 h-4' }: { className?: string }) {
+function PlusIcon({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <line x1="12" y1="5" x2="12" y2="19" />
+      <line x1="5" y1="12" x2="19" y2="12" />
+    </svg>
+  );
+}
+
+function CloseIcon({ className = 'w-3 h-3' }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
       <line x1="18" y1="6" x2="6" y2="18" />
@@ -67,16 +84,18 @@ function SparklesIcon({ className = 'w-3.5 h-3.5' }: { className?: string }) {
 
 export type AdItem = PremiumAdItem;
 
-export function LuxuryAdsStrip() {
+export function StickyAdsStrip() {
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
   const [hasCompareBar, setHasCompareBar] = useState(false);
   const [config, setConfig] = useState<PremiumAdsConfig>(DEFAULT_PREMIUM_CONFIG);
   const [activeAd, setActiveAd] = useState<PremiumAdItem | null>(null);
   const [isMinimized, setIsMinimized] = useState(false);
-  const [pageIndex, setPageIndex] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
   const [isVideoMuted, setIsVideoMuted] = useState(true);
+  const [isHovered, setIsHovered] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -119,18 +138,46 @@ export function LuxuryAdsStrip() {
 
   const adItems = config.ads.filter((ad) => ad.isActive !== false);
 
-  // Auto-rotate ads every 3.5 seconds smoothly (paused on hover)
-  useEffect(() => {
-    if (adItems.length <= 3 || isPaused || isMinimized) return;
-    const interval = setInterval(() => {
-      setPageIndex((prev) => (prev + 1) % adItems.length);
-    }, 3500);
-    return () => clearInterval(interval);
-  }, [adItems.length, isPaused, isMinimized]);
+  const checkScroll = () => {
+    if (!scrollRef.current) return;
+    const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+    setCanScrollLeft(scrollLeft > 4);
+    setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 4);
+  };
 
-  const handleNextAds = () => {
-    if (adItems.length === 0) return;
-    setPageIndex((prev) => (prev + 1) % adItems.length);
+  useEffect(() => {
+    if (pathname?.startsWith('/admin') || pathname?.startsWith('/crm')) {
+      return;
+    }
+    checkScroll();
+  }, [pathname, mounted, adItems.length]);
+
+  // Gentle auto-rotation through the ads every 3.8s when not hovered or active
+  useEffect(() => {
+    if (!mounted || activeAd || isMinimized || isHovered || adItems.length <= 3) return;
+
+    const timer = setInterval(() => {
+      if (!scrollRef.current) return;
+      const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+      if (scrollLeft + clientWidth >= scrollWidth - 8) {
+        scrollRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+      } else {
+        scrollRef.current.scrollBy({ left: 62, behavior: 'smooth' });
+      }
+      setTimeout(checkScroll, 250);
+    }, 3800);
+
+    return () => clearInterval(timer);
+  }, [mounted, activeAd, isMinimized, isHovered, adItems.length]);
+
+  const handleScroll = (direction: 'left' | 'right') => {
+    if (!scrollRef.current) return;
+    const scrollAmount = scrollRef.current.clientWidth || 188;
+    scrollRef.current.scrollBy({
+      left: direction === 'left' ? -scrollAmount : scrollAmount,
+      behavior: 'smooth'
+    });
+    setTimeout(checkScroll, 200);
   };
 
   const handleOpenAd = (ad: PremiumAdItem) => {
@@ -167,21 +214,15 @@ export function LuxuryAdsStrip() {
     return null;
   }
 
-  // Exactly 3 ads visible at a time, cycling smoothly with Next button or auto-rotate
-  const displayCount = Math.min(3, adItems.length);
-  const visibleAds = Array.from({ length: displayCount }).map((_, idx) => {
-    return adItems[(pageIndex + idx) % adItems.length];
-  });
-
   return (
     <>
-      {/* ================= STICKY ADS STRIP (EXACT MATCH WITH DESIGN MOCKUP) ================= */}
+      {/* ================= STICKY ADS STRIP (EXACT SCREENSHOT MATCH) ================= */}
       <aside
         aria-label="Sponsored Partners and Ads"
         className={`fixed ${
           hasCompareBar
             ? 'bottom-[84px] lg:bottom-24'
-            : 'bottom-3 sm:bottom-4 lg:bottom-6'
+            : 'bottom-2 sm:bottom-2.5 lg:bottom-5'
         } left-1/2 -translate-x-1/2 z-40 select-none animate-in fade-in slide-in-from-bottom-3 duration-300`}
       >
         {isMinimized ? (
@@ -206,98 +247,139 @@ export function LuxuryAdsStrip() {
             </span>
           </button>
         ) : (
-          /* Full Sticky Strip - Exact Match with Second Design Mockup */
+          /* Full Sticky Strip - Exact Match with Original Visual Design */
           <div
-            onMouseEnter={() => setIsPaused(true)}
-            onMouseLeave={() => setIsPaused(false)}
-            className="relative bg-[#08080a] rounded-[32px] sm:rounded-[36px] shadow-[0_15px_45px_rgba(0,0,0,0.9)] px-4 sm:px-6 py-3 sm:py-3.5 flex items-center justify-between gap-3 sm:gap-6 lg:gap-8 transition-all max-w-[calc(100vw-16px)] sm:max-w-none"
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            className="relative bg-[#0d0d10]/95 backdrop-blur-xl border border-zinc-800/90 rounded-[22px] sm:rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.7)] px-2 py-2 sm:px-3 sm:py-2.5 flex items-center gap-2 sm:gap-2.5 transition-all max-w-[calc(100vw-16px)] sm:max-w-none"
           >
-            {/* Left Corner: Glowing Burgundy Crown Badge */}
-            <div className="shrink-0 self-start mt-0.5 sm:mt-1">
+            {/* Left Header Image Badge: Gold Crown with Premium Royal Background */}
+            <div className="flex items-center justify-center shrink-0 pr-1.5 border-r border-zinc-800/80">
               <div
-                className="relative px-2 sm:px-2.5 py-1 rounded-2xl bg-gradient-to-b from-[#3a0614] via-[#52091c] to-[#25030c] border-[1.5px] border-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.45)] flex items-center justify-center group/crown"
+                className="relative px-2 py-1 rounded-xl bg-gradient-to-b from-[#2e050f] via-[#420816] to-[#1f030a] border border-amber-400/70 shadow-[0_0_16px_rgba(245,158,11,0.35)] flex items-center justify-center shrink-0 group/crown"
                 title={config.crownTitle || 'Premium Collection'}
               >
-                <div className="relative w-8 h-4 sm:w-10 sm:h-5 shrink-0">
+                {/* Subtle Amber Glow Behind the Crown */}
+                <div className="absolute inset-0 rounded-xl bg-[radial-gradient(ellipse_at_center,_rgba(245,158,11,0.25)_0%,_transparent_70%)] pointer-events-none" />
+
+                <div className="relative w-14 h-7 sm:w-16 sm:h-8 shrink-0">
                   <Image
                     src={config.crownImage || '/premium-crown.png'}
                     alt={config.crownTitle || 'Premium'}
                     fill
                     unoptimized
                     priority
-                    className="object-contain drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)] group-hover/crown:scale-105 transition-transform duration-200"
+                    className="object-contain drop-shadow-[0_2px_6px_rgba(0,0,0,0.8)] group-hover/crown:scale-105 transition-transform duration-200"
                   />
                 </div>
               </div>
             </div>
 
-            {/* Center: 3 Circular Ad Avatars with Thick Golden Rings and Clean White Labels */}
-            <div className="flex items-center justify-center gap-3 sm:gap-6 lg:gap-7">
-              {visibleAds.map((ad, idx) => (
+            {/* Left Scroll Arrow */}
+            {canScrollLeft && (
+              <button
+                type="button"
+                onClick={() => handleScroll('left')}
+                className="w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-full bg-[#1e1e24] hover:bg-zinc-700 text-zinc-300 hover:text-white flex items-center justify-center transition shrink-0 cursor-pointer shadow-sm"
+                title="Scroll previous ads"
+              >
+                <ChevronLeftIcon className="w-3.5 h-3.5" />
+              </button>
+            )}
+
+            {/* Circles Rail: Shows exactly 3 Ads at a time, horizontal scrolling reveals more */}
+            <div
+              ref={scrollRef}
+              onScroll={checkScroll}
+              className="flex items-center gap-2 sm:gap-2.5 overflow-x-auto scrollbar-none py-1 px-0.5 w-[164px] sm:w-[190px] max-w-[164px] sm:max-w-[190px] scroll-smooth"
+              style={{ scrollSnapType: 'x mandatory' }}
+            >
+              {adItems.map((ad) => (
                 <button
-                  key={`${ad.id}-${pageIndex}-${idx}`}
+                  key={ad.id}
                   type="button"
                   onClick={() => handleOpenAd(ad)}
-                  className="flex flex-col items-center group cursor-pointer focus:outline-none animate-in fade-in zoom-in-95 duration-300"
+                  className="flex flex-col items-center gap-1 shrink-0 group/circle cursor-pointer focus:outline-none w-[48px] sm:w-[56px]"
                   title={`${ad.name} - ${ad.tagline}`}
+                  style={{ scrollSnapAlign: 'start' }}
                 >
-                  {/* Thick Golden Ring Frame: Solid vibrant amber ring */}
-                  <div className="w-13 h-13 sm:w-15 sm:h-15 lg:w-16 lg:h-16 rounded-full p-[3px] bg-[#f59e0b] shadow-[0_0_12px_rgba(245,158,11,0.5)] group-hover:scale-105 group-hover:shadow-[0_0_18px_rgba(245,158,11,0.8)] transition-all duration-200 shrink-0">
+                  {/* Circular Avatar Container with Gold Luxury Border */}
+                  <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full p-[2px] bg-gradient-to-tr from-amber-500 via-yellow-300 to-amber-600 shadow-[0_0_12px_rgba(245,158,11,0.55)] group-hover/circle:shadow-[0_0_18px_rgba(245,158,11,0.85)] group-hover/circle:scale-105 transition-all duration-200">
                     <div className="w-full h-full rounded-full overflow-hidden relative bg-black">
                       <Image
                         src={ad.image || '/opus-thumb.jpg'}
                         alt={ad.name}
                         fill
                         unoptimized
-                        className="object-cover group-hover:scale-110 transition-transform duration-300"
+                        className="object-cover group-hover/circle:scale-110 transition-transform duration-300"
                       />
                     </div>
                   </div>
 
-                  {/* Clean White Label Underneath */}
-                  <span className="text-[11px] sm:text-xs font-semibold text-white group-hover:text-amber-400 transition-colors mt-1.5 text-center truncate max-w-[62px] sm:max-w-[76px] leading-tight">
+                  {/* Name Label underneath */}
+                  <span className="text-[11px] font-medium text-white group-hover/circle:text-amber-300 transition-colors truncate max-w-[56px] text-center leading-tight">
                     {ad.name}
                   </span>
                 </button>
               ))}
-            </div>
 
-            {/* Right Side: Next Arrow + Close Button */}
-            <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
-              {/* Next Arrow Button */}
-              {adItems.length > 1 && (
-                <button
-                  type="button"
-                  onClick={handleNextAds}
-                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#1e1e24] hover:bg-[#2c2c34] active:scale-95 text-white flex items-center justify-center transition cursor-pointer shadow-md"
-                  title="Next ad (Click to rotate)"
-                  aria-label="Next ad"
-                >
-                  <ChevronRightIcon className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
-                </button>
-              )}
-
-              {/* Close Button */}
+              {/* "+ Promote" Circle Button at the end */}
               <button
                 type="button"
-                onClick={() => setIsMinimized(true)}
-                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#1e1e24] hover:bg-[#2c2c34] active:scale-95 text-white flex items-center justify-center transition cursor-pointer shadow-md"
-                title="Close ads strip"
-                aria-label="Close ads strip"
+                onClick={handlePromoteClick}
+                className="flex flex-col items-center gap-1 shrink-0 group/promote cursor-pointer focus:outline-none w-[48px] sm:w-[56px]"
+                title="Advertise your business here on ANV Realty"
+                style={{ scrollSnapAlign: 'start' }}
               >
-                <CloseIcon className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+                <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full border-2 border-dashed border-zinc-700 hover:border-amber-400 bg-zinc-900/80 hover:bg-zinc-800 text-zinc-400 hover:text-amber-400 flex items-center justify-center transition-all group-hover/promote:scale-105">
+                  <PlusIcon className="w-4 h-4" />
+                </div>
+                <span className="text-[10.5px] font-medium text-zinc-400 group-hover/promote:text-amber-400 transition-colors truncate max-w-[50px] text-center leading-tight">
+                  Promote
+                </span>
               </button>
             </div>
+
+            {/* Right Scroll Arrow */}
+            {canScrollRight && (
+              <button
+                type="button"
+                onClick={() => handleScroll('right')}
+                className="w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-full bg-[#1e1e24] hover:bg-zinc-700 text-zinc-300 hover:text-white flex items-center justify-center transition shrink-0 cursor-pointer shadow-sm"
+                title="Scroll more ads"
+              >
+                <ChevronRightIcon className="w-3.5 h-3.5" />
+              </button>
+            )}
+
+            {/* Quick Minimize X Button */}
+            <button
+              type="button"
+              onClick={() => setIsMinimized(true)}
+              className="w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-full bg-[#1e1e24] hover:bg-zinc-700 text-zinc-300 hover:text-white flex items-center justify-center transition shrink-0 cursor-pointer shadow-sm ml-0.5"
+              title="Minimize ads"
+              aria-label="Minimize ads"
+            >
+              <CloseIcon className="w-3.5 h-3.5" />
+            </button>
           </div>
         )}
       </aside>
 
-      {/* ================= MODAL / FULL AD SHOWCASE ================= */}
+      {/* ================= INTERACTIVE AD DETAIL MODAL ================= */}
       {activeAd && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="relative w-full max-w-xl bg-zinc-950 border border-zinc-800 rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-2.5 sm:p-4 animate-in fade-in duration-200"
+          onClick={() => setActiveAd(null)}
+        >
+          <div
+            className="relative w-full max-w-lg bg-zinc-950 border border-zinc-800 rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl text-white animate-in zoom-in-95 duration-200 max-h-[92vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-4 sm:p-5 border-b border-zinc-800/80 bg-zinc-900/60">
+            <div className="p-4 sm:p-5 border-b border-zinc-800 flex items-center justify-between gap-3 bg-zinc-900/60">
               <div className="flex items-center gap-2.5 min-w-0">
                 <div className="w-9 h-9 rounded-full overflow-hidden relative shrink-0 border border-amber-500/50">
                   <Image
