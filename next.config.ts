@@ -7,9 +7,7 @@ const nextConfig: NextConfig = {
   trailingSlash: false,
   serverExternalPackages: ['pdf-parse', '@napi-rs/canvas', 'pg'],
   experimental: {
-    turbopackPluginRuntimeStrategy: 'workerThreads',
     optimizePackageImports: [
-      'lucide-react',
       'date-fns',
       'lodash',
     ],

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { PropertyItem } from '@/components/public/HomepageSearchablePortal';
+import { PropertyItem } from '@/lib/property-types';
 
 interface PropertyComparisonContextType {
   compareList: PropertyItem[];
