@@ -76,7 +76,7 @@ export async function fetchAllProperties(forceFresh = false): Promise<PropertyIt
           : `Spacious and luxurious ${bhkStr} residence in ${p.locality}. High floor inventory with scenic skyline views.`;
 
         // Parse structured dossier metadata if present in description
-        const { cleanDescription, dossier } = parseDossierData(p.description || '');
+        const { cleanDescription, dossier } = parseDossierData(p.description || '', p.name);
 
         const highlights = dossier.highlights && dossier.highlights.length > 0
           ? dossier.highlights

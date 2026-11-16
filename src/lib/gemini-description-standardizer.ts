@@ -323,14 +323,17 @@ export function fastDeterministicStandardizeDescription(
       const val = s.replace(/(?:project|building)\s*name\s*[:\-]/i, '').trim();
       addBucket(10, `Building Name: ${val}`);
     } else if (/(?:commercial\s*shop|office\s*space|showroom|warehouse|bhk|penthouse|apartment)\s*(?:available|for\s*rent|for\s*sale)?/i.test(s) && !buckets[2]) {
-      addBucket(2, `Property Title: ${s.replace(/^(?:property\s*title\s*[:\-])?\s*/i, '')}`);
+      const titleCandidate = s.replace(/^(?:property\s*title\s*[:\-])?\s*/i, '').trim();
+      // Only treat as title if it has descriptive length and is not merely a generic 1-2 word category
+      if (titleCandidate.length > 15 && !/^(?:commercial\s*shop|office\s*space)$/i.test(titleCandidate)) {
+        addBucket(2, `Property Title: ${titleCandidate}`);
+      }
     } else if (/(?:shop|office|showroom|space)\s*available\s*in\s*([^,#|]+)/i.test(s)) {
       const locMatch = s.match(/(?:available\s*in)\s*([^,#|]+)/i);
       if (locMatch && locMatch[1]) {
         addBucket(3, `Landmark, City: ${locMatch[1].trim()}, Pune`);
       }
-      const suitVal = s.replace(/^(?:#\s*)?(?:suitable\s*for\s*[:\-]?\s*)+/i, '').trim();
-      addBucket(19, suitVal);
+      // Note: Do NOT add availability/location lines to bucket 19 (Suitable For)
     } else if (/near\s+|opposite\s+|chowk|crossroad|metro|highway|expressway|corridor|towards\s+/i.test(s) && !/road\s*width|facing/i.test(s)) {
       addBucket(3, `Landmark, City: ${s}`);
     } else if (/carpet\s*area|saleable\s*area|super\s*area|built\s*up|total\s*(?:stated\s*)?area|basement|mezzanine/i.test(s)) {
@@ -348,9 +351,11 @@ export function fastDeterministicStandardizeDescription(
       addBucket(17, `Total Floors: ${s}`);
     } else if (/on\s*floor|floor\s*no|(\d+)(?:st|nd|rd|th)\s*floor/i.test(s)) {
       addBucket(18, `Property on Floor: ${s}`);
-    } else if (/suitable\s*for/i.test(s) || /(?:retail|showroom|clinic|bank|corporate|commercial\s*business|godown|storage)/i.test(s)) {
+    } else if (/suitable\s*for/i.test(s) || (/(?:retail|showroom|clinic|bank|corporate|godown|storage)/i.test(s) && !/(?:available\s*in|for\s*rent|for\s*sale|at\s*undri)/i.test(s))) {
       const cleanSuit = s.replace(/^(?:#\s*)?(?:suitable\s*for\s*[:\-]?\s*)+/i, '').trim();
-      addBucket(19, cleanSuit);
+      if (!/(?:available\s*in|for\s*rent|for\s*sale)/i.test(cleanSuit)) {
+        addBucket(19, cleanSuit);
+      }
     } else if (/lock[\s\-]*in/i.test(s)) {
       addBucket(22, `Lock-in Period: ${s}`);
     } else if (/lease\s*period|agreement\s*period/i.test(s)) {

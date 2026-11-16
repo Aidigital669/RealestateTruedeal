@@ -325,8 +325,8 @@ export function PropertyDetailPageClient({
 
   // Structured Dossier Parsing & Privacy Settings
   const { cleanDescription, dossier } = useMemo(() => {
-    return parseDossierData(property?.description || '');
-  }, [property?.description]);
+    return parseDossierData(property?.description || '', property?.name);
+  }, [property?.description, property?.name]);
 
   const hideName = Boolean(property?.hideName ?? dossier.hideName);
   const hidePrice = Boolean(property?.hidePrice ?? dossier.hidePrice);
@@ -378,21 +378,30 @@ export function PropertyDetailPageClient({
       for (const p of parts) {
         const item = p.trim().replace(/^#+/, '').trim();
         const key = item.toLowerCase();
-        if (item && !seen.has(key)) {
-          seen.add(key);
-          list.push(item);
+
+        // STRICT FILTER: Discard any invalid entries like property titles, availability phrases, sqft, locations, etc.
+        if (
+          !item ||
+          seen.has(key) ||
+          item.length > 40 ||
+          /\b(?:available\s*in|for\s*rent|for\s*sale|sq\.?\s*ft|carpet\s*area|saleable|bhk|project\s*name|trade\s*park|undri|commercial\s*shop|hospital\s*premise)\b/i.test(item)
+        ) {
+          continue;
         }
+
+        seen.add(key);
+        list.push(item);
       }
     };
 
-    // 1. From property.businessPurposes
+    // 1. From property.businessPurposes (Admin DB assigned)
     if (Array.isArray(property?.businessPurposes)) {
       for (const bp of property.businessPurposes) {
         add(bp);
       }
     }
 
-    // 2. From dossier.suitableFor
+    // 2. From dossier.suitableFor (Admin JSON assigned)
     if (Array.isArray(dossier?.suitableFor)) {
       for (const sf of dossier.suitableFor) {
         add(sf);
@@ -401,7 +410,7 @@ export function PropertyDetailPageClient({
       add(dossier.suitableFor);
     }
 
-    // 3. From description lines starting with # Suitable For:
+    // 3. From description lines starting with # Suitable For: (only if non-empty and not listing metadata)
     const desc = cleanDescription || property?.description || '';
     const matches = desc.match(/#\s*Suitable\s*For\s*:\s*([^\n#]+)/gi);
     if (matches) {
@@ -856,7 +865,11 @@ export function PropertyDetailPageClient({
                 // Build ordered rows — only fields with values
                 const rows: { label: string; value: string }[] = [];
                 FIELD_ORDER.forEach(field => {
-                  const v = lineMap[field.toLowerCase()];
+                  let v = lineMap[field.toLowerCase()];
+                  if (field.toLowerCase() === 'property title') {
+                    // Always show authentic full property title (e.g. "900 Sq.Ft. Commercial Shop for Rent in Undri")
+                    v = property?.name || v;
+                  }
                   if (v) rows.push({ label: field, value: v });
                 });
                 // Any remaining keys not in FIELD_ORDER

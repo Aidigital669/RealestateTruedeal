@@ -57,19 +57,20 @@ import { fastDeterministicStandardizeDescription, normalizeDossierText } from '@
  * Ensures that every line starting with '#' is ordered according to the 42-point hierarchy
  * and placed on its own line without duplicate field prefixes.
  */
-export function formatPropertyDescription(rawDescription: string = ''): string {
+export function formatPropertyDescription(rawDescription: string = '', context?: { title?: string }): string {
   if (!rawDescription) return '';
   const preformatted = rawDescription
     .replace(/(?:\r?\n)?\s*#/g, '\n#')
     .trim();
-  const standardized = fastDeterministicStandardizeDescription(preformatted);
+  const standardized = fastDeterministicStandardizeDescription(preformatted, context);
   return normalizeDossierText(standardized);
 }
 
 /**
  * Extracts structured dossier metadata from property description
  */
-export function parseDossierData(rawDescription: string = ''): ParsedDossier {
+export function parseDossierData(rawDescription: string = '', propertyTitle?: string): ParsedDossier {
+  const context = propertyTitle ? { title: propertyTitle } : undefined;
   if (!rawDescription) {
     return {
       cleanDescription: '',
@@ -80,14 +81,14 @@ export function parseDossierData(rawDescription: string = ''): ParsedDossier {
   const match = rawDescription.match(DOSSIER_TAG_REGEX);
   if (!match) {
     return {
-      cleanDescription: formatPropertyDescription(rawDescription),
+      cleanDescription: formatPropertyDescription(rawDescription, context),
       dossier: {}
     };
   }
 
   try {
     const parsed = JSON.parse(match[1]);
-    const cleanDescription = formatPropertyDescription(rawDescription.replace(DOSSIER_TAG_REGEX, ''));
+    const cleanDescription = formatPropertyDescription(rawDescription.replace(DOSSIER_TAG_REGEX, ''), context);
 
     return {
       cleanDescription,
