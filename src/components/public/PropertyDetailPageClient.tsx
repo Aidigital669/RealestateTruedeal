@@ -764,8 +764,8 @@ export function PropertyDetailPageClient({
                 </button>
               </div>
 
-              {/* 4 CORE STATS BAR */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 bg-white p-3 sm:p-4 rounded-2xl border border-zinc-200 shadow-xs">
+              {/* CORE STATS BAR */}
+              <div className="grid grid-cols-3 gap-2 sm:gap-3 bg-white p-3 sm:p-4 rounded-2xl border border-zinc-200 shadow-xs">
                 <div className="p-2 sm:p-3 bg-zinc-50 rounded-xl border border-zinc-100 min-w-0">
                   <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Typology</span>
                   <span className="text-xs sm:text-sm font-black text-zinc-900 block mt-0.5 truncate">{property.bhk}</span>
@@ -777,12 +777,6 @@ export function PropertyDetailPageClient({
                 <div className="p-2 sm:p-3 bg-zinc-50 rounded-xl border border-zinc-100 min-w-0">
                   <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Possession</span>
                   <span className="text-xs sm:text-sm font-black text-zinc-900 block mt-0.5 truncate">{property.possession || property.status}</span>
-                </div>
-                <div className="p-2 sm:p-3 bg-zinc-50 rounded-xl border border-zinc-100 min-w-0">
-                  <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Verification</span>
-                  <span className="text-xs sm:text-sm font-bold text-emerald-700 block mt-0.5 truncate">
-                    {property.rpsStatus ? `${property.rpsStatus} ✓` : 'Verified Listing ✓'}
-                  </span>
                 </div>
               </div>
 

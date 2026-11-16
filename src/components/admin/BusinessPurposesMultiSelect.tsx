@@ -348,7 +348,7 @@ export function BusinessPurposesMultiSelect({
                 handleAddCustom(customInput);
               }
             }}
-            placeholder="Custom (e.g. shop available in Undri)..."
+            placeholder="Custom purpose (e.g. Pharmacy, Clinic, Boutique)..."
             className="flex-1 px-3 py-2 text-xs bg-white border border-zinc-200 rounded-xl focus:outline-hidden focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
           />
           <button
