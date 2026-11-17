@@ -3089,7 +3089,6 @@ export function HomepageSearchablePortal({
                                   fill
                                   sizes="48px"
                                   priority={rowIdx === 0}
-                                  loading={rowIdx < 4 ? "eager" : "lazy"}
                                   unoptimized
                                   className="object-cover group-hover/thumb:scale-110 transition-transform duration-500"
                                 />
@@ -3245,7 +3244,6 @@ export function HomepageSearchablePortal({
                               fill
                               sizes="64px"
                               priority={mRowIdx === 0}
-                              loading={mRowIdx < 4 ? "eager" : "lazy"}
                               unoptimized
                               className="object-cover"
                             />

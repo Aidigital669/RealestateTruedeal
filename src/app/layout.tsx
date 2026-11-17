@@ -1,7 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
+import dynamic from 'next/dynamic';
 import "./globals.css";
+import { PropertyComparisonProvider } from "@/context/PropertyComparisonContext";
+import { SavedPropertiesProvider } from "@/context/SavedPropertiesContext";
+import { FeaturedAdsBar } from "@/components/public/FeaturedAdsBar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -52,16 +56,13 @@ export const metadata: Metadata = {
   },
 };
 
-import dynamic from 'next/dynamic';
-import { PropertyComparisonProvider } from "@/context/PropertyComparisonContext";
-import { SavedPropertiesProvider } from "@/context/SavedPropertiesContext";
-import { FeaturedAdsBar } from "@/components/public/FeaturedAdsBar";
-
 const FloatingCompareBar = dynamic(
-  () => import('@/components/public/FloatingCompareBar').then((m) => m.FloatingCompareBar)
+  () => import('@/components/public/FloatingCompareBar').then((m) => m.FloatingCompareBar),
+  { ssr: false }
 );
 const TimedEnquiryModal = dynamic(
-  () => import('@/components/public/TimedEnquiryModal').then((m) => m.TimedEnquiryModal)
+  () => import('@/components/public/TimedEnquiryModal').then((m) => m.TimedEnquiryModal),
+  { ssr: false }
 );
 
 export default function RootLayout({
@@ -84,12 +85,12 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col w-full max-w-full" suppressHydrationWarning>
         {/* Google tag (gtag.js) */}
         <Script
-          strategy="lazyOnload"
+          strategy="afterInteractive"
           src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
         />
         <Script
           id="google-tag-gtag"
-          strategy="lazyOnload"
+          strategy="afterInteractive"
         >
           {`
             window.dataLayer = window.dataLayer || [];

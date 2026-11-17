@@ -40,6 +40,7 @@ import { CrmEditLeadModal } from './CrmEditLeadModal';
 
 interface CrmBuyersTabProps {
   buyers: CrmLead[];
+  isLoading?: boolean;
   onOpenAddBuyer: () => void;
   onOpenUploadBuyers?: () => void;
   onSelectBuyer: (buyer: CrmLead) => void;
@@ -49,6 +50,7 @@ interface CrmBuyersTabProps {
 
 export function CrmBuyersTab({
   buyers,
+  isLoading = false,
   onOpenAddBuyer,
   onOpenUploadBuyers,
   onSelectBuyer,
@@ -326,7 +328,7 @@ export function CrmBuyersTab({
               <h1 className="text-base font-bold text-zinc-950 tracking-tight flex items-center gap-2">
                 <span>Verified Buyers & Demands</span>
                 <span className="text-xs font-mono font-semibold bg-amber-100 text-amber-900 px-2 py-0.5 rounded-full">
-                  {totalCount} Active Demands
+                  {isLoading ? 'Loading...' : `${totalCount} Active Demands`}
                 </span>
               </h1>
               <p className="text-xs text-zinc-500">
@@ -407,7 +409,7 @@ export function CrmBuyersTab({
             <Users className="w-3.5 h-3.5 text-zinc-500" />
           </div>
           <div className="flex items-baseline gap-2 mt-2">
-            <span className="text-2xl font-bold text-zinc-900">{totalCount}</span>
+            <span className="text-2xl font-bold text-zinc-900">{isLoading ? "..." : totalCount}</span>
             <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
               Verified
             </span>
@@ -430,7 +432,7 @@ export function CrmBuyersTab({
             <Building className="w-3.5 h-3.5 text-amber-600" />
           </div>
           <div className="flex items-baseline gap-2 mt-2">
-            <span className="text-2xl font-bold text-zinc-900">{commercialCount}</span>
+            <span className="text-2xl font-bold text-zinc-900">{isLoading ? "..." : commercialCount}</span>
             <span className="text-xs text-zinc-500 font-medium">Offices / Shops</span>
           </div>
         </div>
@@ -451,7 +453,7 @@ export function CrmBuyersTab({
             <Building className="w-3.5 h-3.5 text-sky-600" />
           </div>
           <div className="flex items-baseline gap-2 mt-2">
-            <span className="text-2xl font-bold text-zinc-900">{residentialCount}</span>
+            <span className="text-2xl font-bold text-zinc-900">{isLoading ? "..." : residentialCount}</span>
             <span className="text-xs text-zinc-500 font-medium">2, 3, 4 BHKs</span>
           </div>
         </div>
@@ -472,7 +474,7 @@ export function CrmBuyersTab({
             <Flame className="w-3.5 h-3.5 text-purple-600" />
           </div>
           <div className="flex items-baseline gap-2 mt-2">
-            <span className="text-2xl font-bold text-zinc-900">{highBudgetCount}</span>
+            <span className="text-2xl font-bold text-zinc-900">{isLoading ? "..." : highBudgetCount}</span>
             <span className="text-[11px] font-semibold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full">
               Premium
             </span>
@@ -810,7 +812,15 @@ export function CrmBuyersTab({
                 );
               })}
 
-              {filteredBuyers.length === 0 && (
+                            {isLoading ? (
+                <tr>
+                  <td colSpan={7} className="py-20 text-center text-zinc-400">
+                    <Loader2 className="w-8 h-8 mx-auto text-amber-500 animate-spin mb-3" />
+                    <p className="text-sm font-bold text-zinc-700">Loading verified buyer mandates...</p>
+                    <p className="text-xs text-zinc-400 mt-1">Connecting directly to secure CRM database</p>
+                  </td>
+                </tr>
+              ) : filteredBuyers.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-16 text-center text-zinc-400">
                     <Users className="w-10 h-10 mx-auto text-zinc-300 mb-2" />
@@ -820,7 +830,7 @@ export function CrmBuyersTab({
                     </p>
                   </td>
                 </tr>
-              )}
+              ) : null}
             </tbody>
           </table>
         </div>

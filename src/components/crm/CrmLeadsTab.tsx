@@ -38,6 +38,7 @@ import { CrmEditLeadModal } from './CrmEditLeadModal';
 
 interface CrmLeadsTabProps {
   leads: CrmLead[];
+  isLoading?: boolean;
   onOpenAddLead: () => void;
   onSelectLead: (lead: CrmLead) => void;
   onRefresh?: () => void;
@@ -46,6 +47,7 @@ interface CrmLeadsTabProps {
 
 export function CrmLeadsTab({
   leads,
+  isLoading = false,
   onOpenAddLead,
   onSelectLead,
   onRefresh,
@@ -959,7 +961,15 @@ export function CrmLeadsTab({
                     </tr>
                   );
                 })}
-                {filteredLeads.length === 0 && (
+                                {isLoading ? (
+                  <tr>
+                    <td colSpan={10} className="py-16 text-center text-zinc-400">
+                      <Loader2 className="w-8 h-8 mx-auto text-amber-500 animate-spin mb-3" />
+                      <p className="text-sm font-semibold text-zinc-700">Loading leads...</p>
+                      <p className="text-xs text-zinc-400 mt-0.5">Fetching latest inquiries from CRM</p>
+                    </td>
+                  </tr>
+                ) : filteredLeads.length === 0 ? (
                   <tr>
                     <td colSpan={10} className="py-12 text-center text-zinc-400">
                       <UserCheck className="w-8 h-8 mx-auto text-zinc-300 mb-2" />
@@ -967,7 +977,7 @@ export function CrmLeadsTab({
                       <p className="text-xs text-zinc-400 mt-0.5">Click &quot;+ Add Lead&quot; to register a client requirement</p>
                     </td>
                   </tr>
-                )}
+                ) : null}
               </tbody>
             </table>
           </div>

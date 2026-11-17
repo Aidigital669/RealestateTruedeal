@@ -22,6 +22,8 @@ import { X } from 'lucide-react';
 export default function CrmPage() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState<boolean>(true);
+  const [isMounted, setIsMounted] = useState<boolean>(false);
+  const [isLoadingLeads, setIsLoadingLeads] = useState<boolean>(true);
 
   // Default active tab: 'buyers' or 'leads'
   const [sidebarTab, setSidebarTab] = useState<'dashboard' | 'buyers' | 'leads' | 'customers' | 'site_visits' | 'calls' | 'properties' | string>('buyers');
@@ -36,6 +38,7 @@ export default function CrmPage() {
   const [buyerUploadOpen, setBuyerUploadOpen] = useState(false);
 
   const fetchLeads = async () => {
+    setIsLoadingLeads(true);
     try {
       const res = await fetch('/api/crm/leads');
       const data = await res.json();
@@ -98,11 +101,14 @@ export default function CrmPage() {
       console.log('CRM leads live fetch notice:', err);
       setLeads([]);
       setSelectedLead(null);
+    } finally {
+      setIsLoadingLeads(false);
     }
   };
 
   // Check existing session & fetch live leads
   useEffect(() => {
+    setIsMounted(true);
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('anv_crm_auth');
       if (stored === 'true') {
@@ -110,6 +116,7 @@ export default function CrmPage() {
         fetchLeads();
       } else {
         setIsAuthenticated(false);
+        setIsLoadingLeads(false);
       }
       setIsCheckingAuth(false);
     }
@@ -241,7 +248,7 @@ export default function CrmPage() {
   const buyersList = leads.filter(isBuyerRecord);
   const regularLeadsList = leads.filter((l) => !isBuyerRecord(l));
 
-  if (isCheckingAuth) {
+  if (!isMounted || isCheckingAuth) {
     return (
       <div className="min-h-screen bg-zinc-950 flex items-center justify-center text-amber-400 text-xs font-semibold">
         Verifying CRM authorization...
@@ -289,6 +296,7 @@ export default function CrmPage() {
           {sidebarTab === 'buyers' && (
             <CrmBuyersTab
               buyers={buyersList}
+              isLoading={isLoadingLeads}
               onOpenAddBuyer={() => setIsAddLeadOpen(true)}
               onOpenUploadBuyers={() => setBuyerUploadOpen(true)}
               onSelectBuyer={handleSelectLeadFromTable}
@@ -301,6 +309,7 @@ export default function CrmPage() {
           {sidebarTab === 'leads' && (
             <CrmLeadsTab
               leads={regularLeadsList}
+              isLoading={isLoadingLeads}
               onOpenAddLead={() => setIsAddLeadOpen(true)}
               onSelectLead={handleSelectLeadFromTable}
               onRefresh={fetchLeads}

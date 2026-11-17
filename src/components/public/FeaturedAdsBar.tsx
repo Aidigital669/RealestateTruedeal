@@ -259,7 +259,6 @@ export function FeaturedAdsBar() {
                         sizes="(max-width: 640px) 32px, (max-width: 768px) 40px, 44px"
                         unoptimized
                         priority={idx === 0}
-                        loading={idx === 0 ? "eager" : "lazy"}
                         className="object-cover group-hover/circle:scale-110 transition-transform duration-300"
                       />
                     </div>
