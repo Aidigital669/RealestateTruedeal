@@ -182,9 +182,9 @@ export function FeaturedAdsBar() {
         aria-label="Sponsored Partners and Ads"
         className={`fixed ${
           hasCompareBar
-            ? 'bottom-[84px] lg:bottom-24'
-            : 'bottom-2 sm:bottom-2.5 lg:bottom-5'
-        } left-1/2 -translate-x-1/2 z-40 select-none animate-in fade-in slide-in-from-bottom-3 duration-300`}
+            ? 'bottom-[76px] sm:bottom-[84px] lg:bottom-24'
+            : 'bottom-2 sm:bottom-3 lg:bottom-5'
+        } left-1/2 -translate-x-1/2 z-40 select-none animate-in fade-in slide-in-from-bottom-3 duration-300 w-max max-w-[calc(100vw-24px)] flex items-center justify-center`}
       >
         {isMinimized ? (
           /* Minimized Pill to restore */
@@ -213,18 +213,18 @@ export function FeaturedAdsBar() {
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
             style={{ backgroundColor: '#000000' }}
-            className="relative bg-black border border-zinc-800/90 rounded-[22px] xs:rounded-[24px] sm:rounded-3xl shadow-[0_16px_50px_rgba(0,0,0,0.95)] px-2 py-1.5 xs:px-2.5 xs:py-2 sm:px-3.5 sm:py-2.5 md:px-4 md:py-3 flex items-center gap-1.5 xs:gap-2 sm:gap-2.5 md:gap-3 transition-all max-w-[calc(100vw-12px)] sm:max-w-none"
+            className="relative bg-black border border-zinc-800/90 rounded-2xl sm:rounded-3xl shadow-[0_16px_50px_rgba(0,0,0,0.95)] px-2 py-1.5 sm:px-3.5 sm:py-2.5 md:px-4 md:py-3 flex items-center gap-1.5 sm:gap-2.5 md:gap-3 transition-all shrink-0 max-w-[calc(100vw-24px)]"
           >
             {/* Left Header Image Badge: Gold Crown with Premium Royal Wine Background */}
-            <div className="flex items-center justify-center shrink-0 pr-1.5 sm:pr-2 border-r border-zinc-800/90">
+            <div className="flex items-center justify-center shrink-0 pr-1.5 sm:pr-2.5 border-r border-zinc-800/90">
               <div
-                className="relative px-1.5 py-0.5 xs:px-2 xs:py-1 sm:px-2.5 sm:py-1 rounded-lg sm:rounded-xl bg-gradient-to-b from-[#2e050f] via-[#420816] to-[#1f030a] border border-amber-400/80 shadow-[0_0_14px_rgba(245,158,11,0.4)] flex items-center justify-center shrink-0 group/crown"
+                className="relative px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-lg sm:rounded-xl bg-gradient-to-b from-[#2e050f] via-[#420816] to-[#1f030a] border border-amber-400/80 shadow-[0_0_12px_rgba(245,158,11,0.35)] flex items-center justify-center shrink-0 group/crown"
                 title={config.crownTitle || 'Premium Collection'}
               >
                 {/* Subtle Amber Glow Behind the Crown */}
                 <div className="absolute inset-0 rounded-lg sm:rounded-xl bg-[radial-gradient(ellipse_at_center,_rgba(245,158,11,0.25)_0%,_transparent_70%)] pointer-events-none" />
 
-                <div className="relative w-10 h-5 xs:w-12 xs:h-6 sm:w-14 sm:h-7 md:w-16 md:h-8 shrink-0">
+                <div className="relative w-8 h-4 sm:w-12 sm:h-6 md:w-14 md:h-7 shrink-0">
                   <Image
                     src={config.crownImage || '/premium-crown.png'}
                     alt={config.crownTitle || 'Premium'}
@@ -238,17 +238,17 @@ export function FeaturedAdsBar() {
             </div>
 
             {/* Center: EXACTLY 3 Ad Avatars Visible on the Front */}
-            <div className="flex items-center gap-1.5 xs:gap-2 sm:gap-2.5 md:gap-3 py-0.5 px-0.5">
+            <div className="flex items-center gap-1.5 sm:gap-2.5 md:gap-3 py-0.5 shrink-0">
               {visibleAds.map((ad, idx) => (
                 <button
                   key={`${ad.id}-${currentIndex}-${idx}`}
                   type="button"
                   onClick={() => handleOpenAd(ad)}
-                  className="flex flex-col items-center gap-0.5 sm:gap-1 shrink-0 group/circle cursor-pointer focus:outline-none w-[42px] xs:w-[48px] sm:w-[54px] md:w-[60px] transition-transform duration-200"
+                  className="flex flex-col items-center gap-0.5 sm:gap-1 shrink-0 group/circle cursor-pointer focus:outline-none w-[38px] sm:w-[48px] md:w-[56px] transition-transform duration-200"
                   title={`${ad.name} - ${ad.tagline}`}
                 >
                   {/* Circular Avatar Container with Gold Luxury Border */}
-                  <div className="w-9 h-9 xs:w-10 xs:h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-full p-[1.5px] sm:p-[2px] bg-gradient-to-tr from-amber-500 via-yellow-300 to-amber-600 shadow-[0_0_10px_rgba(245,158,11,0.55)] sm:shadow-[0_0_14px_rgba(245,158,11,0.65)] group-hover/circle:shadow-[0_0_18px_rgba(245,158,11,0.9)] group-hover/circle:scale-105 transition-all duration-200">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-full p-[1.5px] sm:p-[2px] bg-gradient-to-tr from-amber-500 via-yellow-300 to-amber-600 shadow-[0_0_8px_rgba(245,158,11,0.55)] sm:shadow-[0_0_14px_rgba(245,158,11,0.65)] group-hover/circle:shadow-[0_0_18px_rgba(245,158,11,0.9)] group-hover/circle:scale-105 transition-all duration-200">
                     <div className="w-full h-full rounded-full overflow-hidden relative bg-black">
                       <Image
                         src={ad.image || '/opus-thumb.jpg'}
@@ -261,7 +261,7 @@ export function FeaturedAdsBar() {
                   </div>
 
                   {/* Name Label underneath */}
-                  <span className="text-[9.5px] xs:text-[10.5px] sm:text-[11px] md:text-xs font-medium text-white group-hover/circle:text-amber-300 transition-colors truncate max-w-[44px] xs:max-w-[50px] sm:max-w-[56px] md:max-w-[62px] text-center leading-tight mt-0.5">
+                  <span className="text-[9px] sm:text-[10.5px] md:text-xs font-medium text-white group-hover/circle:text-amber-300 transition-colors truncate max-w-[38px] sm:max-w-[48px] md:max-w-[56px] text-center leading-tight mt-0.5">
                     {ad.name}
                   </span>
                 </button>
@@ -274,22 +274,22 @@ export function FeaturedAdsBar() {
               <button
                 type="button"
                 onClick={handleNext}
-                className="w-6.5 h-6.5 xs:w-7 xs:h-7 sm:w-7.5 sm:h-7.5 md:w-8 md:h-8 rounded-full bg-[#1e1e24] hover:bg-zinc-700 active:scale-95 text-zinc-300 hover:text-white flex items-center justify-center transition shrink-0 cursor-pointer shadow-sm"
+                className="w-6 h-6 sm:w-7 sm:h-7 md:w-7.5 md:h-7.5 rounded-full bg-[#1e1e24] hover:bg-zinc-700 active:scale-90 text-zinc-300 hover:text-white flex items-center justify-center transition shrink-0 cursor-pointer shadow-sm"
                 title="Next ad"
                 aria-label="Next ad"
               >
-                <ChevronRightIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                <ChevronRightIcon className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5" />
               </button>
 
               {/* Cross / Close Button `✕` */}
               <button
                 type="button"
                 onClick={() => setIsMinimized(true)}
-                className="w-6.5 h-6.5 xs:w-7 xs:h-7 sm:w-7.5 sm:h-7.5 md:w-8 md:h-8 rounded-full bg-[#1e1e24] hover:bg-zinc-700 active:scale-95 text-zinc-300 hover:text-white flex items-center justify-center transition shrink-0 cursor-pointer shadow-sm"
+                className="w-6 h-6 sm:w-7 sm:h-7 md:w-7.5 md:h-7.5 rounded-full bg-[#1e1e24] hover:bg-zinc-700 active:scale-90 text-zinc-300 hover:text-white flex items-center justify-center transition shrink-0 cursor-pointer shadow-sm"
                 title="Close ads"
                 aria-label="Close ads"
               >
-                <CloseIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                <CloseIcon className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5" />
               </button>
             </div>
           </div>
