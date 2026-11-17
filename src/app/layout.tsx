@@ -1,11 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
-import dynamic from 'next/dynamic';
 import "./globals.css";
 import { PropertyComparisonProvider } from "@/context/PropertyComparisonContext";
 import { SavedPropertiesProvider } from "@/context/SavedPropertiesContext";
 import { FeaturedAdsBar } from "@/components/public/FeaturedAdsBar";
+import { ClientLayoutWidgets } from "@/components/public/ClientLayoutWidgets";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -56,13 +56,6 @@ export const metadata: Metadata = {
   },
 };
 
-const FloatingCompareBar = dynamic(
-  () => import('@/components/public/FloatingCompareBar').then((m) => m.FloatingCompareBar)
-);
-const TimedEnquiryModal = dynamic(
-  () => import('@/components/public/TimedEnquiryModal').then((m) => m.TimedEnquiryModal)
-);
-
 export default function RootLayout({
   children,
 }: {
@@ -104,9 +97,8 @@ export default function RootLayout({
         <SavedPropertiesProvider>
           <PropertyComparisonProvider>
             {children}
-            <FloatingCompareBar />
+            <ClientLayoutWidgets />
             <FeaturedAdsBar />
-            <TimedEnquiryModal />
           </PropertyComparisonProvider>
         </SavedPropertiesProvider>
       </body>
