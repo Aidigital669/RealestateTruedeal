@@ -760,6 +760,32 @@ export function HomepageSearchablePortal({
   const [sellerModalOpen, setSellerModalOpen] = useState(false);
   const [selectedBuyerRefForConnect, setSelectedBuyerRefForConnect] = useState<string | undefined>(undefined);
   const [selectedBuyerSummaryForConnect, setSelectedBuyerSummaryForConnect] = useState<string | undefined>(undefined);
+  const [selectedBuyerDemandForSubmit, setSelectedBuyerDemandForSubmit] = useState<BuyerDemandItem | undefined>(undefined);
+
+  const handleOpenSubmitProperty = (demand?: BuyerDemandItem) => {
+    if (demand) {
+      setSelectedBuyerDemandForSubmit(demand);
+      setSelectedBuyerRefForConnect(demand.referenceCode);
+      setSelectedBuyerSummaryForConnect(`${demand.bhk} in ${demand.locality} (${demand.budget})`);
+    } else {
+      setSelectedBuyerDemandForSubmit(undefined);
+      setSelectedBuyerRefForConnect(undefined);
+      setSelectedBuyerSummaryForConnect(undefined);
+    }
+    setSellerModalOpen(true);
+  };
+
+  const handlePropertySaved = async () => {
+    try {
+      const res = await fetch('/api/properties');
+      const data = await res.json();
+      if (data.properties && Array.isArray(data.properties)) {
+        setProperties(data.properties);
+      }
+    } catch (e) {
+      console.warn('Property list refresh error:', e);
+    }
+  };
   const [consultationModalOpen, setConsultationModalOpen] = useState(false);
   const [requirementModalOpen, setRequirementModalOpen] = useState(false);
   const [blogAuthModalOpen, setBlogAuthModalOpen] = useState(false);
@@ -3585,11 +3611,7 @@ export function HomepageSearchablePortal({
                   </a>
                   <button
                     type="button"
-                    onClick={() => {
-                      setSelectedBuyerRefForConnect(undefined);
-                      setSelectedBuyerSummaryForConnect(undefined);
-                      setSellerModalOpen(true);
-                    }}
+                    onClick={() => handleOpenSubmitProperty()}
                     className="w-full sm:w-auto bg-zinc-950 hover:bg-zinc-800 text-white font-bold px-6 py-3 rounded-xl text-xs transition cursor-pointer"
                   >
                     Register My Property
@@ -3643,11 +3665,7 @@ export function HomepageSearchablePortal({
               <div className="flex items-center gap-2.5 flex-wrap">
                 <button
                   type="button"
-                  onClick={() => {
-                    setSelectedBuyerRefForConnect(undefined);
-                    setSelectedBuyerSummaryForConnect(undefined);
-                    setSellerModalOpen(true);
-                  }}
+                  onClick={() => handleOpenSubmitProperty()}
                   className="bg-amber-500 hover:bg-amber-400 text-zinc-950 font-extrabold px-5 py-2.5 rounded-xl text-xs transition flex items-center gap-2 shadow-sm cursor-pointer"
                 >
                   <Building2 className="w-3.5 h-3.5" />
@@ -3672,11 +3690,7 @@ export function HomepageSearchablePortal({
                   <div className="flex items-center gap-2.5 flex-wrap">
                     <button
                       type="button"
-                      onClick={() => {
-                        setSelectedBuyerRefForConnect(undefined);
-                        setSelectedBuyerSummaryForConnect(undefined);
-                        setSellerModalOpen(true);
-                      }}
+                      onClick={() => handleOpenSubmitProperty()}
                       className="text-xs bg-amber-500 hover:bg-amber-400 text-zinc-950 font-extrabold px-4 py-2 rounded-xl transition flex items-center gap-1.5 shadow-sm cursor-pointer"
                     >
                       <Building2 className="w-3.5 h-3.5" />
@@ -4060,28 +4074,14 @@ export function HomepageSearchablePortal({
                             </p>
                           </td>
                           <td className="px-5 py-3.5 text-right whitespace-nowrap">
-                            <div className="flex items-center justify-end gap-1.5">
-                              <a
-                                href={`https://wa.me/919373020701?text=${encodeURIComponent(`Hello ANV Realty Desk, I am contacting you regarding Verified Buyer Ref: ${demand.referenceCode} (${demand.bhk} in ${demand.locality}, Budget: ${demand.budget}). Please connect me.`)}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="bg-[#25D366] hover:bg-[#20ba59] active:scale-95 text-zinc-950 font-bold px-2.5 py-1.5 rounded-lg text-xs transition inline-flex items-center gap-1 shadow-xs cursor-pointer"
-                                title="Connect on WhatsApp (+91 93730 20701)"
-                              >
-                                <svg viewBox="0 0 32 32" className="w-3.5 h-3.5 fill-current" xmlns="http://www.w3.org/2000/svg">
-                                  <path d="M16 2C8.28 2 2 8.28 2 16c0 2.66.75 5.15 2.05 7.29L2.3 29.7l6.63-1.74A13.9 13.9 0 0016 30c7.72 0 14-6.28 14-14S23.72 2 16 2zm8.17 19.83c-.34.96-1.7 1.76-2.76 1.99-.73.16-1.68.29-4.88-1.04-4.09-1.69-6.72-5.83-6.93-6.1-.2-.28-1.67-2.22-1.67-4.23s1.05-3.01 1.43-3.42c.38-.41.82-.51 1.1-.51.27 0 .55 0 .79.02.25.01.59-.1.92.7.34.82 1.16 2.83 1.26 3.04.1.2.17.44.03.71-.13.27-.2.44-.4.68-.2.24-.43.53-.61.71-.21.21-.43.44-.19.86.25.41 1.09 1.8 2.34 2.91 1.61 1.43 2.97 1.88 3.39 2.09.42.2.67.18.92-.1.25-.28 1.07-1.24 1.35-1.67.28-.43.56-.36.94-.22.38.14 2.42 1.14 2.83 1.35.41.2.69.31.79.48.1.18.1 1.02-.24 1.98z" />
-                                </svg>
-                                <span>WhatsApp</span>
-                              </a>
-                              <a
-                                href="tel:+919373020701"
-                                className="bg-amber-500 hover:bg-amber-400 active:scale-95 text-zinc-950 font-bold px-2.5 py-1.5 rounded-lg text-xs transition inline-flex items-center gap-1 shadow-xs cursor-pointer"
-                                title="Call Senior Desk (+91 93730 20701)"
-                              >
-                                <Phone className="w-3.5 h-3.5" />
-                                <span>Call</span>
-                              </a>
-                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenSubmitProperty(demand)}
+                              className="bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 active:scale-95 text-zinc-950 font-black px-3.5 py-1.5 rounded-lg text-xs transition inline-flex items-center gap-1.5 shadow-sm cursor-pointer"
+                              title={`Submit your property for Buyer ${demand.referenceCode}`}
+                            >
+                              <span>Submit Your Property</span>
+                            </button>
                           </td>
                         </tr>
                       ))}
@@ -4318,26 +4318,15 @@ export function HomepageSearchablePortal({
                           </p>
                         )}
 
-                        {/* 4. Action Buttons: WhatsApp & Call Desk */}
-                        <div className="grid grid-cols-2 gap-2.5 pt-0.5">
-                          <a
-                            href={`https://wa.me/919373020701?text=${encodeURIComponent(`Hello ANV Realty Desk, I am contacting you regarding Verified Buyer Ref: ${demand.referenceCode} (${demand.bhk} in ${demand.locality}, Budget: ${demand.budget}). Please connect me.`)}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="bg-[#25D366] hover:bg-[#20ba59] active:scale-95 text-zinc-950 font-black py-2.5 px-3 rounded-xl text-xs transition inline-flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+                        {/* 4. Action Button: Submit Your Property */}
+                        <div className="pt-0.5">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenSubmitProperty(demand)}
+                            className="w-full bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 active:scale-95 text-zinc-950 font-black py-2.5 px-3 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-xs cursor-pointer"
                           >
-                            <svg viewBox="0 0 32 32" className="w-4 h-4 fill-current shrink-0" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M16 2C8.28 2 2 8.28 2 16c0 2.66.75 5.15 2.05 7.29L2.3 29.7l6.63-1.74A13.9 13.9 0 0016 30c7.72 0 14-6.28 14-14S23.72 2 16 2zm8.17 19.83c-.34.96-1.7 1.76-2.76 1.99-.73.16-1.68.29-4.88-1.04-4.09-1.69-6.72-5.83-6.93-6.1-.2-.28-1.67-2.22-1.67-4.23s1.05-3.01 1.43-3.42c.38-.41.82-.51 1.1-.51.27 0 .55 0 .79.02.25.01.59-.1.92.7.34.82 1.16 2.83 1.26 3.04.1.2.17.44.03.71-.13.27-.2.44-.4.68-.2.24-.43.53-.61.71-.21.21-.43.44-.19.86.25.41 1.09 1.8 2.34 2.91 1.61 1.43 2.97 1.88 3.39 2.09.42.2.67.18.92-.1.25-.28 1.07-1.24 1.35-1.67.28-.43.56-.36.94-.22.38.14 2.42 1.14 2.83 1.35.41.2.69.31.79.48.1.18.1 1.02-.24 1.98z" />
-                            </svg>
-                            <span>WhatsApp</span>
-                          </a>
-                          <a
-                            href="tel:+919373020701"
-                            className="bg-amber-500 hover:bg-amber-400 active:scale-95 text-zinc-950 font-black py-2.5 px-3 rounded-xl text-xs transition inline-flex items-center justify-center gap-2 shadow-xs cursor-pointer"
-                          >
-                            <Phone className="w-4 h-4 shrink-0" />
-                            <span>Call Desk</span>
-                          </a>
+                            <span>Submit Your Property</span>
+                          </button>
                         </div>
                       </div>
                     ))
@@ -4514,28 +4503,15 @@ export function HomepageSearchablePortal({
                         </div>
                       </div>
 
-                      {/* Card Bottom CTA: Only WhatsApp and Call Desk */}
+                      {/* Card Bottom CTA: Submit Your Property */}
                       <div className="p-3.5 sm:p-4 lg:p-5 pt-2.5 sm:pt-3 border-t border-zinc-100 bg-zinc-50/70">
-                        <div className="grid grid-cols-2 gap-2.5">
-                          <a
-                            href={`https://wa.me/919373020701?text=${encodeURIComponent(`Hello ANV Realty Desk, I am contacting you regarding Verified Buyer Ref: ${demand.referenceCode} (${demand.bhk} in ${demand.locality}, Budget: ${demand.budget}). Please connect me.`)}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="bg-[#25D366] hover:bg-[#20ba59] active:scale-95 text-zinc-950 font-black py-2.5 px-3 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-xs cursor-pointer"
-                          >
-                            <svg viewBox="0 0 32 32" className="w-4 h-4 fill-current shrink-0" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M16 2C8.28 2 2 8.28 2 16c0 2.66.75 5.15 2.05 7.29L2.3 29.7l6.63-1.74A13.9 13.9 0 0016 30c7.72 0 14-6.28 14-14S23.72 2 16 2zm8.17 19.83c-.34.96-1.7 1.76-2.76 1.99-.73.16-1.68.29-4.88-1.04-4.09-1.69-6.72-5.83-6.93-6.1-.2-.28-1.67-2.22-1.67-4.23s1.05-3.01 1.43-3.42c.38-.41.82-.51 1.1-.51.27 0 .55 0 .79.02.25.01.59-.1.92.7.34.82 1.16 2.83 1.26 3.04.1.2.17.44.03.71-.13.27-.2.44-.4.68-.2.24-.43.53-.61.71-.21.21-.43.44-.19.86.25.41 1.09 1.8 2.34 2.91 1.61 1.43 2.97 1.88 3.39 2.09.42.2.67.18.92-.1.25-.28 1.07-1.24 1.35-1.67.28-.43.56-.36.94-.22.38.14 2.42 1.14 2.83 1.35.41.2.69.31.79.48.1.18.1 1.02-.24 1.98z" />
-                            </svg>
-                            <span>WhatsApp</span>
-                          </a>
-                          <a
-                            href="tel:+919373020701"
-                            className="bg-amber-500 hover:bg-amber-400 active:scale-95 text-zinc-950 font-black py-2.5 px-3 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-xs cursor-pointer"
-                          >
-                            <Phone className="w-4 h-4 shrink-0" />
-                            <span>Call Desk</span>
-                          </a>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenSubmitProperty(demand)}
+                          className="w-full bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 active:scale-95 text-zinc-950 font-black py-2.5 px-3 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+                        >
+                          <span>Submit Your Property</span>
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -4743,11 +4719,14 @@ export function HomepageSearchablePortal({
       <SellerLeadCaptureModal
         isOpen={sellerModalOpen}
         onClose={() => setSellerModalOpen(false)}
-        initialLocation={selectedLocality !== 'All' ? selectedLocality : (catalogueSearch || searchQuery)}
-        initialBhk={selectedBhk !== 'All' ? selectedBhk : ''}
+        initialLocation={selectedBuyerDemandForSubmit?.locality || (selectedLocality !== 'All' ? selectedLocality : (catalogueSearch || searchQuery))}
+        initialBhk={selectedBuyerDemandForSubmit?.bhk || (selectedBhk !== 'All' ? selectedBhk : '')}
+        initialPrice={selectedBuyerDemandForSubmit?.budget || (selectedPriceRange !== 'All' ? selectedPriceRange : '')}
         buyerRef={selectedBuyerRefForConnect}
+        buyerDemand={selectedBuyerDemandForSubmit}
         buyerDemandSummary={selectedBuyerSummaryForConnect}
         onSuccessToast={(msg) => showToast(msg)}
+        onPropertySaved={handlePropertySaved}
       />
 
 
