@@ -33,6 +33,10 @@ function WhatsAppIcon({ className = 'w-4 h-4 fill-current' }: { className?: stri
 const POPUP_DELAY_MS = 2 * 60 * 1000; // 2 minutes (120,000 ms)
 
 export function TimedEnquiryModal() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'enquiry' | 'visit'>('enquiry');

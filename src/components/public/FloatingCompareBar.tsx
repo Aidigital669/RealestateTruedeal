@@ -8,8 +8,14 @@ import { Scale, X, ArrowRight, Trash2 } from 'lucide-react';
 import { usePropertyComparison } from '@/context/PropertyComparisonContext';
 
 export function FloatingCompareBar() {
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
   const pathname = usePathname();
   const { compareList, removeFromCompare, clearCompare } = usePropertyComparison();
+
+  if (!mounted) return null;
 
   // Don't show floating bar if comparison list is empty, on compare page, or on admin/crm portals
   if (
