@@ -302,7 +302,6 @@ export default function CrmPage() {
             <CrmLeadsTab
               leads={regularLeadsList}
               onOpenAddLead={() => setIsAddLeadOpen(true)}
-              onOpenUploadBuyers={() => setBuyerUploadOpen(true)}
               onSelectLead={handleSelectLeadFromTable}
               onRefresh={fetchLeads}
               selectedLeadId={selectedLead?.id}

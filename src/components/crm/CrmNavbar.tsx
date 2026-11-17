@@ -364,7 +364,7 @@ export function CrmNavbar({
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-        {onOpenUploadBuyers && currentTab === 'leads' && (
+        {onOpenUploadBuyers && currentTab === 'buyers' && (
           <button
             onClick={onOpenUploadBuyers}
             className="flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-zinc-950 rounded-lg text-xs font-bold transition cursor-pointer shadow-xs"
