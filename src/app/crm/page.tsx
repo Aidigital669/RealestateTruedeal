@@ -5,6 +5,7 @@ import { CrmAuthGate } from '@/components/crm/CrmAuthGate';
 import { CrmSidebar } from '@/components/crm/CrmSidebar';
 import { CrmNavbar } from '@/components/crm/CrmNavbar';
 import { CrmLeadsTab } from '@/components/crm/CrmLeadsTab';
+import { CrmBuyersTab } from '@/components/crm/CrmBuyersTab';
 import { CrmCustomersTab } from '@/components/crm/CrmCustomersTab';
 import { CrmSiteVisitsTab } from '@/components/crm/CrmSiteVisitsTab';
 import { CrmCallsTab } from '@/components/crm/CrmCallsTab';
@@ -22,8 +23,8 @@ export default function CrmPage() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState<boolean>(true);
 
-  // Default active tab
-  const [sidebarTab, setSidebarTab] = useState<'dashboard' | 'leads' | 'customers' | 'site_visits' | string>('leads');
+  // Default active tab: 'buyers' or 'leads'
+  const [sidebarTab, setSidebarTab] = useState<'dashboard' | 'buyers' | 'leads' | 'customers' | 'site_visits' | 'calls' | 'properties' | string>('buyers');
   const [activeNavTab, setActiveNavTab] = useState('pipeline');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStage, setSelectedStage] = useState('qualified');
@@ -86,7 +87,7 @@ export default function CrmPage() {
           slaLabel: l.slaLabel
         }));
         setLeads(mapped);
-        if (mapped.length > 0) {
+        if (mapped.length > 0 && !selectedLead) {
           setSelectedLead(mapped[0]);
         }
       } else {
@@ -133,7 +134,6 @@ export default function CrmPage() {
   };
 
   const handleAddLead = async (newLead: CrmLead) => {
-    // Optimistic UI update
     setLeads([newLead, ...leads]);
     setSelectedLead(newLead);
 
@@ -167,7 +167,6 @@ export default function CrmPage() {
   };
 
   const handleUpdateStage = async (leadId: string, newStage: string) => {
-    // Optimistic UI update
     setLeads((prev) =>
       prev.map((l) =>
         l.id === leadId ? { ...l, stage: newStage as any, status: 'Negotiation' } : l
@@ -203,7 +202,7 @@ export default function CrmPage() {
 
   const handleSidebarTabChange = (tab: string) => {
     setSidebarTab(tab);
-    if (tab === 'leads') {
+    if (tab === 'leads' || tab === 'buyers') {
       setActiveNavTab('pipeline');
     } else if (tab === 'dashboard') {
       setActiveNavTab('dashboard');
@@ -217,7 +216,7 @@ export default function CrmPage() {
   const handleNavTabChange = (tab: string) => {
     setActiveNavTab(tab);
     if (tab === 'pipeline') {
-      setSidebarTab('leads');
+      setSidebarTab('buyers');
     } else if (tab === 'dashboard') {
       setSidebarTab('dashboard');
     } else if (tab === 'properties') {
@@ -226,6 +225,22 @@ export default function CrmPage() {
       setSidebarTab('reports');
     }
   };
+
+  // Classify records into Buyers vs General Enquiry Leads
+  const isBuyerRecord = (l: CrmLead) => {
+    return (
+      l.code?.startsWith('BYR-') ||
+      l.code?.startsWith('REQ-') ||
+      l.sourceType === 'bulk_upload' ||
+      l.sourceType === 'import' ||
+      l.source?.toLowerCase().includes('excel') ||
+      l.source?.toLowerCase().includes('upload') ||
+      l.designation?.toLowerCase().includes('buyer')
+    );
+  };
+
+  const buyersList = leads.filter(isBuyerRecord);
+  const regularLeadsList = leads.filter((l) => !isBuyerRecord(l));
 
   if (isCheckingAuth) {
     return (
@@ -242,7 +257,7 @@ export default function CrmPage() {
 
   return (
     <div className="min-h-screen bg-[#f8f9fa] flex text-zinc-900 font-sans antialiased">
-      {/* 1. Left Sidebar matching screenshot */}
+      {/* 1. Left Sidebar with dedicated Buyers & Leads tabs */}
       <CrmSidebar
         currentTab={sidebarTab}
         onTabChange={handleSidebarTabChange}
@@ -251,11 +266,13 @@ export default function CrmPage() {
         onOpenUploadBuyers={() => setBuyerUploadOpen(true)}
         mobileOpen={mobileSidebarOpen}
         onMobileClose={() => setMobileSidebarOpen(false)}
+        buyersCount={buyersList.length > 0 ? buyersList.length : leads.length}
+        leadsCount={regularLeadsList.length}
       />
 
       {/* 2. Main Content View Area */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Top Navbar matching each tab's screenshot */}
+        {/* Top Navbar */}
         <CrmNavbar
           currentTab={sidebarTab}
           activeNavTab={activeNavTab}
@@ -269,28 +286,41 @@ export default function CrmPage() {
 
         {/* Scrollable CRM Body */}
         <main className="p-3 sm:p-6 space-y-4 sm:space-y-5 max-w-7xl w-full mx-auto overflow-y-auto">
-          {/* Tab 2: Leads (Screenshot 1 of first prompt) */}
+          {/* Dedicated Tab: Buyers (Verified Buyer Demands with Edit & Delete) */}
+          {sidebarTab === 'buyers' && (
+            <CrmBuyersTab
+              buyers={buyersList.length > 0 ? buyersList : leads}
+              onOpenAddBuyer={() => setIsAddLeadOpen(true)}
+              onOpenUploadBuyers={() => setBuyerUploadOpen(true)}
+              onSelectBuyer={handleSelectLeadFromTable}
+              onRefresh={fetchLeads}
+              selectedBuyerId={selectedLead?.id}
+            />
+          )}
+
+          {/* Tab 2: Leads (Sales Enquiries & Form Submissions with Edit & Delete) */}
           {sidebarTab === 'leads' && (
             <CrmLeadsTab
-              leads={leads}
+              leads={regularLeadsList.length > 0 ? regularLeadsList : leads}
               onOpenAddLead={() => setIsAddLeadOpen(true)}
-              onSelectLead={handleSelectLeadFromTable}
               onOpenUploadBuyers={() => setBuyerUploadOpen(true)}
+              onSelectLead={handleSelectLeadFromTable}
+              onRefresh={fetchLeads}
               selectedLeadId={selectedLead?.id}
             />
           )}
 
-          {/* Tab 3: Customers (Screenshot 2 of latest prompt) */}
+          {/* Tab 3: Customers */}
           {sidebarTab === 'customers' && (
             <CrmCustomersTab />
           )}
 
-          {/* Tab 5: Site Visits (Screenshot 1 of latest prompt) */}
+          {/* Tab 5: Site Visits */}
           {sidebarTab === 'site_visits' && (
             <CrmSiteVisitsTab />
           )}
 
-          {/* Tab 8: Calls (Screenshot 1 of latest prompt) */}
+          {/* Tab 8: Calls */}
           {sidebarTab === 'calls' && (
             <CrmCallsTab />
           )}
@@ -312,7 +342,8 @@ export default function CrmPage() {
           )}
 
           {/* Other Sidebar Tabs Fallback */}
-          {sidebarTab !== 'leads' &&
+          {sidebarTab !== 'buyers' &&
+            sidebarTab !== 'leads' &&
             sidebarTab !== 'customers' &&
             sidebarTab !== 'site_visits' &&
             sidebarTab !== 'calls' &&
@@ -325,38 +356,31 @@ export default function CrmPage() {
                 <p className="text-xs text-zinc-500 max-w-md mx-auto">
                   Viewing live enterprise module for {sidebarTab}. Switch to the{' '}
                   <button
+                    onClick={() => handleSidebarTabChange('buyers')}
+                    className="text-amber-800 font-bold underline cursor-pointer"
+                  >
+                    Buyers
+                  </button>
+                  ,{' '}
+                  <button
                     onClick={() => handleSidebarTabChange('leads')}
                     className="text-amber-800 font-bold underline cursor-pointer"
                   >
-                    Leads (Tab 2)
+                    Leads
                   </button>
                   ,{' '}
                   <button
                     onClick={() => handleSidebarTabChange('customers')}
                     className="text-amber-800 font-bold underline cursor-pointer"
                   >
-                    Customers (Tab 3)
-                  </button>
-                  ,{' '}
-                  <button
-                    onClick={() => handleSidebarTabChange('site_visits')}
-                    className="text-amber-800 font-bold underline cursor-pointer"
-                  >
-                    Site Visits (Tab 5)
-                  </button>
-                  ,{' '}
-                  <button
-                    onClick={() => handleSidebarTabChange('employees')}
-                    className="text-amber-800 font-bold underline cursor-pointer"
-                  >
-                    Employees
+                    Customers
                   </button>
                   , or{' '}
                   <button
-                    onClick={() => handleSidebarTabChange('calls')}
+                    onClick={() => handleSidebarTabChange('properties')}
                     className="text-amber-800 font-bold underline cursor-pointer"
                   >
-                    Calls
+                    Properties
                   </button>{' '}
                   to access the active operational pipelines.
                 </p>
@@ -400,7 +424,10 @@ export default function CrmPage() {
       <CrmBuyerUploadModal
         isOpen={buyerUploadOpen}
         onClose={() => setBuyerUploadOpen(false)}
-        onImportComplete={() => { fetchLeads(); }}
+        onImportComplete={(_count) => {
+          fetchLeads();
+          setSidebarTab('buyers');
+        }}
       />
 
       {/* Interactive + Add Lead Modal */}

@@ -32,6 +32,8 @@ interface CrmSidebarProps {
   mobileOpen?: boolean;
   onMobileClose?: () => void;
   onOpenUploadBuyers?: () => void;
+  buyersCount?: number;
+  leadsCount?: number;
 }
 
 export function CrmSidebar({
@@ -41,7 +43,9 @@ export function CrmSidebar({
   onLogout,
   mobileOpen = false,
   onMobileClose,
-  onOpenUploadBuyers
+  onOpenUploadBuyers,
+  buyersCount,
+  leadsCount
 }: CrmSidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [currentUser, setCurrentUser] = useState({
@@ -67,7 +71,20 @@ export function CrmSidebar({
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, badge: null },
-    { id: 'leads', label: 'Leads', icon: Users, badge: null },
+    {
+      id: 'buyers',
+      label: 'Buyers',
+      icon: Users,
+      badge: buyersCount !== undefined ? String(buyersCount) : 'Active',
+      badgeColor: 'bg-amber-100 text-amber-900 font-bold'
+    },
+    {
+      id: 'leads',
+      label: 'Leads',
+      icon: UserCog,
+      badge: leadsCount !== undefined && leadsCount > 0 ? String(leadsCount) : null,
+      badgeColor: 'bg-zinc-100 text-zinc-700'
+    },
     { id: 'customers', label: 'Customers', icon: Briefcase, badge: null },
     { id: 'properties', label: 'Properties', icon: Building2, badge: 'Active', badgeColor: 'bg-emerald-100 text-emerald-700' },
     { id: 'site_visits', label: 'Site Visits', icon: CalendarCheck, badge: null },

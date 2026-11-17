@@ -27,15 +27,21 @@ import {
   Flame,
   Clock,
   Sparkles,
-  MessageCircle
+  MessageCircle,
+  Pencil,
+  Trash2,
+  AlertTriangle,
+  Loader2
 } from 'lucide-react';
 import { CrmLead } from '@/lib/crm-data';
+import { CrmEditLeadModal } from './CrmEditLeadModal';
 
 interface CrmLeadsTabProps {
   leads: CrmLead[];
   onOpenAddLead: () => void;
   onOpenUploadBuyers?: () => void;
   onSelectLead: (lead: CrmLead) => void;
+  onRefresh?: () => void;
   selectedLeadId?: string;
 }
 
@@ -44,6 +50,7 @@ export function CrmLeadsTab({
   onOpenAddLead,
   onOpenUploadBuyers,
   onSelectLead,
+  onRefresh,
   selectedLeadId
 }: CrmLeadsTabProps) {
   // View mode
@@ -70,6 +77,13 @@ export function CrmLeadsTab({
   const [broadcastMessage, setBroadcastMessage] = useState(
     'Hello from Anv Reealty! We have exclusive private previews of newly released high-floor suites in Baner & Balewadi. Would you like to schedule a private walkthrough this weekend?'
   );
+
+  // Edit & Delete state
+  const [editingLead, setEditingLead] = useState<CrmLead | null>(null);
+  const [leadToDelete, setLeadToDelete] = useState<CrmLead | null>(null);
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -115,6 +129,60 @@ export function CrmLeadsTab({
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
     );
+  };
+
+  // Delete single lead
+  const handleConfirmSingleDelete = async () => {
+    if (!leadToDelete) return;
+    setIsDeleting(true);
+
+    try {
+      const res = await fetch(`/api/crm/leads?id=${leadToDelete.id}`, {
+        method: 'DELETE'
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to delete lead');
+      }
+
+      showToast(`Deleted ${leadToDelete.name || leadToDelete.code}`);
+      setLeadToDelete(null);
+      setSelectedIds((prev) => prev.filter((id) => id !== leadToDelete.id));
+      if (onRefresh) onRefresh();
+    } catch (err: any) {
+      console.error('Delete error:', err);
+      showToast(`Error: ${err.message || 'Failed to delete'}`);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // Delete bulk selected leads
+  const handleConfirmBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    setIsBulkDeleting(true);
+
+    try {
+      const res = await fetch('/api/crm/leads', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: selectedIds })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to delete selected leads');
+      }
+
+      showToast(`Successfully deleted ${data.count || selectedIds.length} lead records.`);
+      setSelectedIds([]);
+      setShowBulkDeleteConfirm(false);
+      if (onRefresh) onRefresh();
+    } catch (err: any) {
+      console.error('Bulk delete error:', err);
+      showToast(`Error: ${err.message || 'Failed to delete selected'}`);
+    } finally {
+      setIsBulkDeleting(false);
+    }
   };
 
   // Export CSV
@@ -643,10 +711,21 @@ export function CrmLeadsTab({
 
             <button
               onClick={() => showToast(`Archived ${selectedIds.length} selected leads`)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-zinc-200 hover:bg-rose-50 text-rose-600 hover:border-rose-200 rounded-lg text-xs font-medium transition cursor-pointer shadow-2xs"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-lg text-xs font-medium transition cursor-pointer shadow-2xs"
             >
               <Archive className="w-3.5 h-3.5" />
               <span>Archive</span>
+            </button>
+
+            {/* Bulk Delete Button */}
+            <button
+              disabled={selectedIds.length === 0}
+              onClick={() => setShowBulkDeleteConfirm(true)}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-rose-50 border border-rose-200 hover:bg-rose-600 hover:text-white text-rose-700 rounded-lg text-xs font-bold transition cursor-pointer shadow-2xs disabled:opacity-40 disabled:cursor-not-allowed"
+              title="Delete selected leads"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Delete Selected {selectedIds.length > 0 ? `(${selectedIds.length})` : ''}</span>
             </button>
           </div>
         </div>
@@ -675,6 +754,7 @@ export function CrmLeadsTab({
                   <th className="py-3 px-4">SOURCE</th>
                   <th className="py-3 px-4">ADVISOR</th>
                   <th className="py-3 px-4">STATUS</th>
+                  <th className="py-3 px-4 text-right">ACTIONS</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
@@ -866,12 +946,34 @@ export function CrmLeadsTab({
                           {lead.status}
                         </span>
                       </td>
+
+                      {/* Actions */}
+                      <td className="py-3 px-4 text-right">
+                        <div className="inline-flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            type="button"
+                            onClick={() => setEditingLead(lead)}
+                            className="p-1.5 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-700 hover:text-zinc-950 transition cursor-pointer shadow-2xs"
+                            title="Edit Lead"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setLeadToDelete(lead)}
+                            className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white transition cursor-pointer shadow-2xs"
+                            title="Delete Lead"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   );
                 })}
                 {filteredLeads.length === 0 && (
                   <tr>
-                    <td colSpan={9} className="py-12 text-center text-zinc-400">
+                    <td colSpan={10} className="py-12 text-center text-zinc-400">
                       <UserCheck className="w-8 h-8 mx-auto text-zinc-300 mb-2" />
                       <p className="text-sm font-semibold text-zinc-700">No leads found</p>
                       <p className="text-xs text-zinc-400 mt-0.5">Click &quot;+ Add Lead&quot; to register a client requirement</p>
@@ -1164,6 +1266,137 @@ export function CrmLeadsTab({
                 className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition"
               >
                 Dispatch Broadcast
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Lead Modal */}
+      {editingLead && (
+        <CrmEditLeadModal
+          isOpen={true}
+          lead={editingLead}
+          isBuyer={false}
+          onClose={() => setEditingLead(null)}
+          onSave={() => {
+            showToast('Lead details updated successfully.');
+            setEditingLead(null);
+            if (onRefresh) onRefresh();
+          }}
+        />
+      )}
+
+      {/* Single Delete Confirmation Modal */}
+      {leadToDelete && (
+        <div
+          className="fixed inset-0 z-[80] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+          onClick={() => { if (!isDeleting) setLeadToDelete(null); }}
+        >
+          <div
+            className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-zinc-200 animate-in zoom-in-95 duration-150 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5 text-rose-600" />
+              </div>
+              <div>
+                <h3 className="text-sm font-black text-zinc-950">Delete Lead</h3>
+                <p className="text-xs text-zinc-500">This action cannot be undone.</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-zinc-700 leading-relaxed bg-zinc-50 p-3 rounded-lg border border-zinc-200">
+              Are you sure you want to permanently delete{' '}
+              <strong className="text-zinc-950">{leadToDelete.name}</strong> ({leadToDelete.code})?
+            </p>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={() => setLeadToDelete(null)}
+                className="px-4 py-2 rounded-lg border border-zinc-300 text-xs font-bold text-zinc-700 hover:bg-zinc-100 transition cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={handleConfirmSingleDelete}
+                className="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm disabled:opacity-50"
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete Lead</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Delete Confirmation Modal */}
+      {showBulkDeleteConfirm && (
+        <div
+          className="fixed inset-0 z-[80] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+          onClick={() => { if (!isBulkDeleting) setShowBulkDeleteConfirm(false); }}
+        >
+          <div
+            className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-zinc-200 animate-in zoom-in-95 duration-150 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5 text-rose-600" />
+              </div>
+              <div>
+                <h3 className="text-sm font-black text-zinc-950">
+                  Delete {selectedIds.length} Selected Leads
+                </h3>
+                <p className="text-xs text-zinc-500">Permanent batch deletion</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-zinc-700 leading-relaxed bg-zinc-50 p-3 rounded-lg border border-zinc-200">
+              Are you sure you want to permanently delete all{' '}
+              <strong className="text-rose-600 font-black">{selectedIds.length}</strong> selected leads from the system? This action cannot be undone.
+            </p>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                disabled={isBulkDeleting}
+                onClick={() => setShowBulkDeleteConfirm(false)}
+                className="px-4 py-2 rounded-lg border border-zinc-300 text-xs font-bold text-zinc-700 hover:bg-zinc-100 transition cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isBulkDeleting}
+                onClick={handleConfirmBulkDelete}
+                className="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm disabled:opacity-50"
+              >
+                {isBulkDeleting ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Deleting {selectedIds.length}...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Yes, Delete All {selectedIds.length}</span>
+                  </>
+                )}
               </button>
             </div>
           </div>

@@ -20,11 +20,12 @@ export interface CrmLead {
   };
   location: string;
   source: string;
-  sourceType: 'website' | 'google_ads' | 'whatsapp' | 'referral' | 'walk_in';
+  sourceType: 'website' | 'google_ads' | 'whatsapp' | 'referral' | 'walk_in' | 'bulk_upload' | 'import' | string;
   status: string;
   stage: 'new' | 'contacted' | 'qualified' | 'shortlisted' | 'site_visit' | 'negotiation' | 'converted' | 'lost';
   temperature: 'hot' | 'warm' | 'cold';
   assignedTo: string;
+  notes?: string;
   followUp: {
     display: string;
     subtext: string;

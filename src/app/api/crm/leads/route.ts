@@ -149,3 +149,151 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+export async function PATCH(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const rawId = body.id || body.leadId;
+
+    if (!rawId) {
+      return NextResponse.json(
+        { success: false, error: "Lead ID is required for updating." },
+        { status: 400 }
+      );
+    }
+
+    const cleanId = parseInt(String(rawId).replace(/[^0-9]/g, ''), 10);
+    if (!cleanId || isNaN(cleanId)) {
+      return NextResponse.json(
+        { success: false, error: "Invalid lead ID provided." },
+        { status: 400 }
+      );
+    }
+
+    const updateFields: string[] = [];
+    const values: any[] = [];
+
+    const fieldMap: Record<string, string> = {
+      name: 'name',
+      phone: 'phone',
+      email: 'email',
+      designation: 'designation',
+      company: 'company',
+      location: 'location',
+      propertyInterest: 'property_interest',
+      bhk: 'bhk',
+      carpetSqft: 'carpet_sqft',
+      budget: 'budget',
+      status: 'status',
+      stage: 'stage',
+      temperature: 'temperature',
+      assignedTo: 'assigned_to',
+      notes: 'notes'
+    };
+
+    for (const [key, col] of Object.entries(fieldMap)) {
+      if (body[key] !== undefined) {
+        values.push(body[key]);
+        updateFields.push(`${col} = $${values.length}`);
+      }
+    }
+
+    if (updateFields.length === 0) {
+      return NextResponse.json(
+        { success: false, error: "No fields provided to update." },
+        { status: 400 }
+      );
+    }
+
+    values.push(cleanId);
+    const sql = `
+      UPDATE crm_leads
+      SET ${updateFields.join(', ')}, updated_at = NOW()
+      WHERE id = $${values.length}
+      RETURNING id, code, name, phone, email, location, property_interest AS "propertyInterest", bhk, budget, status, stage, temperature, assigned_to AS "assignedTo", notes;
+    `;
+
+    const updated = await queryOne(sql, values);
+    if (!updated) {
+      return NextResponse.json(
+        { success: false, error: "Lead not found or update failed." },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: "Lead updated successfully",
+      lead: updated
+    });
+  } catch (error: any) {
+    console.error("PATCH /api/crm/leads error:", error);
+    return NextResponse.json(
+      { success: false, error: error.message || "Failed to update lead" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    let idsToDelete: number[] = [];
+
+    // Check query params
+    const { searchParams } = new URL(req.url);
+    const queryId = searchParams.get("id");
+    const queryIds = searchParams.get("ids");
+
+    if (queryIds) {
+      idsToDelete = queryIds
+        .split(",")
+        .map((id) => parseInt(id.replace(/[^0-9]/g, ""), 10))
+        .filter((id) => !isNaN(id) && id > 0);
+    } else if (queryId) {
+      const cleanId = parseInt(queryId.replace(/[^0-9]/g, ""), 10);
+      if (!isNaN(cleanId) && cleanId > 0) idsToDelete = [cleanId];
+    }
+
+    // If not in query params, inspect body
+    if (idsToDelete.length === 0) {
+      try {
+        const body = await req.json();
+        if (Array.isArray(body.ids)) {
+          idsToDelete = body.ids
+            .map((id: any) => parseInt(String(id).replace(/[^0-9]/g, ""), 10))
+            .filter((id: number) => !isNaN(id) && id > 0);
+        } else if (body.id) {
+          const cleanId = parseInt(String(body.id).replace(/[^0-9]/g, ""), 10);
+          if (!isNaN(cleanId) && cleanId > 0) idsToDelete = [cleanId];
+        }
+      } catch {
+        // Body was empty or not JSON
+      }
+    }
+
+    if (idsToDelete.length === 0) {
+      return NextResponse.json(
+        { success: false, error: "No valid lead ID(s) provided for deletion." },
+        { status: 400 }
+      );
+    }
+
+    const deleted = await query(
+      `DELETE FROM crm_leads WHERE id = ANY($1::int[]) RETURNING id, code;`,
+      [idsToDelete]
+    );
+
+    return NextResponse.json({
+      success: true,
+      count: deleted.length,
+      deletedIds: deleted.map((d: any) => d.id),
+      message: `Successfully deleted ${deleted.length} lead(s).`
+    });
+  } catch (error: any) {
+    console.error("DELETE /api/crm/leads error:", error);
+    return NextResponse.json(
+      { success: false, error: error.message || "Failed to delete lead(s)" },
+      { status: 500 }
+    );
+  }
+}
