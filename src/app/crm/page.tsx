@@ -9,6 +9,7 @@ import { CrmBuyersTab } from '@/components/crm/CrmBuyersTab';
 import { CrmCustomersTab } from '@/components/crm/CrmCustomersTab';
 import { CrmSiteVisitsTab } from '@/components/crm/CrmSiteVisitsTab';
 import { CrmCallsTab } from '@/components/crm/CrmCallsTab';
+import { isBuyerLead } from '@/lib/buyer-demands-service';
 import { CrmKpiGrid } from '@/components/crm/CrmKpiGrid';
 import { CrmPipelineStages } from '@/components/crm/CrmPipelineStages';
 import { CrmLeadDossier } from '@/components/crm/CrmLeadDossier';
@@ -226,17 +227,16 @@ export default function CrmPage() {
     }
   };
 
-  // Classify records into Buyers vs General Enquiry Leads
+  // Classify records into Buyers vs General Enquiry Leads using universal classifier
   const isBuyerRecord = (l: CrmLead) => {
-    return (
-      l.code?.startsWith('BYR-') ||
-      l.code?.startsWith('REQ-') ||
-      l.sourceType === 'bulk_upload' ||
-      l.sourceType === 'import' ||
-      l.source?.toLowerCase().includes('excel') ||
-      l.source?.toLowerCase().includes('upload') ||
-      l.designation?.toLowerCase().includes('buyer')
-    );
+    return isBuyerLead({
+      code: l.code,
+      source: l.source,
+      sourceType: l.sourceType,
+      status: l.status,
+      designation: l.designation,
+      name: l.name
+    });
   };
 
   const buyersList = leads.filter(isBuyerRecord);
@@ -266,7 +266,7 @@ export default function CrmPage() {
         onOpenUploadBuyers={() => setBuyerUploadOpen(true)}
         mobileOpen={mobileSidebarOpen}
         onMobileClose={() => setMobileSidebarOpen(false)}
-        buyersCount={buyersList.length > 0 ? buyersList.length : leads.length}
+        buyersCount={buyersList.length}
         leadsCount={regularLeadsList.length}
       />
 
@@ -289,7 +289,7 @@ export default function CrmPage() {
           {/* Dedicated Tab: Buyers (Verified Buyer Demands with Edit & Delete) */}
           {sidebarTab === 'buyers' && (
             <CrmBuyersTab
-              buyers={buyersList.length > 0 ? buyersList : leads}
+              buyers={buyersList}
               onOpenAddBuyer={() => setIsAddLeadOpen(true)}
               onOpenUploadBuyers={() => setBuyerUploadOpen(true)}
               onSelectBuyer={handleSelectLeadFromTable}
@@ -301,7 +301,7 @@ export default function CrmPage() {
           {/* Tab 2: Leads (Sales Enquiries & Form Submissions with Edit & Delete) */}
           {sidebarTab === 'leads' && (
             <CrmLeadsTab
-              leads={regularLeadsList.length > 0 ? regularLeadsList : leads}
+              leads={regularLeadsList}
               onOpenAddLead={() => setIsAddLeadOpen(true)}
               onOpenUploadBuyers={() => setBuyerUploadOpen(true)}
               onSelectLead={handleSelectLeadFromTable}

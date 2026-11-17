@@ -1,10 +1,13 @@
 /**
  * Buyer Demands Service for ANV REEALTY
- * Provides verified active buyer requirements from database (crm_leads, WebsiteEnquiry)
- * and seed verified patron mandates for matchmaking with property sellers.
+ * Provides verified active buyer requirements directly from crm_leads (the single source of truth)
+ * ensuring 100% exact parity between the CRM Buyers portal and public website pages.
  */
 
 import { query } from "@/lib/db";
+import { detectSellerTypologyAndLocality, type SellerIntentAnalysis } from './seller-intent';
+
+export { detectSellerTypologyAndLocality, type SellerIntentAnalysis };
 
 const OFFICIAL_ANV_PHONE = "93730 20701";
 const OFFICIAL_ANV_EMAIL = "leads@anvrealty.com";
@@ -60,14 +63,52 @@ export function isJunkLead(name: string | null | undefined, notes: string | null
   return false;
 }
 
+/**
+ * Universal classification to determine if a CRM lead record is a Buyer Mandate
+ * Used across CRM tabs and Public Website to ensure 100% synchronized counts.
+ */
+export function isBuyerLead(lead: {
+  code?: string | null;
+  source?: string | null;
+  sourceType?: string | null;
+  source_type?: string | null;
+  status?: string | null;
+  designation?: string | null;
+  name?: string | null;
+}): boolean {
+  const code = (lead.code || '').toUpperCase();
+  const src = (lead.source || '').toLowerCase();
+  const srcType = (lead.sourceType || lead.source_type || '').toLowerCase();
+  const status = (lead.status || '').toLowerCase();
+  const desig = (lead.designation || '').toLowerCase();
+
+  // If code starts with BYR- or REQ-, it is definitely a buyer mandate
+  if (code.startsWith('BYR-') || code.startsWith('REQ-')) return true;
+
+  // Source types indicating buyer imports or buyer uploads
+  if (srcType === 'bulk_upload' || srcType === 'import' || srcType === 'buyer') return true;
+
+  // Source names
+  if (src.includes('excel') || src.includes('upload') || src.includes('buyer')) return true;
+
+  // Status or designation containing buyer
+  if (status.includes('buyer') || desig.includes('buyer')) return true;
+
+  return false;
+}
+
 export const VERIFIED_SEED_BUYER_DEMANDS: BuyerDemandRecord[] = [];
 
+/**
+ * Returns all active buyer demands from crm_leads.
+ * Single source of truth guaranteeing identical counts across CRM and Website.
+ */
 export async function getAllLiveBuyerDemands(): Promise<BuyerDemandRecord[]> {
   const dbDemands: BuyerDemandRecord[] = [];
 
   try {
     const crmRows = await query(`
-      SELECT id, code, name, location, bhk, budget, notes, created_at
+      SELECT id, code, name, location, property_interest, bhk, budget, notes, created_at, status, source, source_type, designation
       FROM crm_leads
       WHERE status != 'Lost' AND status != 'Archived'
       ORDER BY created_at DESC;
@@ -76,10 +117,11 @@ export async function getAllLiveBuyerDemands(): Promise<BuyerDemandRecord[]> {
     if (Array.isArray(crmRows)) {
       for (const row of crmRows) {
         if (isJunkLead(row.name, row.notes)) continue;
+        if (!isBuyerLead(row)) continue;
 
         dbDemands.push({
           id: `CRM-${row.id}`,
-          referenceCode: row.code || `REQ-${row.id}`,
+          referenceCode: row.code || `BYR-${row.id}`,
           maskedName: maskBuyerName(row.name),
           displayPhone: OFFICIAL_ANV_PHONE,
           displayEmail: OFFICIAL_ANV_EMAIL,
@@ -88,9 +130,12 @@ export async function getAllLiveBuyerDemands(): Promise<BuyerDemandRecord[]> {
           budget: row.budget || '₹1.50 Cr - ₹3.00 Cr',
           timeline: 'Ready to Move / 60 Days',
           purpose: 'Self-Use / Investment',
-          requirements: row.notes || `Looking for ${row.bhk || 'property'} in ${row.location || 'Pune'}. Verified buyer registered with ANV REEALTY.`,
+          requirements:
+            row.notes ||
+            row.property_interest ||
+            `Looking for ${row.bhk || 'property'} in ${row.location || 'Pune'}. Verified buyer registered with ANV REEALTY.`,
           createdAt: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString(),
-          status: 'Verified CRM Buyer'
+          status: row.status || 'Verified Active Buyer'
         });
       }
     }
@@ -98,72 +143,14 @@ export async function getAllLiveBuyerDemands(): Promise<BuyerDemandRecord[]> {
     console.log("CRM leads fetch note:", err.message);
   }
 
-  try {
-    const enqRows = await query(`
-      SELECT id, name, subject, message, "createdAt"
-      FROM "WebsiteEnquiry"
-      ORDER BY "createdAt" DESC
-      LIMIT 1000;
-    `);
-
-    if (Array.isArray(enqRows)) {
-      for (const row of enqRows) {
-        if (isJunkLead(row.name, row.message)) continue;
-
-        let loc = 'Pune';
-        let b = '3 BHK';
-        const msg = row.message || '';
-        const subj = row.subject || '';
-
-        const locMatch = msg.match(/Preferred Locality:\s*([^|]+)/i) || subj.match(/in\s+([A-Za-z\s]+)/i);
-        if (locMatch && locMatch[1]) loc = locMatch[1].trim();
-
-        const bhkMatch = msg.match(/Configuration:\s*([^|]+)/i) || subj.match(/(\d+\s*BHK|Commercial)/i);
-        if (bhkMatch && bhkMatch[1]) b = bhkMatch[1].trim();
-
-        const budgetMatch = msg.match(/Budget:\s*([^|]+)/i);
-        const budget = budgetMatch ? budgetMatch[1].trim() : '₹1.50 Cr - ₹2.50 Cr';
-
-        dbDemands.push({
-          id: `ENQ-${row.id}`,
-          referenceCode: `REQ-ENQ-${row.id}`,
-          maskedName: maskBuyerName(row.name),
-          displayPhone: OFFICIAL_ANV_PHONE,
-          displayEmail: OFFICIAL_ANV_EMAIL,
-          locality: loc,
-          bhk: b,
-          budget: budget,
-          timeline: 'Immediate / Active',
-          purpose: 'Direct Inquirer',
-          requirements: msg || `Bespoke requirement submitted for ${b} in ${loc}.`,
-          createdAt: row.createdAt ? new Date(row.createdAt).toISOString() : new Date().toISOString(),
-          status: 'Website Buyer Inquiry'
-        });
-      }
-    }
-  } catch (err: any) {
-    console.log("WebsiteEnquiry fetch note:", err.message);
-  }
-
-  // Combine database demands and seed verified mandates (deduplicated by referenceCode)
-  const existingRefs = new Set(dbDemands.map((d) => d.referenceCode));
-  for (const seed of VERIFIED_SEED_BUYER_DEMANDS) {
-    if (!existingRefs.has(seed.referenceCode)) {
-      dbDemands.push(seed);
-    }
-  }
-
   return dbDemands;
 }
 
-import { detectSellerTypologyAndLocality, type SellerIntentAnalysis } from './seller-intent';
-export { detectSellerTypologyAndLocality, type SellerIntentAnalysis };
-
 /**
- * Matches active buyer requirements based on the seller's property description.
- * Strictly avoids random fallbacks:
- * - Unrecognized/gibberish terms return [] (0 matches).
- * - Specific criteria returns only demands that actually match, or [] if none match.
+ * Real-time Matchmaking Algorithm for Property Sellers.
+ * Given a seller's requirement or description, finds the top matching buyer demands from the verified database.
+ * - If the query is gibberish or unrecognized, returns STRICTLY ZERO matches.
+ * - If specific typologies (hospital, showroom, office, shop, pre-leased, bhk) are mentioned, returns ONLY relevant matches, or empty if none match.
  * - General seller queries return the top genuine verified buyer mandates across Pune.
  */
 export async function getMatchingBuyerDemands(

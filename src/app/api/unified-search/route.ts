@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
-import { isJunkLead, VERIFIED_SEED_BUYER_DEMANDS } from "@/lib/buyer-demands-service";
+import { getAllLiveBuyerDemands, isJunkLead, VERIFIED_SEED_BUYER_DEMANDS } from "@/lib/buyer-demands-service";
 import { generateWithGemini } from "@/lib/gemini";
 import { getPropertySlug } from "@/lib/slug";
 import {
@@ -238,82 +238,8 @@ STRICT INSTRUCTIONS:
       }
     }
 
-    // 2. Fetch Buyer Inquiries / Demands (STRICT PHONE MASKING TO 93730 20701)
-    let buyerDemands: any[] = [];
-    try {
-      const crmRows = await query(`
-        SELECT id, code, name, location, bhk, budget, notes, created_at
-        FROM crm_leads
-        WHERE status != 'Lost' AND status != 'Archived'
-        ORDER BY created_at DESC;
-      `);
-
-      for (const row of crmRows) {
-        if (isJunkLead(row.name, row.notes)) continue;
-        buyerDemands.push({
-          id: `CRM-${row.id}`,
-          referenceCode: row.code || `REQ-${row.id}`,
-          maskedName: maskBuyerName(row.name),
-          displayPhone: OFFICIAL_ANV_PHONE,
-          displayEmail: OFFICIAL_ANV_EMAIL,
-          locality: row.location?.replace(/,.*$/, '').trim() || 'Pune',
-          bhk: row.bhk || '3 BHK',
-          budget: row.budget || '₹1.50 Cr - ₹2.50 Cr',
-          timeline: 'Ready to Move / 60 Days',
-          purpose: 'Self-Use / Investment',
-          requirements: row.notes || `Looking for ${row.bhk || '3 BHK'} in ${row.location || 'Pune'}. Verified buyer registered with Anv Reealty.`,
-          createdAt: row.created_at,
-          status: 'Verified CRM Buyer'
-        });
-      }
-
-      const enqRows = await query(`
-        SELECT id, name, subject, message, "createdAt"
-        FROM "WebsiteEnquiry"
-        ORDER BY "createdAt" DESC
-        LIMIT 1000;
-      `);
-
-      for (const row of enqRows) {
-        if (isJunkLead(row.name, row.message)) continue;
-        let loc = 'Pune';
-        let b = '3 BHK';
-        const msg = row.message || '';
-        const subj = row.subject || '';
-
-        const locMatch = msg.match(/Preferred Locality:\s*([^|]+)/i) || subj.match(/in\s+([A-Za-z\s]+)/i);
-        if (locMatch && locMatch[1]) loc = locMatch[1].trim();
-
-        const bhkMatch = msg.match(/Configuration:\s*([^|]+)/i) || subj.match(/(\d+\s*BHK|Commercial)/i);
-        if (bhkMatch && bhkMatch[1]) b = bhkMatch[1].trim();
-
-        const budgetMatch = msg.match(/Budget:\s*([^|]+)/i);
-        const budget = budgetMatch ? budgetMatch[1].trim() : '₹1.50 Cr - ₹2.50 Cr';
-
-        const timelineMatch = msg.match(/Possession Timeline:\s*([^|]+)/i);
-        const timeline = timelineMatch ? timelineMatch[1].trim() : 'Ready to Move';
-
-        buyerDemands.push({
-          id: `ENQ-${row.id}`,
-          referenceCode: `REQ-ENQ-${row.id}`,
-          maskedName: maskBuyerName(row.name),
-          displayPhone: OFFICIAL_ANV_PHONE,
-          displayEmail: OFFICIAL_ANV_EMAIL,
-          locality: loc,
-          bhk: b,
-          budget: budget,
-          timeline: timeline,
-          purpose: 'Direct Inquirer',
-          requirements: msg || `Bespoke requirement submitted for ${b} in ${loc}.`,
-          createdAt: row.createdAt,
-          status: 'Website Buyer Inquiry'
-        });
-      }
-    } catch (dbErr: any) {
-      console.log("DB inquiry query notice:", dbErr.message);
-    }
-
-    const allDemands = [...buyerDemands, ...VERIFIED_SEED_BUYER_DEMANDS];
+    // 2. Fetch Buyer Inquiries / Demands (Single Source of Truth from CRM Leads)
+    const allDemands = await getAllLiveBuyerDemands();
     const locFilterLower = (locality && locality !== "All" ? locality : "").toLowerCase();
     const bhkFilterLower = (bhk && bhk !== "All" ? bhk : "").toLowerCase();
 
