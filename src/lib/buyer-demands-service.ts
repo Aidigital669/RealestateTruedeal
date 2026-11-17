@@ -5,9 +5,10 @@
  */
 
 import { query } from "@/lib/db";
+import { isBuyerLead } from "@/lib/crm-data";
 import { detectSellerTypologyAndLocality, type SellerIntentAnalysis } from './seller-intent';
 
-export { detectSellerTypologyAndLocality, type SellerIntentAnalysis };
+export { isBuyerLead, detectSellerTypologyAndLocality, type SellerIntentAnalysis };
 
 const OFFICIAL_ANV_PHONE = "93730 20701";
 const OFFICIAL_ANV_EMAIL = "leads@anvrealty.com";
@@ -59,40 +60,6 @@ export function isJunkLead(name: string | null | undefined, notes: string | null
   if (lowerNotes.includes('kkjkk') || lowerNotes.includes('addasdd')) {
     return true;
   }
-
-  return false;
-}
-
-/**
- * Universal classification to determine if a CRM lead record is a Buyer Mandate
- * Used across CRM tabs and Public Website to ensure 100% synchronized counts.
- */
-export function isBuyerLead(lead: {
-  code?: string | null;
-  source?: string | null;
-  sourceType?: string | null;
-  source_type?: string | null;
-  status?: string | null;
-  designation?: string | null;
-  name?: string | null;
-}): boolean {
-  const code = (lead.code || '').toUpperCase();
-  const src = (lead.source || '').toLowerCase();
-  const srcType = (lead.sourceType || lead.source_type || '').toLowerCase();
-  const status = (lead.status || '').toLowerCase();
-  const desig = (lead.designation || '').toLowerCase();
-
-  // If code starts with BYR- or REQ-, it is definitely a buyer mandate
-  if (code.startsWith('BYR-') || code.startsWith('REQ-')) return true;
-
-  // Source types indicating buyer imports or buyer uploads
-  if (srcType === 'bulk_upload' || srcType === 'import' || srcType === 'buyer') return true;
-
-  // Source names
-  if (src.includes('excel') || src.includes('upload') || src.includes('buyer')) return true;
-
-  // Status or designation containing buyer
-  if (status.includes('buyer') || desig.includes('buyer')) return true;
 
   return false;
 }

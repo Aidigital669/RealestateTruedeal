@@ -9,7 +9,6 @@ import { CrmBuyersTab } from '@/components/crm/CrmBuyersTab';
 import { CrmCustomersTab } from '@/components/crm/CrmCustomersTab';
 import { CrmSiteVisitsTab } from '@/components/crm/CrmSiteVisitsTab';
 import { CrmCallsTab } from '@/components/crm/CrmCallsTab';
-import { isBuyerLead } from '@/lib/buyer-demands-service';
 import { CrmKpiGrid } from '@/components/crm/CrmKpiGrid';
 import { CrmPipelineStages } from '@/components/crm/CrmPipelineStages';
 import { CrmLeadDossier } from '@/components/crm/CrmLeadDossier';
@@ -17,7 +16,7 @@ import { CrmTelephonyBanner } from '@/components/crm/CrmTelephonyBanner';
 import { CrmPropertiesTab } from '@/components/crm/CrmPropertiesTab';
 import { CrmAddLeadModal } from '@/components/crm/CrmAddLeadModal';
 import { CrmBuyerUploadModal } from '@/components/crm/CrmBuyerUploadModal';
-import { CRM_LEADS_DATA, CrmLead } from '@/lib/crm-data';
+import { CRM_LEADS_DATA, CrmLead, isBuyerLead } from '@/lib/crm-data';
 import { X } from 'lucide-react';
 
 export default function CrmPage() {
