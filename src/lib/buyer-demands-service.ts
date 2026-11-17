@@ -70,8 +70,7 @@ export async function getAllLiveBuyerDemands(): Promise<BuyerDemandRecord[]> {
       SELECT id, code, name, location, bhk, budget, notes, created_at
       FROM crm_leads
       WHERE status != 'Lost' AND status != 'Archived'
-      ORDER BY created_at DESC
-      LIMIT 50;
+      ORDER BY created_at DESC;
     `);
 
     if (Array.isArray(crmRows)) {
@@ -104,7 +103,7 @@ export async function getAllLiveBuyerDemands(): Promise<BuyerDemandRecord[]> {
       SELECT id, name, subject, message, "createdAt"
       FROM "WebsiteEnquiry"
       ORDER BY "createdAt" DESC
-      LIMIT 50;
+      LIMIT 1000;
     `);
 
     if (Array.isArray(enqRows)) {
