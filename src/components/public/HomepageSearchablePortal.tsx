@@ -3088,7 +3088,6 @@ export function HomepageSearchablePortal({
                                   alt={row.name}
                                   fill
                                   sizes="48px"
-                                  priority={rowIdx === 0}
                                   unoptimized
                                   className="object-cover group-hover/thumb:scale-110 transition-transform duration-500"
                                 />
@@ -3243,7 +3242,6 @@ export function HomepageSearchablePortal({
                               alt={row.name}
                               fill
                               sizes="64px"
-                              priority={mRowIdx === 0}
                               unoptimized
                               className="object-cover"
                             />
