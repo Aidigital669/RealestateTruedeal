@@ -199,6 +199,7 @@ export function FeaturedAdsBar() {
                 src={config.crownImage || '/premium-crown.png'}
                 alt={config.crownTitle || 'Premium'}
                 fill
+                sizes="28px"
                 unoptimized
                 className="object-contain drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]"
               />
@@ -229,6 +230,7 @@ export function FeaturedAdsBar() {
                     src={config.crownImage || '/premium-crown.png'}
                     alt={config.crownTitle || 'Premium'}
                     fill
+                    sizes="(max-width: 640px) 32px, (max-width: 768px) 48px, 56px"
                     unoptimized
                     priority
                     className="object-contain drop-shadow-[0_2px_6px_rgba(0,0,0,0.8)] group-hover/crown:scale-105 transition-transform duration-200"
@@ -254,7 +256,10 @@ export function FeaturedAdsBar() {
                         src={ad.image || '/opus-thumb.jpg'}
                         alt={ad.name}
                         fill
+                        sizes="(max-width: 640px) 32px, (max-width: 768px) 40px, 44px"
                         unoptimized
+                        priority={idx === 0}
+                        loading={idx === 0 ? "eager" : "lazy"}
                         className="object-cover group-hover/circle:scale-110 transition-transform duration-300"
                       />
                     </div>
@@ -316,6 +321,7 @@ export function FeaturedAdsBar() {
                     src={activeAd.image || '/opus-thumb.jpg'}
                     alt={activeAd.name}
                     fill
+                    sizes="36px"
                     unoptimized
                     className="object-cover"
                   />
@@ -380,6 +386,7 @@ export function FeaturedAdsBar() {
                   src={activeAd.image || '/opus-thumb.jpg'}
                   alt={activeAd.name}
                   fill
+                  sizes="(max-width: 640px) 100vw, 512px"
                   unoptimized
                   className="object-cover"
                 />

@@ -276,6 +276,7 @@ const PropertyCard = React.memo(function PropertyCard({
             }
             alt={property.name}
             fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             unoptimized
             className="object-cover group-hover:scale-105 transition-transform duration-700"
           />
@@ -3051,7 +3052,7 @@ export function HomepageSearchablePortal({
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-zinc-100">
-                      {displayedComparisonProperties.map((row) => (
+                      {displayedComparisonProperties.map((row, rowIdx) => (
                         <tr
                           key={row.id}
                           className="hover:bg-amber-50/50 transition-colors group"
@@ -3086,6 +3087,9 @@ export function HomepageSearchablePortal({
                                   }
                                   alt={row.name}
                                   fill
+                                  sizes="48px"
+                                  priority={rowIdx === 0}
+                                  loading={rowIdx < 4 ? "eager" : "lazy"}
                                   unoptimized
                                   className="object-cover group-hover/thumb:scale-110 transition-transform duration-500"
                                 />
@@ -3218,7 +3222,7 @@ export function HomepageSearchablePortal({
                       </button>
                     </div>
                   ) : (
-                    displayedComparisonProperties.map((row) => (
+                    displayedComparisonProperties.map((row, mRowIdx) => (
                       <div key={row.id} className="p-3.5 bg-white space-y-2.5 hover:bg-amber-50/30 transition-colors">
                         {/* 1. Property & Developer */}
                         <div className="flex items-start gap-3">
@@ -3239,6 +3243,9 @@ export function HomepageSearchablePortal({
                               }
                               alt={row.name}
                               fill
+                              sizes="64px"
+                              priority={mRowIdx === 0}
+                              loading={mRowIdx < 4 ? "eager" : "lazy"}
                               unoptimized
                               className="object-cover"
                             />
@@ -3368,6 +3375,7 @@ export function HomepageSearchablePortal({
                         }
                         alt={hoveredTableProperty.property.name}
                         fill
+                        sizes="320px"
                         unoptimized
                         className="object-cover group-hover/hoverimg:scale-105 transition-transform duration-500"
                       />
@@ -4626,6 +4634,7 @@ export function HomepageSearchablePortal({
                       }
                       alt={article.title}
                       fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                       unoptimized
                       className="object-cover group-hover:scale-105 transition-transform duration-700"
                     />
