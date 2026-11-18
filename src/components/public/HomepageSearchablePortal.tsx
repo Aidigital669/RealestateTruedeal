@@ -11,6 +11,7 @@ import {
   ChevronDown,
   User,
   Users,
+  UserPlus,
   Filter,
   ArrowRight,
   ArrowLeft,
@@ -784,6 +785,18 @@ export function HomepageSearchablePortal({
       }
     } catch (e) {
       console.warn('Property list refresh error:', e);
+    }
+  };
+
+  const refreshBuyerDemands = async () => {
+    try {
+      const res = await fetch('/api/buyer-demands');
+      const data = await res.json();
+      if (data.success && Array.isArray(data.demands)) {
+        setBuyerDemands(data.demands);
+      }
+    } catch (e) {
+      console.warn('Buyer demands refresh error:', e);
     }
   };
   const [consultationModalOpen, setConsultationModalOpen] = useState(false);
@@ -3665,10 +3678,18 @@ export function HomepageSearchablePortal({
               <div className="flex items-center gap-2.5 flex-wrap">
                 <button
                   type="button"
-                  onClick={() => handleOpenSubmitProperty()}
-                  className="bg-amber-500 hover:bg-amber-400 text-zinc-950 font-extrabold px-5 py-2.5 rounded-xl text-xs transition flex items-center gap-2 shadow-sm cursor-pointer"
+                  onClick={() => setRequirementModalOpen(true)}
+                  className="bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 text-zinc-950 font-black px-5 py-2.5 rounded-xl text-xs transition flex items-center gap-2 shadow-xs cursor-pointer active:scale-95"
                 >
-                  <Building2 className="w-3.5 h-3.5" />
+                  <UserPlus className="w-3.5 h-3.5" />
+                  <span>Post Buyer Requirement</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleOpenSubmitProperty()}
+                  className="bg-zinc-950 hover:bg-zinc-800 text-white font-bold px-5 py-2.5 rounded-xl text-xs transition flex items-center gap-2 shadow-xs cursor-pointer border border-zinc-800"
+                >
+                  <Building2 className="w-3.5 h-3.5 text-amber-400" />
                   <span>Register Property to Match Buyers</span>
                 </button>
               </div>
@@ -3690,8 +3711,16 @@ export function HomepageSearchablePortal({
                   <div className="flex items-center gap-2.5 flex-wrap">
                     <button
                       type="button"
+                      onClick={() => setRequirementModalOpen(true)}
+                      className="text-xs bg-zinc-900 hover:bg-zinc-800 text-white font-bold px-4 py-2 rounded-xl transition flex items-center gap-1.5 shadow-sm cursor-pointer border border-zinc-700/80"
+                    >
+                      <UserPlus className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Post Buyer Requirement</span>
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => handleOpenSubmitProperty()}
-                      className="text-xs bg-amber-500 hover:bg-amber-400 text-zinc-950 font-extrabold px-4 py-2 rounded-xl transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+                      className="text-xs bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 text-zinc-950 font-black px-4 py-2 rounded-xl transition flex items-center gap-1.5 shadow-sm cursor-pointer"
                     >
                       <Building2 className="w-3.5 h-3.5" />
                       <span>Match My Property</span>
@@ -4354,25 +4383,43 @@ export function HomepageSearchablePortal({
                 )}
               </div>
             ) : (
-              <div className="bg-white rounded-3xl border border-zinc-200/90 p-10 text-center space-y-4 shadow-sm w-full max-w-xl mx-auto">
-                <div className="w-14 h-14 rounded-2xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center mx-auto">
-                  <Search className="w-7 h-7 text-amber-600" />
+              <div className="bg-white rounded-3xl border border-zinc-200/90 p-8 sm:p-12 text-center space-y-5 shadow-sm w-full max-w-xl mx-auto my-6">
+                <div className="w-16 h-16 rounded-2xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center mx-auto shadow-2xs">
+                  <Search className="w-8 h-8 text-amber-600" />
                 </div>
-                <div>
-                  <h4 className="text-xl font-black text-zinc-950">0 Buyers Found</h4>
-                  <p className="text-zinc-500 text-xs mt-1">Please modify your search or register your property to reach active buyers.</p>
+                <div className="space-y-1.5">
+                  <h4 className="text-2xl sm:text-3xl font-black text-zinc-950 tracking-tight">0 Buyers Found</h4>
+                  <p className="text-zinc-500 text-xs sm:text-sm mt-1 max-w-md mx-auto leading-relaxed">
+                    Looking to buy or sell? Post your requirement as a buyer to receive verified off-market matches, or register your property to reach active buyers.
+                  </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedBuyerRefForConnect(undefined);
-                    setSelectedBuyerSummaryForConnect(undefined);
-                    setSellerModalOpen(true);
-                  }}
-                  className="bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold px-6 py-2.5 rounded-xl text-xs shadow transition cursor-pointer"
-                >
-                  Register Property for Buyer Matching
-                </button>
+                <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setRequirementModalOpen(true)}
+                    className="w-full sm:w-auto bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 text-zinc-950 font-black px-6 py-3.5 rounded-xl text-xs sm:text-sm shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                    <span>I Am a Buyer — Post Your Requirement</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenSubmitProperty()}
+                    className="w-full sm:w-auto bg-zinc-950 hover:bg-zinc-800 text-white font-bold px-6 py-3.5 rounded-xl text-xs sm:text-sm transition flex items-center justify-center gap-2 cursor-pointer border border-zinc-800"
+                  >
+                    <Building2 className="w-4 h-4 text-amber-400" />
+                    <span>Register Property for Buyers</span>
+                  </button>
+                </div>
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    onClick={handleResetFilters}
+                    className="text-xs font-bold text-zinc-500 hover:text-zinc-900 transition underline underline-offset-4 cursor-pointer"
+                  >
+                    Reset Filters to View All Buyers
+                  </button>
+                </div>
               </div>
             )}
 
@@ -4384,21 +4431,25 @@ export function HomepageSearchablePortal({
                 </div>
                 <div>
                   <span className="text-[10px] sm:text-[11px] font-bold text-amber-400 uppercase tracking-wider block">Direct Seller & Buyer Desk</span>
-                  <h4 className="text-sm sm:text-base md:text-lg font-bold text-white mt-0.5">Have a property matching these buyer profiles?</h4>
+                  <h4 className="text-sm sm:text-base md:text-lg font-bold text-white mt-0.5">Looking to buy or sell off-market?</h4>
                   <p className="text-[11px] sm:text-xs text-zinc-400 mt-0.5">Our advisory team verifies and conducts confidential introductions between genuine property owners and ready buyers.</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 shrink-0 w-full sm:w-auto justify-center">
+              <div className="flex items-center gap-3 shrink-0 w-full sm:w-auto justify-center flex-wrap">
                 <button
                   type="button"
-                  onClick={() => {
-                    setSelectedBuyerRefForConnect(undefined);
-                    setSelectedBuyerSummaryForConnect(undefined);
-                    setSellerModalOpen(true);
-                  }}
-                  className="w-full sm:w-auto bg-amber-500 hover:bg-amber-400 active:scale-95 text-zinc-950 font-black px-5 py-2.5 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+                  onClick={() => setRequirementModalOpen(true)}
+                  className="w-full sm:w-auto bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 active:scale-95 text-zinc-950 font-black px-5 py-2.5 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-xs cursor-pointer"
                 >
-                  <Building2 className="w-3.5 h-3.5" />
+                  <UserPlus className="w-3.5 h-3.5" />
+                  <span>Post Buyer Requirement</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleOpenSubmitProperty()}
+                  className="w-full sm:w-auto bg-zinc-900 hover:bg-zinc-800 text-white font-bold px-5 py-2.5 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl text-xs transition flex items-center justify-center gap-2 border border-zinc-700 cursor-pointer"
+                >
+                  <Building2 className="w-3.5 h-3.5 text-amber-400" />
                   <span>Register Property</span>
                 </button>
               </div>
@@ -4675,7 +4726,10 @@ export function HomepageSearchablePortal({
           setSelectedPropertyForEnquiry(null);
         }}
         property={selectedPropertyForEnquiry || undefined}
-        onSuccess={(msg) => showToast(msg)}
+        onSuccess={(msg) => {
+          showToast(msg);
+          refreshBuyerDemands();
+        }}
       />
 
       {/* Institutional Table Site Visit Modal */}
@@ -4686,7 +4740,10 @@ export function HomepageSearchablePortal({
           setSelectedPropertyForSiteVisit(null);
         }}
         property={selectedPropertyForSiteVisit || undefined}
-        onSuccess={(msg) => showToast(msg)}
+        onSuccess={(msg) => {
+          showToast(msg);
+          refreshBuyerDemands();
+        }}
       />
 
       {/* Property Full Specifications & Financials Modal */}
@@ -4712,7 +4769,10 @@ export function HomepageSearchablePortal({
         initialLocality={selectedLocality !== 'All' ? selectedLocality : (catalogueSearch || searchQuery || 'Baner')}
         initialBhk={selectedBhk !== 'All' ? selectedBhk : '3 BHK'}
         initialBudget={selectedPriceRange !== 'All' ? selectedPriceRange : '₹1.5 Cr - ₹2.5 Cr'}
-        onSuccess={(msg) => showToast(msg)}
+        onSuccess={(msg) => {
+          showToast(msg);
+          refreshBuyerDemands();
+        }}
       />
 
       {/* Seller Lead Capture Modal */}

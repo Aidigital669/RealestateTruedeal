@@ -560,7 +560,7 @@ export function BespokePropertyRequirementModal({
                   disabled={loading}
                   className="px-8 py-3 bg-amber-600 hover:bg-amber-500 text-zinc-950 font-bold rounded-xl text-xs sm:text-sm transition shadow-[0_0_20px_rgba(163, 136, 30,0.3)] hover:shadow-[0_0_30px_rgba(163, 136, 30,0.5)] flex items-center gap-2 cursor-pointer disabled:opacity-50 uppercase tracking-wider"
                 >
-                  <span>{loading ? 'Confirming...' : 'Confirm'}</span>
+                  <span>{loading ? 'Submitting Requirement...' : 'Submit Buyer Requirement'}</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
