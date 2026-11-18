@@ -3,6 +3,7 @@ import { PublicFooter } from "@/components/public/PublicFooter";
 import { HomepageSearchablePortal, PropertyItem, BlogItem } from "@/components/public/HomepageSearchablePortal";
 import { query } from "@/lib/db";
 import { fetchAllProperties } from "@/lib/property-data";
+import { getAllLiveBuyerDemands } from "@/lib/buyer-demands-service";
 import type { Metadata } from "next";
 
 const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://anvreeality.com';
@@ -30,6 +31,7 @@ let cachedPageData: {
   dbLocs: any[];
   dbTypes: any[];
   dbStatuses: any[];
+  buyerDemands: any[];
   timestamp: number;
 } | null = null;
 const PAGE_CACHE_TTL = 60 * 1000; // 60s in-memory cache for ultra-fast response
@@ -80,6 +82,7 @@ export default async function Home(props: {
   const searchParams = props.searchParams ? await props.searchParams : undefined;
   let properties: PropertyItem[] = fallbackProperties;
   let insights: BlogItem[] = fallbackInsights;
+  let buyerDemands: any[] = [];
 
   const now = Date.now();
   let dbLocs: any[] = [];
@@ -93,8 +96,9 @@ export default async function Home(props: {
       dbLocs = cachedPageData.dbLocs;
       dbTypes = cachedPageData.dbTypes;
       dbStatuses = cachedPageData.dbStatuses;
+      buyerDemands = cachedPageData.buyerDemands || [];
     } else {
-      const [fetchedProps, fetchedBlogs, fetchedLocs, fetchedTypes, fetchedStatuses] = await Promise.all([
+      const [fetchedProps, fetchedBlogs, fetchedLocs, fetchedTypes, fetchedStatuses, fetchedBuyers] = await Promise.all([
         fetchAllProperties(),
         query(`
           SELECT 
@@ -109,13 +113,15 @@ export default async function Home(props: {
         `),
         query(`SELECT DISTINCT name FROM "Location" WHERE name IS NOT NULL AND TRIM(name) != '' ORDER BY name ASC;`),
         query(`SELECT DISTINCT name FROM "PropertyType" WHERE name IS NOT NULL AND TRIM(name) != '' ORDER BY name ASC;`),
-        query(`SELECT DISTINCT status FROM "Property" WHERE status IS NOT NULL AND TRIM(status) != '' AND status != 'Draft';`)
+        query(`SELECT DISTINCT status FROM "Property" WHERE status IS NOT NULL AND TRIM(status) != '' AND status != 'Draft';`),
+        getAllLiveBuyerDemands().catch(() => [])
       ]);
 
       properties = fetchedProps;
       dbLocs = fetchedLocs || [];
       dbTypes = fetchedTypes || [];
       dbStatuses = fetchedStatuses || [];
+      buyerDemands = fetchedBuyers || [];
 
       if (fetchedBlogs && fetchedBlogs.length > 0) {
         insights = fetchedBlogs.map((b: any) => ({
@@ -134,6 +140,7 @@ export default async function Home(props: {
         dbLocs,
         dbTypes,
         dbStatuses,
+        buyerDemands,
         timestamp: now
       };
     }
@@ -223,6 +230,7 @@ export default async function Home(props: {
       <div className="flex-1 flex flex-col">
         <HomepageSearchablePortal
           initialProperties={properties}
+          initialBuyerDemands={buyerDemands}
           initialBlogs={insights}
           initialFilterOptions={initialFilterOptions}
           initialSearchParams={searchParams}

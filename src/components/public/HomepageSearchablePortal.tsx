@@ -155,6 +155,7 @@ export interface DynamicFilterOptions {
 
 export interface HomepageSearchablePortalProps {
   initialProperties: PropertyItem[];
+  initialBuyerDemands?: BuyerDemandItem[];
   initialBlogs: BlogItem[];
   initialFilterOptions?: DynamicFilterOptions;
   initialSearchParams?: {
@@ -500,6 +501,7 @@ const PropertyCard = React.memo(function PropertyCard({
 
 export function HomepageSearchablePortal({
   initialProperties,
+  initialBuyerDemands,
   initialBlogs,
   initialFilterOptions,
   initialSearchParams,
@@ -625,16 +627,18 @@ export function HomepageSearchablePortal({
       })
       .catch((err) => console.log('Filter options fetch fallback:', err));
 
-    // Preload verified active buyer demands so seller matchmaking is instantaneous
-    fetch('/api/buyer-demands')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success && Array.isArray(data.demands)) {
-          setBuyerDemands(data.demands);
-        }
-      })
-      .catch(() => { });
-  }, []);
+    // Preload verified active buyer demands so seller matchmaking is instantaneous if not passed via SSR
+    if (!initialBuyerDemands || initialBuyerDemands.length === 0) {
+      fetch('/api/buyer-demands')
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && Array.isArray(data.demands)) {
+            setBuyerDemands(data.demands);
+          }
+        })
+        .catch(() => { });
+    }
+  }, [initialBuyerDemands]);
 
   const [properties, setProperties] = useState<PropertyItem[]>(() => {
     return initialProperties || [];
@@ -653,7 +657,9 @@ export function HomepageSearchablePortal({
     }
     return 'properties';
   });
-  const [buyerDemands, setBuyerDemands] = useState<BuyerDemandItem[]>([]);
+  const [buyerDemands, setBuyerDemands] = useState<BuyerDemandItem[]>(() => {
+    return initialBuyerDemands || [];
+  });
   const [catalogueBuyerFilter, setCatalogueBuyerFilter] = useState('');
   const deferredBuyerFilter = useDeferredValue(catalogueBuyerFilter);
   const [buyerSortBy, setBuyerSortBy] = useState<string>('relevance');

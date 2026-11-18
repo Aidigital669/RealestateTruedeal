@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query, queryOne } from "@/lib/db";
-import { getAllLiveBuyerDemands } from "@/lib/buyer-demands-service";
+import { getAllLiveBuyerDemands, clearBuyerDemandsCache } from "@/lib/buyer-demands-service";
 
 export const dynamic = 'force-dynamic';
 
@@ -370,6 +370,8 @@ export async function POST(req: NextRequest) {
     } catch (dbErr: any) {
       console.error("WebsiteEnquiry seller insert error:", dbErr.message);
     }
+
+    clearBuyerDemandsCache();
 
     return NextResponse.json({
       success: true,

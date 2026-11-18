@@ -66,11 +66,25 @@ export function isJunkLead(name: string | null | undefined, notes: string | null
 
 export const VERIFIED_SEED_BUYER_DEMANDS: BuyerDemandRecord[] = [];
 
+let cachedBuyerDemands: BuyerDemandRecord[] | null = null;
+let lastBuyerFetchTime = 0;
+const BUYER_CACHE_TTL = 30 * 1000; // 30 seconds cache for instant response
+
+export function clearBuyerDemandsCache(): void {
+  cachedBuyerDemands = null;
+  lastBuyerFetchTime = 0;
+}
+
 /**
  * Returns all active buyer demands from crm_leads.
  * Single source of truth guaranteeing identical counts across CRM and Website.
  */
-export async function getAllLiveBuyerDemands(): Promise<BuyerDemandRecord[]> {
+export async function getAllLiveBuyerDemands(forceRefresh = false): Promise<BuyerDemandRecord[]> {
+  const now = Date.now();
+  if (!forceRefresh && cachedBuyerDemands && (now - lastBuyerFetchTime < BUYER_CACHE_TTL)) {
+    return cachedBuyerDemands;
+  }
+
   const dbDemands: BuyerDemandRecord[] = [];
 
   try {
@@ -106,6 +120,8 @@ export async function getAllLiveBuyerDemands(): Promise<BuyerDemandRecord[]> {
         });
       }
     }
+    cachedBuyerDemands = dbDemands;
+    lastBuyerFetchTime = now;
   } catch (err: any) {
     console.log("CRM leads fetch note:", err.message);
   }

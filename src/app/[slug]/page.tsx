@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
 import { getPropertyBySlugOrId, fetchAllProperties } from '@/lib/property-data';
+import { getAllLiveBuyerDemands } from '@/lib/buyer-demands-service';
 import { getPropertyUrl } from '@/lib/slug';
 import { CATEGORIES_DATA, getCategoryBySlug } from '@/lib/categories-data';
 import { PublicHeader } from '@/components/public/PublicHeader';
@@ -156,7 +157,10 @@ export default async function DirectSlugPage({ params }: PageProps) {
   // 1. Direct Category Match (e.g. /hospital, /office-space, etc.)
   const category = getCategoryBySlug(slug);
   if (category) {
-    const allProperties = await fetchAllProperties();
+    const [allProperties, buyerDemands] = await Promise.all([
+      fetchAllProperties(),
+      getAllLiveBuyerDemands().catch(() => [])
+    ]);
     const searchTerm = category.slug === 'hospital' ? 'hospital' : (category.shortTitle || category.title);
 
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://anvreeality.com';
@@ -240,6 +244,7 @@ export default async function DirectSlugPage({ params }: PageProps) {
             <div id="search-portal-section">
               <HomepageSearchablePortal
                 initialProperties={allProperties}
+                initialBuyerDemands={buyerDemands}
                 initialBlogs={fallbackInsights}
                 initialSearchParams={{ search: searchTerm }}
               />

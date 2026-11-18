@@ -3,6 +3,7 @@ import { PublicHeader } from '@/components/public/PublicHeader';
 import { PublicFooter } from '@/components/public/PublicFooter';
 import { HomepageSearchablePortal, BlogItem } from '@/components/public/HomepageSearchablePortal';
 import { fetchAllProperties } from '@/lib/property-data';
+import { getAllLiveBuyerDemands } from '@/lib/buyer-demands-service';
 import { query } from '@/lib/db';
 
 interface PageProps {
@@ -97,7 +98,10 @@ export default async function PropertiesIndexPage({ searchParams }: PageProps) {
     type: rawParams.type || 'All'
   };
 
-  const properties = await fetchAllProperties();
+  const [properties, buyerDemands] = await Promise.all([
+    fetchAllProperties(),
+    getAllLiveBuyerDemands().catch(() => [])
+  ]);
 
   // Fetch blogs for correlation
   let insights: BlogItem[] = [
@@ -213,6 +217,7 @@ export default async function PropertiesIndexPage({ searchParams }: PageProps) {
       <main className="flex-1 flex flex-col">
         <HomepageSearchablePortal
           initialProperties={properties}
+          initialBuyerDemands={buyerDemands}
           initialBlogs={insights}
           initialSearchParams={initialParams}
           isDedicatedSearchPage={true}
