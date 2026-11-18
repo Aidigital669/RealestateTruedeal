@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { query, queryOne } from "@/lib/db";
 import { getPurposesForProperties, setPropertyBusinessPurposes } from "@/lib/business-purposes";
 import { parseDossierData, embedDossierData } from "@/lib/dossier-parser";
+import { parseAndNormalizeVideoUrl } from "@/lib/video-utils";
 
 export async function GET(req: NextRequest) {
   try {
@@ -274,7 +275,13 @@ export async function POST(req: NextRequest) {
       }
     );
 
-    const newProp = await queryOne(`
+    const rawVideo = videoUrl ? String(videoUrl).trim() : "";
+    const parsedVideo = parseAndNormalizeVideoUrl(rawVideo);
+    const cleanVideoUrl = parsedVideo.isValid
+      ? (parsedVideo.type === "youtube" || parsedVideo.type === "vimeo" ? parsedVideo.normalizedUrl : parsedVideo.embedUrl || rawVideo)
+      : (rawVideo.length > 0 ? rawVideo : null);
+
+    const newProp = await queryOne<any>(`
       INSERT INTO "Property" (
         title, slug, "propertyTypeId", "locationId", "projectId", "listingType", status, "publishStatus",
         description, address, price, "carpetArea", "areaUnit", bedrooms, "configuration", "videoUrl", "isFeatured",
@@ -301,7 +308,7 @@ export async function POST(req: NextRequest) {
       numArea,
       numBedrooms,
       rawType || null,
-      videoUrl ? String(videoUrl).trim() : null
+      cleanVideoUrl
     ]);
 
     const imagesToInsert: string[] = (Array.isArray(images) && images.length > 0)

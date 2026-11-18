@@ -250,7 +250,7 @@ export function FeaturedAdsBar() {
                   title={`${ad.name} - ${ad.tagline}`}
                 >
                   {/* Circular Avatar Container with Gold Luxury Border */}
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-full p-[1.5px] sm:p-[2px] bg-gradient-to-tr from-amber-500 via-amber-300 to-amber-600 shadow-[0_0_8px_rgba(179, 152, 50,0.55)] sm:shadow-[0_0_14px_rgba(179, 152, 50,0.65)] group-hover/circle:shadow-[0_0_18px_rgba(179, 152, 50,0.9)] group-hover/circle:scale-105 transition-all duration-200">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-full p-[1.5px] sm:p-[2px] bg-gradient-to-tr from-amber-500 via-amber-300 to-amber-600 shadow-[0_0_8px_rgba(185, 151, 79,0.55)] sm:shadow-[0_0_14px_rgba(185, 151, 79,0.65)] group-hover/circle:shadow-[0_0_18px_rgba(185, 151, 79,0.9)] group-hover/circle:scale-105 transition-all duration-200">
                     <div className="w-full h-full rounded-full overflow-hidden relative bg-black">
                       <Image
                         src={ad.image || '/opus-thumb.jpg'}

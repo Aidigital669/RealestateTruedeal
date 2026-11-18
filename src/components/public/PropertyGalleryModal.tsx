@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { PropertyItem, formatPriceDisplay, cleanSqft } from '@/components/public/HomepageSearchablePortal';
 import { getPropertyUrl } from '@/lib/slug';
+import { parseAndNormalizeVideoUrl } from '@/lib/video-utils';
 
 interface PropertyGalleryModalProps {
   isOpen: boolean;
@@ -72,12 +73,16 @@ export function PropertyGalleryModal({
   }, [property]);
 
   // Sync state whenever property or initialMode changes
+  const parsedVideo = useMemo(() => {
+    return parseAndNormalizeVideoUrl(property?.videoUrl);
+  }, [property?.videoUrl]);
+
   useEffect(() => {
     if (isOpen) {
       setActivePhotoIdx(0);
-      setActiveMediaMode(initialMode === 'video' && property?.videoUrl ? 'video' : 'photos');
+      setActiveMediaMode(initialMode === 'video' && parsedVideo.isValid ? 'video' : 'photos');
     }
-  }, [isOpen, property, initialMode]);
+  }, [isOpen, initialMode, parsedVideo.isValid]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -110,28 +115,6 @@ export function PropertyGalleryModal({
     e?.stopPropagation();
     setActivePhotoIdx((prev) => (prev - 1 + (mediaImages.length || 1)) % (mediaImages.length || 1));
   };
-
-  // Video Embed URL Formatter
-  const getVideoEmbedUrl = (rawUrl?: string | null): string | null => {
-    if (!rawUrl) return null;
-    const url = rawUrl.trim();
-
-    // YouTube matches
-    const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]+)/i);
-    if (ytMatch && ytMatch[1]) {
-      return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&rel=0`;
-    }
-
-    // Vimeo matches
-    const vimeoMatch = url.match(/vimeo\.com\/(?:video\/)?([0-9]+)/i);
-    if (vimeoMatch && vimeoMatch[1]) {
-      return `https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=1`;
-    }
-
-    return url;
-  };
-
-  const videoEmbedUrl = getVideoEmbedUrl(property.videoUrl);
 
   const getWhatsAppVideoRequestUrl = () => {
     const text = `*ANV REEALTY - Video Walkthrough Request*\n*Property:* ${property.name}\n*Location:* ${property.locality || property.location}\n*Price:* ${property.price}\n\nHello, I would like to receive the full 4K video walkthrough and brochure for this property.`;
@@ -264,19 +247,19 @@ export function PropertyGalleryModal({
         ) : (
           /* ================= VIDEO WALKTHROUGH ================= */
           <div className="w-full h-full max-w-4xl max-h-[72vh] flex items-center justify-center">
-            {property.videoUrl && videoEmbedUrl ? (
+            {parsedVideo.isValid && parsedVideo.embedUrl ? (
               <div className="w-full h-full aspect-video rounded-2xl overflow-hidden shadow-2xl border border-white/20 bg-black">
-                {videoEmbedUrl.includes('youtube.com') || videoEmbedUrl.includes('vimeo.com') ? (
+                {parsedVideo.type === 'youtube' || parsedVideo.type === 'vimeo' ? (
                   <iframe
-                    src={videoEmbedUrl}
+                    src={parsedVideo.embedUrl}
                     className="w-full h-full border-0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                     allowFullScreen
                     title={`${property.name} Video Walkthrough`}
                   />
                 ) : (
                   <video
-                    src={videoEmbedUrl}
+                    src={parsedVideo.embedUrl}
                     controls
                     autoPlay
                     className="w-full h-full object-contain"

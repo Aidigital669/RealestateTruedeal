@@ -35,6 +35,7 @@ import { SharePropertyModal } from '@/components/public/SharePropertyModal';
 import { getClientSession } from '@/lib/user-auth';
 import { AuthInquiryModal } from '@/components/auth/AuthInquiryModal';
 import { formatPropertyDescription, parseDossierData } from '@/lib/dossier-parser';
+import { parseAndNormalizeVideoUrl } from '@/lib/video-utils';
 
 interface PropertyDetailPageClientProps {
   initialProperty?: PropertyItem | null;
@@ -148,12 +149,14 @@ export function PropertyDetailPageClient({
   );
 
   // Video walkthrough URL:
-  // - If property has its own assigned videoUrl, use that.
+  // - If property has its own assigned videoUrl, normalize and use that.
   // - If it is specifically an Opus property and no custom videoUrl is given, use '/Opusvideo.mp4'.
   // - For all other properties, do not fall back to Opus video (activeVideoUrl is null).
-  const activeVideoUrl: string | null = (property?.videoUrl && property.videoUrl.trim().length > 0)
-    ? property.videoUrl.trim()
-    : (isOpusProperty ? '/Opusvideo.mp4' : null);
+  const rawVideo = property?.videoUrl?.trim();
+  const parsedPropVideo = rawVideo ? parseAndNormalizeVideoUrl(rawVideo) : null;
+  const activeVideoUrl: string | null = parsedPropVideo?.isValid
+    ? parsedPropVideo.normalizedUrl
+    : (rawVideo && rawVideo.length > 0 ? rawVideo : (isOpusProperty ? '/Opusvideo.mp4' : null));
 
   const hasVideo: boolean = Boolean(activeVideoUrl && activeVideoUrl.length > 0);
 
@@ -779,44 +782,47 @@ export function PropertyDetailPageClient({
                   !isLightboxOpen ? (
                     <div className="w-full h-full relative bg-black flex items-center justify-center">
                       {(() => {
-                        const url = activeVideoUrl;
-                        const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]+)/i);
-                        if (ytMatch && ytMatch[1]) {
+                        const parsed = parseAndNormalizeVideoUrl(activeVideoUrl);
+                        if (parsed.type === 'youtube' || parsed.type === 'vimeo') {
                           return (
                             <iframe
-                              src={`https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&rel=0`}
+                              src={parsed.embedUrl || ''}
                               className="w-full h-full border-0"
-                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                               allowFullScreen
                               title="Property Video Walkthrough"
                             />
                           );
                         }
-                        const vimeoMatch = url.match(/vimeo\.com\/(?:video\/)?([0-9]+)/i);
-                        if (vimeoMatch && vimeoMatch[1]) {
+                        if (parsed.type === 'direct') {
                           return (
-                            <iframe
-                              src={`https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=1`}
-                              className="w-full h-full border-0"
-                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                              allowFullScreen
-                              title="Property Video Walkthrough"
-                            />
+                            <video
+                              key={parsed.embedUrl || activeVideoUrl}
+                              src={parsed.embedUrl || activeVideoUrl}
+                              controls
+                              autoPlay
+                              muted
+                              playsInline
+                              className="w-full h-full object-cover"
+                              poster={property.videoThumbnail || mediaImages[0] || (isOpusProperty ? '/opus-thumb.jpg' : undefined)}
+                            >
+                              Your browser does not support high-definition video playback.
+                            </video>
                           );
                         }
                         return (
-                          <video
-                            key={url}
-                            src={url}
-                            controls
-                            autoPlay
-                            muted
-                            playsInline
-                            className="w-full h-full object-cover"
-                            poster={property.videoThumbnail || mediaImages[0] || (isOpusProperty ? '/opus-thumb.jpg' : undefined)}
-                          >
-                            Your browser does not support high-definition video playback.
-                          </video>
+                          <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-zinc-950 text-white space-y-3">
+                            <Video className="w-10 h-10 text-amber-400" />
+                            <p className="text-sm font-semibold text-zinc-300">High-Definition Walkthrough Video Available</p>
+                            <a
+                              href={activeVideoUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold transition shadow-lg"
+                            >
+                              Open Walkthrough Link ↗
+                            </a>
+                          </div>
                         );
                       })()}
                     </div>
@@ -1507,43 +1513,46 @@ export function PropertyDetailPageClient({
             {mediaMode === 'video' && hasVideo && activeVideoUrl ? (
               <div className="relative w-full h-full max-w-5xl max-h-[75vh] flex items-center justify-center rounded-2xl overflow-hidden bg-black border border-white/15 shadow-2xl">
                 {(() => {
-                  const url = activeVideoUrl;
-                  const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]+)/i);
-                  if (ytMatch && ytMatch[1]) {
+                  const parsed = parseAndNormalizeVideoUrl(activeVideoUrl);
+                  if (parsed.type === 'youtube' || parsed.type === 'vimeo') {
                     return (
                       <iframe
-                        src={`https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&rel=0`}
+                        src={parsed.embedUrl || ''}
                         className="w-full h-full border-0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                         allowFullScreen
                         title="Property Video Walkthrough Fullscreen"
                       />
                     );
                   }
-                  const vimeoMatch = url.match(/vimeo\.com\/(?:video\/)?([0-9]+)/i);
-                  if (vimeoMatch && vimeoMatch[1]) {
+                  if (parsed.type === 'direct') {
                     return (
-                      <iframe
-                        src={`https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=1`}
-                        className="w-full h-full border-0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                        title="Property Video Walkthrough Fullscreen"
-                      />
+                      <video
+                        key={parsed.embedUrl || activeVideoUrl}
+                        src={parsed.embedUrl || activeVideoUrl}
+                        controls
+                        autoPlay
+                        playsInline
+                        className="w-full h-full object-contain"
+                        poster={property.videoThumbnail || mediaImages[0] || (isOpusProperty ? '/opus-thumb.jpg' : undefined)}
+                      >
+                        Your browser does not support high-definition video playback.
+                      </video>
                     );
                   }
                   return (
-                    <video
-                      key={url}
-                      src={url}
-                      controls
-                      autoPlay
-                      playsInline
-                      className="w-full h-full object-contain"
-                      poster={property.videoThumbnail || mediaImages[0] || (isOpusProperty ? '/opus-thumb.jpg' : undefined)}
-                    >
-                      Your browser does not support high-definition video playback.
-                    </video>
+                    <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-zinc-950 text-white space-y-3">
+                      <Video className="w-12 h-12 text-amber-400" />
+                      <p className="text-base font-semibold text-zinc-200">High-Definition Walkthrough Video Available</p>
+                      <a
+                        href={activeVideoUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold transition shadow-lg"
+                      >
+                        Open Walkthrough Link ↗
+                      </a>
+                    </div>
                   );
                 })()}
               </div>

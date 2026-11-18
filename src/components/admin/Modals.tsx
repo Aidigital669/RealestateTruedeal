@@ -45,6 +45,7 @@ import {
   getDefaultConnectivity,
   PRESET_AMENITIES
 } from '@/lib/dossier-parser';
+import { parseAndNormalizeVideoUrl } from '@/lib/video-utils';
 
 // ================= EDIT SECTION MODAL =================
 export function EditSectionModal({
@@ -748,15 +749,23 @@ export function AddPropertyModal({
               )}
             </div>
             <p className="text-[11px] text-zinc-500">
-              Paste a YouTube walkthrough link, Vimeo, or direct MP4 URL. If empty, no video tour button will appear.
+              Paste any YouTube link (watch, share, shorts, live, or embed code), Vimeo, or direct MP4 URL.
             </p>
 
             <div className="relative flex items-center">
               <input
                 type="text"
                 value={videoUrl}
-                onChange={(e) => setVideoUrl(e.target.value)}
-                placeholder="e.g. https://www.youtube.com/watch?v=... or https://.../walkthrough.mp4"
+                onChange={(e) => {
+                  const val = e.target.value;
+                  const parsed = parseAndNormalizeVideoUrl(val);
+                  if (val.includes('<iframe') && parsed.isValid && parsed.normalizedUrl) {
+                    setVideoUrl(parsed.normalizedUrl);
+                  } else {
+                    setVideoUrl(val);
+                  }
+                }}
+                placeholder="e.g. https://www.youtube.com/watch?v=... or https://youtu.be/... or shorts"
                 className="w-full pl-3 pr-8 py-2 border border-zinc-200 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-zinc-400 bg-white"
               />
               {videoUrl && (
@@ -770,6 +779,52 @@ export function AddPropertyModal({
                 </button>
               )}
             </div>
+
+            {/* Live Video Preview Box */}
+            {videoUrl.trim().length > 0 && (() => {
+              const parsed = parseAndNormalizeVideoUrl(videoUrl);
+              return (
+                <div className="p-3 bg-zinc-50 border border-zinc-200 rounded-xl space-y-2 mt-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold flex items-center gap-1.5 text-zinc-800">
+                      {parsed.type === 'youtube' && <span className="text-red-600 font-extrabold flex items-center gap-1">▶ YouTube Video</span>}
+                      {parsed.type === 'vimeo' && <span className="text-sky-600 font-extrabold flex items-center gap-1">▶ Vimeo Video</span>}
+                      {parsed.type === 'direct' && <span className="text-emerald-600 font-extrabold flex items-center gap-1">▶ Direct MP4 Video</span>}
+                      {parsed.type === 'unknown' && <span className="text-amber-600 font-extrabold flex items-center gap-1">⚠️ Web Video</span>}
+                    </span>
+                    {parsed.isValid ? (
+                      <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                        ✓ Valid &amp; Playable
+                      </span>
+                    ) : (
+                      <span className="text-[10px] bg-rose-100 text-rose-800 font-bold px-2 py-0.5 rounded-full">
+                        Invalid Link
+                      </span>
+                    )}
+                  </div>
+
+                  {parsed.isValid && parsed.embedUrl && (
+                    <div className="relative aspect-video w-full max-w-sm rounded-lg overflow-hidden bg-black border border-zinc-300 shadow-xs">
+                      {parsed.type === 'youtube' || parsed.type === 'vimeo' ? (
+                        <iframe
+                          src={parsed.embedUrl.replace('autoplay=1', 'autoplay=0')}
+                          className="w-full h-full border-0"
+                          allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                          allowFullScreen
+                          title="Video Walkthrough Preview"
+                        />
+                      ) : (
+                        <video
+                          src={parsed.embedUrl}
+                          controls
+                          className="w-full h-full object-contain"
+                        />
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
 
           <div>
@@ -877,7 +932,10 @@ export function AddPropertyModal({
                 imageUrl: cleanImages[0] || '',
                 image: cleanImages[0] || '',
                 images: cleanImages,
-                videoUrl: videoUrl.trim(),
+                videoUrl: (() => {
+                  const p = parseAndNormalizeVideoUrl(videoUrl);
+                  return p.isValid ? (p.type === 'youtube' || p.type === 'vimeo' ? p.normalizedUrl : p.embedUrl || videoUrl.trim()) : videoUrl.trim();
+                })(),
                 publishStatus: publishOnWebsite ? 'Published' : 'Draft' 
               });
               onClose();
@@ -1244,7 +1302,8 @@ export function EditPropertyModal({
     setIsSaving(true);
     try {
       const cleanImages = images.map((u) => u.trim()).filter(Boolean);
-      const cleanVideo = videoUrl.trim();
+      const pVid = parseAndNormalizeVideoUrl(videoUrl);
+      const cleanVideo = pVid.isValid ? (pVid.type === 'youtube' || pVid.type === 'vimeo' ? pVid.normalizedUrl : pVid.embedUrl || videoUrl.trim()) : videoUrl.trim();
       const finalConfig = (bhk || customConfig).trim() || 'Commercial';
 
       const finalDescription = embedDossierData(formatPropertyDescription(description.trim()), {
@@ -2412,15 +2471,23 @@ export function EditPropertyModal({
                 )}
               </div>
               <p className="text-[11px] text-zinc-500">
-                Paste a YouTube walkthrough link, Vimeo, or direct MP4 URL. If left empty, no video tour button will be shown.
+                Paste any YouTube link (watch, share, shorts, live, or embed code), Vimeo, or direct MP4 URL.
               </p>
 
               <div className="relative flex items-center">
                 <input
                   type="text"
                   value={videoUrl}
-                  onChange={(e) => setVideoUrl(e.target.value)}
-                  placeholder="e.g. https://www.youtube.com/watch?v=... or https://.../walkthrough.mp4"
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    const parsed = parseAndNormalizeVideoUrl(val);
+                    if (val.includes('<iframe') && parsed.isValid && parsed.normalizedUrl) {
+                      setVideoUrl(parsed.normalizedUrl);
+                    } else {
+                      setVideoUrl(val);
+                    }
+                  }}
+                  placeholder="e.g. https://www.youtube.com/watch?v=... or https://youtu.be/... or shorts"
                   className="w-full pl-3 pr-8 py-2 border border-zinc-200 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-zinc-400 bg-white"
                 />
                 {videoUrl && (
@@ -2434,6 +2501,52 @@ export function EditPropertyModal({
                   </button>
                 )}
               </div>
+
+              {/* Live Video Preview Box */}
+              {videoUrl.trim().length > 0 && (() => {
+                const parsed = parseAndNormalizeVideoUrl(videoUrl);
+                return (
+                  <div className="p-3 bg-zinc-50 border border-zinc-200 rounded-xl space-y-2 mt-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-bold flex items-center gap-1.5 text-zinc-800">
+                        {parsed.type === 'youtube' && <span className="text-red-600 font-extrabold flex items-center gap-1">▶ YouTube Video</span>}
+                        {parsed.type === 'vimeo' && <span className="text-sky-600 font-extrabold flex items-center gap-1">▶ Vimeo Video</span>}
+                        {parsed.type === 'direct' && <span className="text-emerald-600 font-extrabold flex items-center gap-1">▶ Direct MP4 Video</span>}
+                        {parsed.type === 'unknown' && <span className="text-amber-600 font-extrabold flex items-center gap-1">⚠️ Web Video</span>}
+                      </span>
+                      {parsed.isValid ? (
+                        <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                          ✓ Valid &amp; Playable
+                        </span>
+                      ) : (
+                        <span className="text-[10px] bg-rose-100 text-rose-800 font-bold px-2 py-0.5 rounded-full">
+                          Invalid Link
+                        </span>
+                      )}
+                    </div>
+
+                    {parsed.isValid && parsed.embedUrl && (
+                      <div className="relative aspect-video w-full max-w-sm rounded-lg overflow-hidden bg-black border border-zinc-300 shadow-xs">
+                        {parsed.type === 'youtube' || parsed.type === 'vimeo' ? (
+                          <iframe
+                            src={parsed.embedUrl.replace('autoplay=1', 'autoplay=0')}
+                            className="w-full h-full border-0"
+                            allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                            allowFullScreen
+                            title="Video Walkthrough Preview"
+                          />
+                        ) : (
+                          <video
+                            src={parsed.embedUrl}
+                            controls
+                            className="w-full h-full object-contain"
+                          />
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           </div>
         )}

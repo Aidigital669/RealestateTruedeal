@@ -267,7 +267,7 @@ export function SellerLeadCaptureModal({
               </>
             ) : (
               <>
-                <div className="w-16 h-16 rounded-full bg-amber-500/20 border-2 border-amber-500 flex items-center justify-center mx-auto text-amber-400 shadow-[0_0_30px_rgba(179, 152, 50,0.35)]">
+                <div className="w-16 h-16 rounded-full bg-amber-500/20 border-2 border-amber-500 flex items-center justify-center mx-auto text-amber-400 shadow-[0_0_30px_rgba(185, 151, 79,0.35)]">
                   <CheckCircle2 className="w-8 h-8 text-amber-400" />
                 </div>
                 <div className="space-y-2">

@@ -348,7 +348,7 @@ export function PremiumAdsManager({ showToast }: PremiumAdsManagerProps) {
                     className="flex flex-col items-center group cursor-pointer focus:outline-none"
                     title={`Preview ${ad.name}`}
                   >
-                    <div className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-full border-[3px] border-amber-400 overflow-hidden relative shadow-[0_0_12px_rgba(179, 152, 50,0.4)] group-hover:scale-105 transition-transform duration-200 bg-black">
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-full border-[3px] border-amber-400 overflow-hidden relative shadow-[0_0_12px_rgba(185, 151, 79,0.4)] group-hover:scale-105 transition-transform duration-200 bg-black">
                       <Image
                         src={ad.image || '/opus-thumb.jpg'}
                         alt={ad.name}

@@ -469,7 +469,7 @@ export function SiteVisitModal({
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-400 active:scale-[0.99] disabled:opacity-50 text-zinc-950 font-black text-xs transition-all shadow-[0_10px_30px_rgba(179, 152, 50,0.25)] flex items-center justify-center gap-2 cursor-pointer mt-2"
+                className="w-full py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-400 active:scale-[0.99] disabled:opacity-50 text-zinc-950 font-black text-xs transition-all shadow-[0_10px_30px_rgba(185, 151, 79,0.25)] flex items-center justify-center gap-2 cursor-pointer mt-2"
               >
                 {loading ? (
                   <>

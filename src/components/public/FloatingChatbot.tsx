@@ -311,7 +311,7 @@ function _DisabledFloatingChatbot() {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="relative group w-14 h-14 rounded-full bg-gradient-to-tr from-amber-500 via-amber-400 to-amber-500 text-zinc-950 flex items-center justify-center shadow-[0_10px_30px_rgba(179, 152, 50,0.55)] hover:shadow-[0_15px_40px_rgba(179, 152, 50,0.75)] hover:scale-110 active:scale-95 transition-all duration-300 cursor-pointer ring-4 ring-amber-400/40 group-hover:ring-amber-400/70"
+          className="relative group w-14 h-14 rounded-full bg-gradient-to-tr from-amber-500 via-amber-400 to-amber-500 text-zinc-950 flex items-center justify-center shadow-[0_10px_30px_rgba(185, 151, 79,0.55)] hover:shadow-[0_15px_40px_rgba(185, 151, 79,0.75)] hover:scale-110 active:scale-95 transition-all duration-300 cursor-pointer ring-4 ring-amber-400/40 group-hover:ring-amber-400/70"
           title="Open Anv AI Concierge Chatbot"
           aria-label="Open AI Property Concierge"
         >

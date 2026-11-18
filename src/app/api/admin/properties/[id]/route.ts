@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { queryOne, query } from "@/lib/db";
 import { getPurposesForProperties, setPropertyBusinessPurposes } from "@/lib/business-purposes";
 import { parseDossierData, embedDossierData } from "@/lib/dossier-parser";
+import { parseAndNormalizeVideoUrl } from "@/lib/video-utils";
 
 export async function PATCH(
   req: NextRequest,
@@ -213,7 +214,12 @@ export async function PATCH(
 
     // 7. Video URL
     if (body.videoUrl !== undefined) {
-      colUpdates.set('"videoUrl"', body.videoUrl && String(body.videoUrl).trim().length > 0 ? String(body.videoUrl).trim() : null);
+      const rawV = body.videoUrl ? String(body.videoUrl).trim() : "";
+      const parsed = parseAndNormalizeVideoUrl(rawV);
+      const cleanV = parsed.isValid
+        ? (parsed.type === "youtube" || parsed.type === "vimeo" ? parsed.normalizedUrl : parsed.embedUrl || rawV)
+        : (rawV.length > 0 ? rawV : null);
+      colUpdates.set('"videoUrl"', cleanV);
     }
 
     // 8. Listing Type (Buy vs Rent)

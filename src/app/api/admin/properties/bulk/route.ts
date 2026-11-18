@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { queryOne, query } from "@/lib/db";
 import * as XLSX from "xlsx";
 import { parseDossierData } from "@/lib/dossier-parser";
+import { parseAndNormalizeVideoUrl } from "@/lib/video-utils";
 
 const CATEGORY_IMAGE_POOLS: Record<string, string[]> = {
   'Hospital': [
@@ -539,7 +540,11 @@ export async function POST(req: NextRequest) {
       const bathroomsRaw = row.bathrooms !== undefined ? row.bathrooms : row["Bathrooms"] || row["Baths"];
       const bathrooms = bathroomsRaw ? parseInt(String(bathroomsRaw).replace(/[^0-9]/g, ""), 10) || null : null;
 
-      const videoUrl = (row.videoUrl || row["Video URL"] || row["video_url"] || "").toString().trim();
+      const videoUrlRaw = (row.videoUrl || row["Video URL"] || row["video_url"] || "").toString().trim();
+      const pVid = parseAndNormalizeVideoUrl(videoUrlRaw);
+      const videoUrl = pVid.isValid
+        ? (pVid.type === "youtube" || pVid.type === "vimeo" ? pVid.normalizedUrl : pVid.embedUrl || videoUrlRaw)
+        : (videoUrlRaw.length > 0 ? videoUrlRaw : null);
 
       // Image URLs
       const imageRaw = (
