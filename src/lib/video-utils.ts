@@ -10,16 +10,17 @@ export interface ParsedVideoInfo {
   embedUrl: string | null;
   normalizedUrl: string;
   isValid: boolean;
+  isShorts?: boolean;
 }
 
 export function parseAndNormalizeVideoUrl(rawUrl?: string | null): ParsedVideoInfo {
   if (!rawUrl || typeof rawUrl !== 'string') {
-    return { type: 'unknown', embedUrl: null, normalizedUrl: '', isValid: false };
+    return { type: 'unknown', embedUrl: null, normalizedUrl: '', isValid: false, isShorts: false };
   }
 
   let url = rawUrl.trim();
   if (!url) {
-    return { type: 'unknown', embedUrl: null, normalizedUrl: '', isValid: false };
+    return { type: 'unknown', embedUrl: null, normalizedUrl: '', isValid: false, isShorts: false };
   }
 
   // 1. If user pasted a full HTML <iframe> code, extract src
@@ -28,26 +29,37 @@ export function parseAndNormalizeVideoUrl(rawUrl?: string | null): ParsedVideoIn
     url = iframeSrcMatch[1].trim();
   }
 
-  // Clean trailing punctuation or brackets if user pasted from chat/email
+  // Clean trailing punctuation, angle brackets, or quotes if user pasted from chat/email
   url = url.replace(/^[<"']+|[>"']+$/g, '').trim();
 
   // Decode any HTML entities like &amp; to &
   url = url.replace(/&amp;/g, '&');
 
   // 2. YouTube Parsing: Support all formats
+  // - https://www.youtube.com/shorts/ID
+  // - https://youtube.com/shorts/ID?feature=share
   // - https://www.youtube.com/watch?v=ID
   // - https://www.youtube.com/watch?feature=share&v=ID
   // - https://youtu.be/ID
   // - https://www.youtube.com/embed/ID
-  // - https://www.youtube.com/shorts/ID
   // - https://www.youtube.com/live/ID
   // - https://m.youtube.com/watch?v=ID
   let ytId: string | null = null;
+  let isShorts = false;
+
+  // Check specifically for YouTube Shorts first: /shorts/ID
+  const shortsMatch = url.match(/(?:shorts)\/([a-zA-Z0-9_-]+)/i);
+  if (shortsMatch && shortsMatch[1]) {
+    ytId = shortsMatch[1].slice(0, 11);
+    isShorts = true;
+  }
 
   // Pattern A: v= query parameter anywhere in query string
-  const vParamMatch = url.match(/[?&]v=([a-zA-Z0-9_-]{11})/i);
-  if (vParamMatch && vParamMatch[1]) {
-    ytId = vParamMatch[1];
+  if (!ytId) {
+    const vParamMatch = url.match(/[?&]v=([a-zA-Z0-9_-]{11})/i);
+    if (vParamMatch && vParamMatch[1]) {
+      ytId = vParamMatch[1];
+    }
   }
 
   // Pattern B: youtu.be shortlinks
@@ -58,9 +70,9 @@ export function parseAndNormalizeVideoUrl(rawUrl?: string | null): ParsedVideoIn
     }
   }
 
-  // Pattern C: /embed/ID, /shorts/ID, /v/ID, /live/ID
+  // Pattern C: /embed/ID, /v/ID, /live/ID
   if (!ytId) {
-    const pathActionMatch = url.match(/(?:embed|shorts|v|live)\/([a-zA-Z0-9_-]{11})/i);
+    const pathActionMatch = url.match(/(?:embed|v|live)\/([a-zA-Z0-9_-]{11})/i);
     if (pathActionMatch && pathActionMatch[1]) {
       ytId = pathActionMatch[1];
     }
@@ -79,8 +91,9 @@ export function parseAndNormalizeVideoUrl(rawUrl?: string | null): ParsedVideoIn
       type: 'youtube',
       videoId: ytId,
       embedUrl: `https://www.youtube.com/embed/${ytId}?autoplay=1&rel=0`,
-      normalizedUrl: `https://www.youtube.com/watch?v=${ytId}`,
+      normalizedUrl: isShorts ? `https://www.youtube.com/shorts/${ytId}` : `https://www.youtube.com/watch?v=${ytId}`,
       isValid: true,
+      isShorts,
     };
   }
 

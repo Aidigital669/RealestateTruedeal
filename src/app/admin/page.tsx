@@ -48,9 +48,11 @@ import {
   History,
   Shield,
   ShieldCheck,
-  ShieldAlert
+  ShieldAlert,
+  Video
 } from 'lucide-react';
 
+import { parseAndNormalizeVideoUrl } from '@/lib/video-utils';
 import { Sidebar } from '@/components/admin/Sidebar';
 import { Navbar } from '@/components/admin/Navbar';
 import { MetricCard } from '@/components/admin/MetricCard';
@@ -120,6 +122,7 @@ export default function AdminPage() {
   // Properties Edit state
   const [editingProperty, setEditingProperty] = useState<any>(null);
   const [editPropertyModalOpen, setEditPropertyModalOpen] = useState(false);
+  const [adminVideoPreviewProp, setAdminVideoPreviewProp] = useState<any | null>(null);
 
   // Property - Buyer Matching Engine state
   const [matchingProperty, setMatchingProperty] = useState<any>(null);
@@ -1153,6 +1156,17 @@ export default function AdminPage() {
                             <div className="flex flex-col gap-1 items-start">
                               <div className="flex items-center gap-1.5 flex-wrap">
                                 <span>{p.realName || p.name || p.title}</span>
+                                {p.videoUrl && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setAdminVideoPreviewProp(p)}
+                                    className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 inline-flex items-center gap-1 cursor-pointer transition shadow-2xs"
+                                    title="Click to preview video walkthrough"
+                                  >
+                                    <Video className="w-2.5 h-2.5 text-red-600" />
+                                    <span>Video</span>
+                                  </button>
+                                )}
                                 {p.isSafe && (
                                   <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300 inline-flex items-center gap-1 shadow-2xs">
                                     <ShieldCheck className="w-3 h-3 text-emerald-600" />
@@ -1303,6 +1317,16 @@ export default function AdminPage() {
                               />
                               {p.isSafe ? 'Safe' : 'Make Safe'}
                             </button>
+                            {p.videoUrl && (
+                              <button
+                                type="button"
+                                onClick={() => setAdminVideoPreviewProp(p)}
+                                className="text-red-600 hover:underline font-semibold text-xs cursor-pointer inline-flex items-center gap-0.5"
+                                title="Preview walkthrough video"
+                              >
+                                ▶ Video
+                              </button>
+                            )}
                             <button
                               onClick={() => {
                                 setEditingProperty(p);
@@ -2452,6 +2476,89 @@ export default function AdminPage() {
         availableLocations={locationsList}
         availablePropertyTypes={propertyTypesList}
       />
+
+      {/* Admin Video Walkthrough Preview Modal */}
+      {adminVideoPreviewProp && (() => {
+        const parsed = parseAndNormalizeVideoUrl(adminVideoPreviewProp.videoUrl);
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-in fade-in">
+            <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+              <div className="flex items-center justify-between p-4 border-b border-zinc-800">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-red-600/20 text-red-500 flex items-center justify-center">
+                    <Video className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-white line-clamp-1">{adminVideoPreviewProp.realName || adminVideoPreviewProp.name || adminVideoPreviewProp.title}</h3>
+                    <p className="text-[11px] text-zinc-400">{adminVideoPreviewProp.location || 'Pune'}</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAdminVideoPreviewProp(null)}
+                  className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 transition cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="flex-1 bg-black flex items-center justify-center p-3 min-h-[380px]">
+                {parsed.isValid && parsed.embedUrl ? (
+                  <div className={`w-full h-full ${parsed.isShorts ? 'max-w-xs aspect-[9/16]' : 'aspect-video'} rounded-xl overflow-hidden bg-black flex items-center justify-center`}>
+                    {parsed.type === 'youtube' || parsed.type === 'vimeo' ? (
+                      <iframe
+                        src={parsed.embedUrl}
+                        className="w-full h-full border-0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowFullScreen
+                        title="Admin Video Walkthrough"
+                      />
+                    ) : (
+                      <video
+                        src={parsed.embedUrl}
+                        controls
+                        autoPlay
+                        className="w-full h-full object-contain"
+                      />
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center p-8 space-y-2 text-zinc-400">
+                    <p className="text-sm font-semibold">Video Link Unavailable or Unrecognized</p>
+                    <p className="text-xs text-zinc-500">{adminVideoPreviewProp.videoUrl}</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="p-3 border-t border-zinc-800 bg-zinc-900 flex items-center justify-between">
+                <span className="text-[11px] text-zinc-400 truncate max-w-sm">
+                  {adminVideoPreviewProp.videoUrl}
+                </span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <a
+                    href={adminVideoPreviewProp.videoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-zinc-950 rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-sm"
+                  >
+                    <span>Open External Link ↗</span>
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(adminVideoPreviewProp.videoUrl);
+                      showToast('✓ Video link copied to clipboard!');
+                    }}
+                    className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-lg text-xs font-semibold transition cursor-pointer"
+                  >
+                    Copy Link
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       <PropertyBuyerMatchingModal
         isOpen={isMatchingModalOpen}

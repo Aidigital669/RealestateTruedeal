@@ -17,13 +17,15 @@ import {
   Shield,
   ShieldCheck,
   ShieldAlert,
-  EyeOff
+  EyeOff,
+  Video
 } from 'lucide-react';
 import Image from 'next/image';
 import { AddPropertyModal, EditPropertyModal } from '@/components/admin/Modals';
 import { ScraperModal } from '@/components/crm/ScraperModal';
 import { PropertyExcelUploadModal } from '@/components/crm/PropertyExcelUploadModal';
 import { CATEGORY_OPTIONS } from '@/lib/categories-data';
+import { parseAndNormalizeVideoUrl } from '@/lib/video-utils';
 
 export function CrmPropertiesTab() {
   const [properties, setProperties] = useState<any[]>([]);
@@ -45,6 +47,7 @@ export function CrmPropertiesTab() {
   const [modalSearchTerm, setModalSearchTerm] = useState('');
   const [showPropertySelector, setShowPropertySelector] = useState(true);
   const [notificationMsg, setNotificationMsg] = useState<string | null>(null);
+  const [videoPreviewProp, setVideoPreviewProp] = useState<any | null>(null);
 
   const fetchProperties = () => {
     setLoading(true);
@@ -762,6 +765,20 @@ export function CrmPropertiesTab() {
                   <div className="px-2 py-1 bg-white/90 backdrop-blur-xs rounded-md text-[10px] font-bold text-zinc-900 border border-black/5 shadow-xs">
                     {prop.configuration || prop.pt_name || 'Commercial'}
                   </div>
+                  {prop.videoUrl && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setVideoPreviewProp(prop);
+                      }}
+                      className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded-md text-[10px] font-black shadow-xs flex items-center gap-1 cursor-pointer transition"
+                      title="Click to preview video walkthrough"
+                    >
+                      <Video className="w-3 h-3 text-white" />
+                      <span>Video</span>
+                    </button>
+                  )}
                   {prop.isSafe && (
                     <div className="px-2 py-1 bg-emerald-600 text-white rounded-md text-[10px] font-black shadow-xs flex items-center gap-1 border border-emerald-400">
                       <ShieldCheck className="w-3 h-3 text-emerald-200" />
@@ -847,6 +864,17 @@ export function CrmPropertiesTab() {
                     >
                       {prop.publishStatus === 'Published' ? 'Unpublish' : 'Publish'}
                     </button>
+                    {prop.videoUrl && (
+                      <button 
+                        type="button"
+                        onClick={() => setVideoPreviewProp(prop)}
+                        className="px-2.5 py-1.5 bg-red-50 text-red-700 hover:bg-red-100 border border-red-200 rounded-lg text-[11px] font-bold transition cursor-pointer flex items-center justify-center gap-1"
+                        title="Watch walkthrough video"
+                      >
+                        <Video className="w-3.5 h-3.5 text-red-600" />
+                        <span>Video</span>
+                      </button>
+                    )}
                     <button 
                       onClick={() => {
                         setEditingProperty(prop);
@@ -883,6 +911,89 @@ export function CrmPropertiesTab() {
         availableLocations={locationsList}
         availablePropertyTypes={propertyTypesList}
       />
+
+      {/* Interactive Video Walkthrough Player Modal */}
+      {videoPreviewProp && (() => {
+        const parsed = parseAndNormalizeVideoUrl(videoPreviewProp.videoUrl);
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-in fade-in">
+            <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+              <div className="flex items-center justify-between p-4 border-b border-zinc-800">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-red-600/20 text-red-500 flex items-center justify-center">
+                    <Video className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-white line-clamp-1">{videoPreviewProp.name || videoPreviewProp.title}</h3>
+                    <p className="text-[11px] text-zinc-400">{videoPreviewProp.location || 'Pune'}</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setVideoPreviewProp(null)}
+                  className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 transition cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="flex-1 bg-black flex items-center justify-center p-3 min-h-[380px]">
+                {parsed.isValid && parsed.embedUrl ? (
+                  <div className={`w-full h-full ${parsed.isShorts ? 'max-w-xs aspect-[9/16]' : 'aspect-video'} rounded-xl overflow-hidden bg-black flex items-center justify-center`}>
+                    {parsed.type === 'youtube' || parsed.type === 'vimeo' ? (
+                      <iframe
+                        src={parsed.embedUrl}
+                        className="w-full h-full border-0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowFullScreen
+                        title="CRM Video Walkthrough"
+                      />
+                    ) : (
+                      <video
+                        src={parsed.embedUrl}
+                        controls
+                        autoPlay
+                        className="w-full h-full object-contain"
+                      />
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center p-8 space-y-2 text-zinc-400">
+                    <p className="text-sm font-semibold">Video Link Unavailable or Unrecognized</p>
+                    <p className="text-xs text-zinc-500">{videoPreviewProp.videoUrl}</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="p-3 border-t border-zinc-800 bg-zinc-900 flex items-center justify-between">
+                <span className="text-[11px] text-zinc-400 truncate max-w-sm">
+                  {videoPreviewProp.videoUrl}
+                </span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <a
+                    href={videoPreviewProp.videoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-zinc-950 rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-sm"
+                  >
+                    <span>Open External Link ↗</span>
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(videoPreviewProp.videoUrl);
+                      alert('✓ Video link copied to clipboard!');
+                    }}
+                    className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-lg text-xs font-semibold transition cursor-pointer"
+                  >
+                    Copy Link
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
