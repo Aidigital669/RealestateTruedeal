@@ -200,7 +200,7 @@ export function AddPropertyModal({
   const [hideComplianceTab, setHideComplianceTab] = useState(false);
   const [hideCostSheet, setHideCostSheet] = useState(false);
   const [hideAmenities, setHideAmenities] = useState(false);
-  const [hideDirectContact, setHideDirectContact] = useState(false);
+  const [hideDirectContact, setHideDirectContact] = useState(true);
   const [hideBreadcrumbs, setHideBreadcrumbs] = useState(true);
   const [reraNumber, setReraNumber] = useState('');
   const [rpsStatus, setRpsStatus] = useState('100% Clear Title • Zero Encumbrances');
@@ -944,7 +944,7 @@ export function EditPropertyModal({
   const [hideComplianceTab, setHideComplianceTab] = useState(false);
   const [hideCostSheet, setHideCostSheet] = useState(false);
   const [hideAmenities, setHideAmenities] = useState(false);
-  const [hideDirectContact, setHideDirectContact] = useState(false);
+  const [hideDirectContact, setHideDirectContact] = useState(true);
   const [hideBreadcrumbs, setHideBreadcrumbs] = useState(true);
   const [hideHighlights, setHideHighlights] = useState(false);
   const [hideConnectivity, setHideConnectivity] = useState(false);
@@ -1036,7 +1036,7 @@ export function EditPropertyModal({
       setHideAmenities(Boolean(property.hideAmenities ?? dossier.hideAmenities));
       setHideHighlights(Boolean(property.hideHighlights ?? dossier.hideHighlights));
       setHideConnectivity(Boolean(property.hideConnectivity ?? dossier.hideConnectivity));
-      setHideDirectContact(Boolean(property.hideDirectContact ?? dossier.hideDirectContact));
+      setHideDirectContact(property.hideDirectContact === false || dossier.hideDirectContact === false ? false : true);
       setHideBreadcrumbs(property.hideBreadcrumbs === undefined ? (dossier.hideBreadcrumbs === undefined ? true : Boolean(dossier.hideBreadcrumbs)) : Boolean(property.hideBreadcrumbs));
 
       // Highlights

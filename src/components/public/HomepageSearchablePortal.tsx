@@ -129,6 +129,7 @@ export interface PropertyItem {
   businessPurposes?: { id: number; name: string; slug: string }[];
   hideName?: boolean;
   hidePrice?: boolean;
+  hideDirectContact?: boolean;
   realName?: string;
 }
 

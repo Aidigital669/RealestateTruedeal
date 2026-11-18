@@ -707,7 +707,9 @@ export default function AdminPage() {
   };
 
   const handleTogglePropertyPrivacy = async (p: any, field: 'hideName' | 'hidePrice' | 'hideDirectContact' | 'hideBreadcrumbs') => {
-    const currentVal = p[field] === undefined ? true : Boolean(p[field]);
+    const currentVal = field === 'hideDirectContact'
+      ? (p.hideDirectContact === false ? false : true)
+      : (p[field] === undefined ? true : Boolean(p[field]));
     const newVal = !currentVal;
     try {
       // Optimistic update
@@ -1228,19 +1230,34 @@ export default function AdminPage() {
                                   </span>
                                 )}
                               </div>
-                              <button
-                                type="button"
-                                onClick={() => handleTogglePropertyPrivacy(p, 'hidePrice')}
-                                title={p.hidePrice ? 'Click to show price to public' : 'Click to hide price from public (shows "Price on Request")'}
-                                className={`text-[10px] inline-flex items-center gap-1 px-1.5 py-0.5 rounded border transition font-medium ${
-                                  p.hidePrice
-                                    ? 'bg-blue-50 border-blue-300 text-blue-800 hover:bg-blue-100'
-                                    : 'bg-zinc-50 border-zinc-200 text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'
-                                }`}
-                              >
-                                {p.hidePrice ? <Eye className="w-2.5 h-2.5" /> : <EyeOff className="w-2.5 h-2.5" />}
-                                {p.hidePrice ? 'Unhide Price' : 'Hide Price'}
-                              </button>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <button
+                                  type="button"
+                                  onClick={() => handleTogglePropertyPrivacy(p, 'hidePrice')}
+                                  title={p.hidePrice ? 'Click to show price to public' : 'Click to hide price from public (shows "Price on Request")'}
+                                  className={`text-[10px] inline-flex items-center gap-1 px-1.5 py-0.5 rounded border transition font-medium ${
+                                    p.hidePrice
+                                      ? 'bg-blue-50 border-blue-300 text-blue-800 hover:bg-blue-100'
+                                      : 'bg-zinc-50 border-zinc-200 text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'
+                                  }`}
+                                >
+                                  {p.hidePrice ? <Eye className="w-2.5 h-2.5" /> : <EyeOff className="w-2.5 h-2.5" />}
+                                  {p.hidePrice ? 'Unhide Price' : 'Hide Price'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleTogglePropertyPrivacy(p, 'hideDirectContact')}
+                                  title={p.hideDirectContact === false ? 'Direct Advisor Desk is visible. Click to hide.' : 'Direct Advisor Desk is hidden. Click to unhide from admin side.'}
+                                  className={`text-[10px] inline-flex items-center gap-1 px-1.5 py-0.5 rounded border transition font-medium ${
+                                    p.hideDirectContact === false
+                                      ? 'bg-emerald-50 border-emerald-300 text-emerald-800 hover:bg-emerald-100'
+                                      : 'bg-zinc-100 border-zinc-200 text-zinc-600 hover:bg-zinc-200 hover:text-zinc-900'
+                                  }`}
+                                >
+                                  {p.hideDirectContact === false ? <Eye className="w-2.5 h-2.5 text-emerald-600" /> : <EyeOff className="w-2.5 h-2.5 text-zinc-500" />}
+                                  {p.hideDirectContact === false ? 'Advisor: Visible' : 'Advisor: Hidden'}
+                                </button>
+                              </div>
                             </div>
                           </td>
                           <td className="px-5 py-3.5">

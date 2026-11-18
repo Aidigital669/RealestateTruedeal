@@ -1193,17 +1193,19 @@ export function PropertyDetailPageClient({
                       </p>
                     </div>
 
-                    <a
-                      href={getWhatsAppEnquiryUrl()}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full py-2.5 bg-[#25D366] hover:bg-[#20bd5a] text-zinc-950 font-bold text-xs rounded-xl shadow-lg transition flex items-center justify-center gap-2 cursor-pointer mt-2"
-                    >
-                      <svg viewBox="0 0 32 32" className="w-4 h-4 fill-zinc-950" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M16 2C8.28 2 2 8.28 2 16c0 2.66.75 5.15 2.05 7.29L2.3 29.7l6.63-1.74A13.9 13.9 0 0016 30c7.72 0 14-6.28 14-14S23.72 2 16 2zm8.17 19.83c-.34.96-1.7 1.76-2.76 1.99-.73.16-1.68.29-4.88-1.04-4.09-1.69-6.72-5.83-6.93-6.1-.2-.28-1.67-2.22-1.67-4.23s1.05-3.01 1.43-3.42c.38-.41.82-.51 1.1-.51.27 0 .55 0 .79.02.25.01.59-.1.92.7.34.82 1.16 2.83 1.26 3.04.1.2.17.44.03.71-.13.27-.2.44-.4.68-.2.24-.43.53-.61.71-.21.21-.43.44-.19.86.25.41 1.09 1.8 2.34 2.91 1.61 1.43 2.97 1.88 3.39 2.09.42.2.67.18.92-.1.25-.28 1.07-1.24 1.35-1.67.28-.43.56-.36.94-.22.38.14 2.42 1.14 2.83 1.35.41.2.69.31.79.48.1.18.1 1.02-.24 1.98z" />
-                      </svg>
-                      <span>Connect with Advisor on WhatsApp</span>
-                    </a>
+                    {property.hideDirectContact === false && (
+                      <a
+                        href={getWhatsAppEnquiryUrl()}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full py-2.5 bg-[#25D366] hover:bg-[#20bd5a] text-zinc-950 font-bold text-xs rounded-xl shadow-lg transition flex items-center justify-center gap-2 cursor-pointer mt-2"
+                      >
+                        <svg viewBox="0 0 32 32" className="w-4 h-4 fill-zinc-950" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M16 2C8.28 2 2 8.28 2 16c0 2.66.75 5.15 2.05 7.29L2.3 29.7l6.63-1.74A13.9 13.9 0 0016 30c7.72 0 14-6.28 14-14S23.72 2 16 2zm8.17 19.83c-.34.96-1.7 1.76-2.76 1.99-.73.16-1.68.29-4.88-1.04-4.09-1.69-6.72-5.83-6.93-6.1-.2-.28-1.67-2.22-1.67-4.23s1.05-3.01 1.43-3.42c.38-.41.82-.51 1.1-.51.27 0 .55 0 .79.02.25.01.59-.1.92.7.34.82 1.16 2.83 1.26 3.04.1.2.17.44.03.71-.13.27-.2.44-.4.68-.2.24-.43.53-.61.71-.21.21-.43.44-.19.86.25.41 1.09 1.8 2.34 2.91 1.61 1.43 2.97 1.88 3.39 2.09.42.2.67.18.92-.1.25-.28 1.07-1.24 1.35-1.67.28-.43.56-.36.94-.22.38.14 2.42 1.14 2.83 1.35.41.2.69.31.79.48.1.18.1 1.02-.24 1.98z" />
+                        </svg>
+                        <span>Connect with Advisor on WhatsApp</span>
+                      </a>
+                    )}
 
                     <button
                       type="button"
@@ -1271,7 +1273,7 @@ export function PropertyDetailPageClient({
                     </button>
 
                     {/* Direct Connect & WhatsApp: Controlled by Admin/Seller */}
-                    {!property.hideDirectContact && (
+                    {property.hideDirectContact === false && (
                       <div className="space-y-4 pt-2 animate-in fade-in duration-200">
                         <div className="relative flex items-center justify-center py-0.5">
                           <div className="border-t border-zinc-800 w-full" />
@@ -1360,7 +1362,7 @@ export function PropertyDetailPageClient({
                   if (visitSection) {
                     visitSection.scrollIntoView({ behavior: 'smooth' });
                   } else {
-                    window.location.href = getWhatsAppEnquiryUrl();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
                   }
                 }}
                 className="px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-black font-extrabold text-xs shadow-xs transition cursor-pointer flex items-center gap-1.5 active:scale-95"
@@ -1369,7 +1371,7 @@ export function PropertyDetailPageClient({
                 <span>Book Visit</span>
               </button>
 
-              {!property.hideDirectContact && (
+              {property.hideDirectContact === false && (
                 <>
                   <a
                     href={getWhatsAppEnquiryUrl()}
