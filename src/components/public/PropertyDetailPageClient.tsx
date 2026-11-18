@@ -776,24 +776,6 @@ export function PropertyDetailPageClient({
                         </button>
                       </>
                     )}
-
-                    {/* Floating Callout Button to Watch Walkthrough Video if Available */}
-                    {hasVideo && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setMediaMode('video');
-                        }}
-                        className="absolute bottom-3 left-3 sm:bottom-4 sm:left-4 z-20 flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl bg-black/85 hover:bg-black text-white text-xs font-black shadow-2xl border border-amber-400/60 backdrop-blur-md transition-all hover:scale-105 cursor-pointer group/vid"
-                        title="Play 4K Video Walkthrough"
-                      >
-                        <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-amber-400 text-black flex items-center justify-center group-hover/vid:scale-110 transition shrink-0">
-                          <Play className="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-black ml-0.5" />
-                        </div>
-                        <span>Watch Video Tour</span>
-                      </button>
-                    )}
                   </>
                 ) : (
                   /* Mode 2: Video Walkthrough Player */
@@ -803,15 +785,13 @@ export function PropertyDetailPageClient({
                         const parsed = parseAndNormalizeVideoUrl(activeVideoUrl);
                         if (parsed.type === 'youtube' || parsed.type === 'vimeo') {
                           return (
-                            <div className="w-full h-full flex items-center justify-center bg-black">
-                              <iframe
-                                src={parsed.embedUrl || ''}
-                                className={`${parsed.isShorts ? 'h-full aspect-[9/16] max-w-full rounded-xl shadow-2xl' : 'w-full h-full'} border-0`}
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                allowFullScreen
-                                title="Property Video Walkthrough"
-                              />
-                            </div>
+                            <iframe
+                              src={parsed.embedUrl || ''}
+                              className="w-full h-full border-0"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                              allowFullScreen
+                              title="Property Video Walkthrough"
+                            />
                           );
                         }
                         if (parsed.type === 'direct') {
@@ -1536,15 +1516,13 @@ export function PropertyDetailPageClient({
                   const parsed = parseAndNormalizeVideoUrl(activeVideoUrl);
                   if (parsed.type === 'youtube' || parsed.type === 'vimeo') {
                     return (
-                      <div className="w-full h-full flex items-center justify-center bg-black">
-                        <iframe
-                          src={parsed.embedUrl || ''}
-                          className={`${parsed.isShorts ? 'h-full aspect-[9/16] max-w-full rounded-2xl shadow-2xl' : 'w-full h-full'} border-0`}
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                          allowFullScreen
-                          title="Property Video Walkthrough Fullscreen"
-                        />
-                      </div>
+                      <iframe
+                        src={parsed.embedUrl || ''}
+                        className="w-full h-full border-0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowFullScreen
+                        title="Property Video Walkthrough Fullscreen"
+                      />
                     );
                   }
                   if (parsed.type === 'direct') {

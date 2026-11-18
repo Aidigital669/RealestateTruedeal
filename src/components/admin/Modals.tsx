@@ -787,11 +787,7 @@ export function AddPropertyModal({
                 <div className="p-3 bg-zinc-50 border border-zinc-200 rounded-xl space-y-2 mt-2">
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-bold flex items-center gap-1.5 text-zinc-800">
-                      {parsed.type === 'youtube' && (
-                        <span className="text-red-600 font-extrabold flex items-center gap-1">
-                          ▶ {parsed.isShorts ? 'YouTube Shorts' : 'YouTube Video'}
-                        </span>
-                      )}
+                      {parsed.type === 'youtube' && <span className="text-red-600 font-extrabold flex items-center gap-1">▶ YouTube Video</span>}
                       {parsed.type === 'vimeo' && <span className="text-sky-600 font-extrabold flex items-center gap-1">▶ Vimeo Video</span>}
                       {parsed.type === 'direct' && <span className="text-emerald-600 font-extrabold flex items-center gap-1">▶ Direct MP4 Video</span>}
                       {parsed.type === 'unknown' && <span className="text-amber-600 font-extrabold flex items-center gap-1">⚠️ Web Video</span>}
@@ -808,7 +804,7 @@ export function AddPropertyModal({
                   </div>
 
                   {parsed.isValid && parsed.embedUrl && (
-                    <div className={`relative ${parsed.isShorts ? 'aspect-[9/16] w-48' : 'aspect-video w-full max-w-sm'} rounded-lg overflow-hidden bg-black border border-zinc-300 shadow-xs mx-auto`}>
+                    <div className="relative aspect-video w-full max-w-sm rounded-lg overflow-hidden bg-black border border-zinc-300 shadow-xs">
                       {parsed.type === 'youtube' || parsed.type === 'vimeo' ? (
                         <iframe
                           src={parsed.embedUrl.replace('autoplay=1', 'autoplay=0')}
@@ -1830,106 +1826,6 @@ export function EditPropertyModal({
                 placeholder="Overview of layout, architecture, amenities, and connectivity..."
               />
             </div>
-
-            {/* Video Walkthrough (YouTube / Shorts / MP4) */}
-            <div className="space-y-2 p-3.5 bg-zinc-50 rounded-xl border border-zinc-200">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <Video className="w-4 h-4 text-amber-600" />
-                  <span className="font-semibold text-zinc-800">Walkthrough Video (YouTube / Shorts / MP4)</span>
-                </div>
-                {videoUrl ? (
-                  <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
-                    ✓ Video Attached
-                  </span>
-                ) : (
-                  <span className="text-[10px] font-medium text-zinc-400">
-                    Optional
-                  </span>
-                )}
-              </div>
-              <p className="text-[11px] text-zinc-500">
-                Paste any YouTube link (watch, share, shorts, live, or embed code), Vimeo, or direct MP4 URL.
-              </p>
-
-              <div className="relative flex items-center">
-                <input
-                  type="text"
-                  value={videoUrl}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    const parsed = parseAndNormalizeVideoUrl(val);
-                    if (val.includes('<iframe') && parsed.isValid && parsed.normalizedUrl) {
-                      setVideoUrl(parsed.normalizedUrl);
-                    } else {
-                      setVideoUrl(val);
-                    }
-                  }}
-                  placeholder="e.g. https://www.youtube.com/shorts/... or https://www.youtube.com/watch?v=..."
-                  className="w-full pl-3 pr-8 py-2 border border-zinc-200 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-zinc-400 bg-white"
-                />
-                {videoUrl && (
-                  <button
-                    type="button"
-                    onClick={() => setVideoUrl('')}
-                    className="absolute right-2 text-zinc-400 hover:text-rose-600"
-                    title="Clear video"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-
-              {/* Live Video Preview Box */}
-              {videoUrl.trim().length > 0 && (() => {
-                const parsed = parseAndNormalizeVideoUrl(videoUrl);
-                return (
-                  <div className="p-3 bg-zinc-50 border border-zinc-200 rounded-xl space-y-2 mt-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-bold flex items-center gap-1.5 text-zinc-800">
-                        {parsed.type === 'youtube' && (
-                          <span className="text-red-600 font-extrabold flex items-center gap-1">
-                            ▶ {parsed.isShorts ? 'YouTube Shorts' : 'YouTube Video'}
-                          </span>
-                        )}
-                        {parsed.type === 'vimeo' && <span className="text-sky-600 font-extrabold flex items-center gap-1">▶ Vimeo Video</span>}
-                        {parsed.type === 'direct' && <span className="text-emerald-600 font-extrabold flex items-center gap-1">▶ Direct MP4 Video</span>}
-                        {parsed.type === 'unknown' && <span className="text-amber-600 font-extrabold flex items-center gap-1">⚠️ Web Video</span>}
-                      </span>
-                      {parsed.isValid ? (
-                        <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                          ✓ Valid &amp; Playable
-                        </span>
-                      ) : (
-                        <span className="text-[10px] bg-rose-100 text-rose-800 font-bold px-2 py-0.5 rounded-full">
-                          Invalid Link
-                        </span>
-                      )}
-                    </div>
-
-                    {parsed.isValid && parsed.embedUrl && (
-                      <div className={`relative ${parsed.isShorts ? 'aspect-[9/16] w-48' : 'aspect-video w-full max-w-sm'} rounded-lg overflow-hidden bg-black border border-zinc-300 shadow-xs mx-auto`}>
-                        {parsed.type === 'youtube' || parsed.type === 'vimeo' ? (
-                          <iframe
-                            src={parsed.embedUrl.replace('autoplay=1', 'autoplay=0')}
-                            className="w-full h-full border-0"
-                            allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                            allowFullScreen
-                            title="Video Walkthrough Preview"
-                          />
-                        ) : (
-                          <video
-                            src={parsed.embedUrl}
-                            controls
-                            className="w-full h-full object-contain"
-                          />
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
-            </div>
           </div>
         )}
 
@@ -2613,11 +2509,7 @@ export function EditPropertyModal({
                   <div className="p-3 bg-zinc-50 border border-zinc-200 rounded-xl space-y-2 mt-2">
                     <div className="flex items-center justify-between text-xs">
                       <span className="font-bold flex items-center gap-1.5 text-zinc-800">
-                        {parsed.type === 'youtube' && (
-                          <span className="text-red-600 font-extrabold flex items-center gap-1">
-                            ▶ {parsed.isShorts ? 'YouTube Shorts' : 'YouTube Video'}
-                          </span>
-                        )}
+                        {parsed.type === 'youtube' && <span className="text-red-600 font-extrabold flex items-center gap-1">▶ YouTube Video</span>}
                         {parsed.type === 'vimeo' && <span className="text-sky-600 font-extrabold flex items-center gap-1">▶ Vimeo Video</span>}
                         {parsed.type === 'direct' && <span className="text-emerald-600 font-extrabold flex items-center gap-1">▶ Direct MP4 Video</span>}
                         {parsed.type === 'unknown' && <span className="text-amber-600 font-extrabold flex items-center gap-1">⚠️ Web Video</span>}
@@ -2634,7 +2526,7 @@ export function EditPropertyModal({
                     </div>
 
                     {parsed.isValid && parsed.embedUrl && (
-                      <div className={`relative ${parsed.isShorts ? 'aspect-[9/16] w-48' : 'aspect-video w-full max-w-sm'} rounded-lg overflow-hidden bg-black border border-zinc-300 shadow-xs mx-auto`}>
+                      <div className="relative aspect-video w-full max-w-sm rounded-lg overflow-hidden bg-black border border-zinc-300 shadow-xs">
                         {parsed.type === 'youtube' || parsed.type === 'vimeo' ? (
                           <iframe
                             src={parsed.embedUrl.replace('autoplay=1', 'autoplay=0')}

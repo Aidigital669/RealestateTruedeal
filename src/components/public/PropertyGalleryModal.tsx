@@ -248,7 +248,7 @@ export function PropertyGalleryModal({
           /* ================= VIDEO WALKTHROUGH ================= */
           <div className="w-full h-full max-w-4xl max-h-[72vh] flex items-center justify-center">
             {parsedVideo.isValid && parsedVideo.embedUrl ? (
-              <div className={`w-full h-full ${parsedVideo.isShorts ? 'max-w-sm aspect-[9/16]' : 'aspect-video'} rounded-2xl overflow-hidden shadow-2xl border border-white/20 bg-black flex items-center justify-center`}>
+              <div className="w-full h-full aspect-video rounded-2xl overflow-hidden shadow-2xl border border-white/20 bg-black">
                 {parsedVideo.type === 'youtube' || parsedVideo.type === 'vimeo' ? (
                   <iframe
                     src={parsedVideo.embedUrl}
