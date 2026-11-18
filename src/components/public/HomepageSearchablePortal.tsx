@@ -3686,17 +3686,17 @@ export function HomepageSearchablePortal({
                 <button
                   type="button"
                   onClick={() => setRequirementModalOpen(true)}
-                  className="bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 text-zinc-950 font-black px-5 py-2.5 rounded-xl text-xs transition flex items-center gap-2 shadow-xs cursor-pointer active:scale-95"
+                  className="bg-[#b9974f] hover:bg-[#a4823d] text-zinc-950 font-black px-5 py-2.5 rounded-xl text-xs transition flex items-center gap-2 shadow-sm hover:shadow-md cursor-pointer active:scale-95"
                 >
-                  <UserPlus className="w-3.5 h-3.5" />
+                  <UserPlus className="w-3.5 h-3.5 text-zinc-950" />
                   <span>Post Buyer Requirement</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => handleOpenSubmitProperty()}
-                  className="bg-zinc-950 hover:bg-zinc-800 text-white font-bold px-5 py-2.5 rounded-xl text-xs transition flex items-center gap-2 shadow-xs cursor-pointer border border-zinc-800"
+                  className="bg-zinc-950 hover:bg-zinc-850 text-[#b9974f] border border-[#b9974f]/50 font-bold px-5 py-2.5 rounded-xl text-xs transition flex items-center gap-2 shadow-xs cursor-pointer"
                 >
-                  <Building2 className="w-3.5 h-3.5 text-amber-400" />
+                  <Building2 className="w-3.5 h-3.5 text-[#b9974f]" />
                   <span>Register Property to Match Buyers</span>
                 </button>
               </div>
@@ -4404,17 +4404,17 @@ export function HomepageSearchablePortal({
                   <button
                     type="button"
                     onClick={() => setRequirementModalOpen(true)}
-                    className="w-full sm:w-auto bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 text-zinc-950 font-black px-6 py-3.5 rounded-xl text-xs sm:text-sm shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+                    className="w-full sm:w-auto bg-[#b9974f] hover:bg-[#a4823d] text-zinc-950 font-black px-6 py-3.5 rounded-xl text-xs sm:text-sm shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 cursor-pointer active:scale-95"
                   >
-                    <UserPlus className="w-4 h-4" />
+                    <UserPlus className="w-4 h-4 text-zinc-950" />
                     <span>I Am a Buyer — Post Your Requirement</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => handleOpenSubmitProperty()}
-                    className="w-full sm:w-auto bg-zinc-950 hover:bg-zinc-800 text-white font-bold px-6 py-3.5 rounded-xl text-xs sm:text-sm transition flex items-center justify-center gap-2 cursor-pointer border border-zinc-800"
+                    className="w-full sm:w-auto bg-zinc-950 hover:bg-zinc-850 text-[#b9974f] border border-[#b9974f]/50 font-bold px-6 py-3.5 rounded-xl text-xs sm:text-sm transition flex items-center justify-center gap-2 cursor-pointer"
                   >
-                    <Building2 className="w-4 h-4 text-amber-400" />
+                    <Building2 className="w-4 h-4 text-[#b9974f]" />
                     <span>Register Property for Buyers</span>
                   </button>
                 </div>

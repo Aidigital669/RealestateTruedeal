@@ -460,7 +460,7 @@ export function SellerLeadCaptureModal({
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 text-zinc-950 font-black py-3.5 px-6 rounded-xl transition duration-200 flex items-center justify-center gap-2 shadow-[0_10px_30px_rgba(163, 136, 30,0.3)] disabled:opacity-60 cursor-pointer text-sm"
+                className="w-full bg-[#b9974f] hover:bg-[#a4823d] active:scale-[0.99] text-zinc-950 font-black py-3.5 px-6 rounded-xl transition duration-200 flex items-center justify-center gap-2 shadow-[0_10px_30px_rgba(185,151,79,0.35)] disabled:opacity-60 cursor-pointer text-sm"
               >
                 {loading ? (
                   <div className="w-5 h-5 border-2 border-zinc-950 border-t-transparent rounded-full animate-spin" />

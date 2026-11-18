@@ -1399,10 +1399,10 @@ export function PropertyDetailPageClient({
                     <button
                       type="submit"
                       disabled={submitting}
-                      className="w-full mt-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-extrabold py-3.5 rounded-xl transition shadow-lg cursor-pointer flex items-center justify-center gap-2"
+                      className="w-full mt-2 bg-[#b9974f] hover:bg-[#a4823d] active:scale-[0.99] text-zinc-950 font-extrabold py-3.5 rounded-xl transition shadow-lg cursor-pointer flex items-center justify-center gap-2"
                     >
                       <span>{submitting ? 'Scheduling...' : 'Schedule Site Visit'}</span>
-                      <ArrowRight className="w-4 h-4 text-black" />
+                      <ArrowRight className="w-4 h-4 text-zinc-950" />
                     </button>
 
                     {/* Direct Connect & WhatsApp: Controlled by Admin/Seller */}

@@ -159,11 +159,11 @@ export function PropertyCardActions({
           <button
             type="button"
             onClick={handleOpenEnquiry}
-            className="flex-1 sm:flex-none px-2.5 py-2 sm:px-3.5 sm:py-2 lg:px-4 lg:py-2.5 bg-zinc-950 hover:bg-zinc-850 active:scale-[0.98] rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-black text-white transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer group text-center"
+            className="flex-1 sm:flex-none px-2.5 py-2 sm:px-3.5 sm:py-2 lg:px-4 lg:py-2.5 bg-[#b9974f] hover:bg-[#a4823d] active:scale-[0.98] rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-black text-zinc-950 transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer group text-center"
             title="Instant Enquiry / Advisory"
           >
             <span className="truncate">Instant Enquiry</span>
-            <ArrowRight className="w-3.5 h-3.5 text-amber-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
+            <ArrowRight className="w-3.5 h-3.5 text-zinc-950 group-hover:translate-x-0.5 transition-transform shrink-0" />
           </button>
         </div>
       </div>

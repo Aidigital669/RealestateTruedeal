@@ -378,10 +378,10 @@ export function InstantEnquiryModal({
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3.5 bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 text-zinc-950 font-bold text-xs rounded-xl shadow-[0_4px_20px_rgba(185, 151, 79,0.3)] transition-all flex items-center justify-center gap-2 group disabled:opacity-50 cursor-pointer"
+                className="w-full py-3.5 bg-[#b9974f] hover:bg-[#a4823d] active:scale-[0.99] text-zinc-950 font-black text-xs rounded-xl shadow-[0_4px_20px_rgba(185,151,79,0.4)] transition-all flex items-center justify-center gap-2 group disabled:opacity-50 cursor-pointer"
               >
                 <span>{loading ? 'Submitting to Partner Desk...' : 'Dispatch Confidential Enquiry'}</span>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="w-4 h-4 text-zinc-950 group-hover:translate-x-1 transition-transform" />
               </button>
 
               <div className="relative flex items-center justify-center py-0.5">
