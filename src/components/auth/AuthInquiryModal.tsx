@@ -236,7 +236,7 @@ export function AuthInquiryModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="relative w-full max-w-[430px] my-auto bg-white rounded-3xl shadow-[0_25px_70px_rgba(0,0,0,0.5),0_0_30px_rgba(217,119,6,0.15)] border border-amber-500/30 overflow-hidden flex flex-col max-h-[calc(100vh-2rem)] transition-all animate-in zoom-in-95 duration-200">
+      <div className="relative w-full max-w-[430px] my-auto bg-white rounded-3xl shadow-[0_25px_70px_rgba(0,0,0,0.5),0_0_30px_rgba(163, 136, 30,0.15)] border border-amber-500/30 overflow-hidden flex flex-col max-h-[calc(100vh-2rem)] transition-all animate-in zoom-in-95 duration-200">
 
         {/* Close Button */}
         <button

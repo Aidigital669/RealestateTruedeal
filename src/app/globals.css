@@ -1,8 +1,39 @@
 @import "tailwindcss";
 
+@theme {
+  /* ANV REEALTY Luxury Gold Palette (Derived from the Official Logo #a3881e / #b39732) */
+  --color-amber-50: #faf8f0;
+  --color-amber-100: #f4eed9;
+  --color-amber-200: #e8dcb4;
+  --color-amber-300: #d8c484;
+  --color-amber-400: #c6ab47;
+  --color-amber-500: #b39832;
+  --color-amber-600: #a3881e;
+  --color-amber-700: #846d1a;
+  --color-amber-800: #6a5618;
+  --color-amber-900: #544416;
+  --color-amber-950: #2d240a;
+
+  --color-gold-50: #faf8f0;
+  --color-gold-100: #f4eed9;
+  --color-gold-200: #e8dcb4;
+  --color-gold-300: #d8c484;
+  --color-gold-400: #c6ab47;
+  --color-gold-500: #b39832;
+  --color-gold-600: #a3881e;
+  --color-gold-700: #846d1a;
+  --color-gold-800: #6a5618;
+  --color-gold-900: #544416;
+  --color-gold-950: #2d240a;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --brand-gold-core: #a3881e;
+  --brand-gold-bright: #b39832;
+  --brand-gold-highlight: #c6ab47;
+  --brand-gold-glow: rgba(163, 136, 30, 0.35);
 }
 
 @theme inline {

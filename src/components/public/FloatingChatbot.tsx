@@ -311,7 +311,7 @@ function _DisabledFloatingChatbot() {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="relative group w-14 h-14 rounded-full bg-gradient-to-tr from-amber-500 via-amber-400 to-amber-500 text-zinc-950 flex items-center justify-center shadow-[0_10px_30px_rgba(245,158,11,0.55)] hover:shadow-[0_15px_40px_rgba(245,158,11,0.75)] hover:scale-110 active:scale-95 transition-all duration-300 cursor-pointer ring-4 ring-amber-400/40 group-hover:ring-amber-400/70"
+          className="relative group w-14 h-14 rounded-full bg-gradient-to-tr from-amber-500 via-amber-400 to-amber-500 text-zinc-950 flex items-center justify-center shadow-[0_10px_30px_rgba(179, 152, 50,0.55)] hover:shadow-[0_15px_40px_rgba(179, 152, 50,0.75)] hover:scale-110 active:scale-95 transition-all duration-300 cursor-pointer ring-4 ring-amber-400/40 group-hover:ring-amber-400/70"
           title="Open Anv AI Concierge Chatbot"
           aria-label="Open AI Property Concierge"
         >
@@ -334,7 +334,7 @@ function _DisabledFloatingChatbot() {
 
       {/* 2. EXPANDED CHATBOT WINDOW (BY DEFAULT OPEN) */}
       {isOpen && (
-        <div className="relative w-[340px] sm:w-[380px] h-[520px] max-h-[calc(100vh-5rem)] bg-zinc-950/95 backdrop-blur-2xl rounded-3xl border border-amber-500/30 shadow-[0_25px_80px_rgba(0,0,0,0.9),0_0_50px_rgba(217,119,6,0.25)] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 transition-all">
+        <div className="relative w-[340px] sm:w-[380px] h-[520px] max-h-[calc(100vh-5rem)] bg-zinc-950/95 backdrop-blur-2xl rounded-3xl border border-amber-500/30 shadow-[0_25px_80px_rgba(0,0,0,0.9),0_0_50px_rgba(163, 136, 30,0.25)] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 transition-all">
           {/* HEADER */}
           <div className="relative px-4 py-3.5 bg-gradient-to-r from-zinc-900 via-zinc-950 to-amber-950/60 border-b border-amber-500/20 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2.5">

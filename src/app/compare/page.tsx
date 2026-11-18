@@ -164,7 +164,7 @@ function CompareContent() {
       <>
         <PublicHeader />
         <main className="min-h-screen bg-gradient-to-b from-zinc-950 via-zinc-900 to-black text-white flex items-center justify-center p-4 pt-28 pb-16">
-          <div className="relative w-full max-w-lg bg-zinc-900/95 border border-amber-500/30 rounded-3xl p-7 sm:p-10 shadow-[0_25px_80px_rgba(0,0,0,0.8),0_0_40px_rgba(217,119,6,0.15)] backdrop-blur-2xl text-center overflow-hidden animate-in zoom-in-95">
+          <div className="relative w-full max-w-lg bg-zinc-900/95 border border-amber-500/30 rounded-3xl p-7 sm:p-10 shadow-[0_25px_80px_rgba(0,0,0,0.8),0_0_40px_rgba(163, 136, 30,0.15)] backdrop-blur-2xl text-center overflow-hidden animate-in zoom-in-95">
             {/* Ambient gold glow */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-28 bg-amber-500/20 blur-3xl pointer-events-none" />
 

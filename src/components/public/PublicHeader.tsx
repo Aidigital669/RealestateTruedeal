@@ -306,9 +306,9 @@ export function PublicHeader() {
           {/* Schedule Consultant Button (Moved to the end) */}
           <button
             onClick={() => setConsultationModalOpen(true)}
-            className="hidden sm:flex items-center gap-1.5 px-4 py-2 bg-black hover:bg-zinc-800 text-white text-xs font-bold rounded-full transition shadow-sm hover:shadow group ml-1 shrink-0 cursor-pointer"
+            className="hidden sm:flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 text-zinc-950 text-xs font-black rounded-full transition shadow-xs hover:shadow group ml-1 shrink-0 cursor-pointer active:scale-95"
           >
-            <Calendar className="w-4 h-4 group-hover:-translate-y-0.5 transition-transform" />
+            <Calendar className="w-4 h-4 text-zinc-950 group-hover:-translate-y-0.5 transition-transform" />
             <span>Schedule Consultant</span>
           </button>
 

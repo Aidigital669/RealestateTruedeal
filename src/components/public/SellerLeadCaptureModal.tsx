@@ -181,7 +181,7 @@ export function SellerLeadCaptureModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="relative w-full max-w-xl my-auto bg-zinc-950 text-white rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.9),0_0_50px_rgba(217,119,6,0.25)] border border-amber-500/30 overflow-hidden flex flex-col max-h-[calc(100vh-2rem)] transition-all animate-in zoom-in-95 duration-200">
+      <div className="relative w-full max-w-xl my-auto bg-zinc-950 text-white rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.9),0_0_50px_rgba(163, 136, 30,0.25)] border border-amber-500/30 overflow-hidden flex flex-col max-h-[calc(100vh-2rem)] transition-all animate-in zoom-in-95 duration-200">
         {/* Close Button */}
         <button
           onClick={onClose}
@@ -267,7 +267,7 @@ export function SellerLeadCaptureModal({
               </>
             ) : (
               <>
-                <div className="w-16 h-16 rounded-full bg-amber-500/20 border-2 border-amber-500 flex items-center justify-center mx-auto text-amber-400 shadow-[0_0_30px_rgba(245,158,11,0.35)]">
+                <div className="w-16 h-16 rounded-full bg-amber-500/20 border-2 border-amber-500 flex items-center justify-center mx-auto text-amber-400 shadow-[0_0_30px_rgba(179, 152, 50,0.35)]">
                   <CheckCircle2 className="w-8 h-8 text-amber-400" />
                 </div>
                 <div className="space-y-2">
@@ -460,7 +460,7 @@ export function SellerLeadCaptureModal({
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 text-zinc-950 font-black py-3.5 px-6 rounded-xl transition duration-200 flex items-center justify-center gap-2 shadow-[0_10px_30px_rgba(217,119,6,0.3)] disabled:opacity-60 cursor-pointer text-sm"
+                className="w-full bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 text-zinc-950 font-black py-3.5 px-6 rounded-xl transition duration-200 flex items-center justify-center gap-2 shadow-[0_10px_30px_rgba(163, 136, 30,0.3)] disabled:opacity-60 cursor-pointer text-sm"
               >
                 {loading ? (
                   <div className="w-5 h-5 border-2 border-zinc-950 border-t-transparent rounded-full animate-spin" />

@@ -155,7 +155,7 @@ export function BespokePropertyRequirementModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="relative w-full max-w-2xl my-auto bg-zinc-950 text-white rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.9),0_0_50px_rgba(217,119,6,0.25)] border border-amber-500/30 overflow-hidden flex flex-col max-h-[calc(100vh-2rem)] transition-all animate-in zoom-in-95 duration-200">
+      <div className="relative w-full max-w-2xl my-auto bg-zinc-950 text-white rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.9),0_0_50px_rgba(163, 136, 30,0.25)] border border-amber-500/30 overflow-hidden flex flex-col max-h-[calc(100vh-2rem)] transition-all animate-in zoom-in-95 duration-200">
         {/* Close Button */}
         <button
           onClick={onClose}
@@ -558,7 +558,7 @@ export function BespokePropertyRequirementModal({
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-8 py-3 bg-amber-600 hover:bg-amber-500 text-zinc-950 font-bold rounded-xl text-xs sm:text-sm transition shadow-[0_0_20px_rgba(217,119,6,0.3)] hover:shadow-[0_0_30px_rgba(217,119,6,0.5)] flex items-center gap-2 cursor-pointer disabled:opacity-50 uppercase tracking-wider"
+                  className="px-8 py-3 bg-amber-600 hover:bg-amber-500 text-zinc-950 font-bold rounded-xl text-xs sm:text-sm transition shadow-[0_0_20px_rgba(163, 136, 30,0.3)] hover:shadow-[0_0_30px_rgba(163, 136, 30,0.5)] flex items-center gap-2 cursor-pointer disabled:opacity-50 uppercase tracking-wider"
                 >
                   <span>{loading ? 'Confirming...' : 'Confirm'}</span>
                   <ArrowRight className="w-4 h-4" />

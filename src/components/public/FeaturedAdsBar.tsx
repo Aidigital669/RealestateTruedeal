@@ -191,7 +191,7 @@ export function FeaturedAdsBar() {
           <button
             type="button"
             onClick={() => setIsMinimized(false)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-zinc-950 via-[#2e050f] to-zinc-950 hover:from-zinc-900 hover:to-[#420816] text-white border border-amber-500/50 shadow-xl backdrop-blur-md transition-all hover:scale-105 cursor-pointer shadow-[0_0_14px_rgba(245,158,11,0.3)]"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-zinc-950 via-[#2e050f] to-zinc-950 hover:from-zinc-900 hover:to-[#420816] text-white border border-amber-500/50 shadow-xl backdrop-blur-md transition-all hover:scale-105 cursor-pointer shadow-[0_0_14px_rgba(179, 152, 50,0.3)]"
             title="Expand Premium"
           >
             <div className="relative w-7 h-4 shrink-0">
@@ -219,11 +219,11 @@ export function FeaturedAdsBar() {
             {/* Left Header Image Badge: Gold Crown with Premium Royal Wine Background */}
             <div className="flex items-center justify-center shrink-0 pr-1.5 sm:pr-2.5 border-r border-zinc-800/90">
               <div
-                className="relative px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-lg sm:rounded-xl bg-gradient-to-b from-[#2e050f] via-[#420816] to-[#1f030a] border border-amber-400/80 shadow-[0_0_12px_rgba(245,158,11,0.35)] flex items-center justify-center shrink-0 group/crown"
+                className="relative px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-lg sm:rounded-xl bg-gradient-to-b from-[#2e050f] via-[#420816] to-[#1f030a] border border-amber-400/80 shadow-[0_0_12px_rgba(179, 152, 50,0.35)] flex items-center justify-center shrink-0 group/crown"
                 title={config.crownTitle || 'Premium Collection'}
               >
                 {/* Subtle Amber Glow Behind the Crown */}
-                <div className="absolute inset-0 rounded-lg sm:rounded-xl bg-[radial-gradient(ellipse_at_center,_rgba(245,158,11,0.25)_0%,_transparent_70%)] pointer-events-none" />
+                <div className="absolute inset-0 rounded-lg sm:rounded-xl bg-[radial-gradient(ellipse_at_center,_rgba(179, 152, 50,0.25)_0%,_transparent_70%)] pointer-events-none" />
 
                 <div className="relative w-8 h-4 sm:w-12 sm:h-6 md:w-14 md:h-7 shrink-0">
                   <Image
@@ -250,7 +250,7 @@ export function FeaturedAdsBar() {
                   title={`${ad.name} - ${ad.tagline}`}
                 >
                   {/* Circular Avatar Container with Gold Luxury Border */}
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-full p-[1.5px] sm:p-[2px] bg-gradient-to-tr from-amber-500 via-yellow-300 to-amber-600 shadow-[0_0_8px_rgba(245,158,11,0.55)] sm:shadow-[0_0_14px_rgba(245,158,11,0.65)] group-hover/circle:shadow-[0_0_18px_rgba(245,158,11,0.9)] group-hover/circle:scale-105 transition-all duration-200">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-full p-[1.5px] sm:p-[2px] bg-gradient-to-tr from-amber-500 via-amber-300 to-amber-600 shadow-[0_0_8px_rgba(179, 152, 50,0.55)] sm:shadow-[0_0_14px_rgba(179, 152, 50,0.65)] group-hover/circle:shadow-[0_0_18px_rgba(179, 152, 50,0.9)] group-hover/circle:scale-105 transition-all duration-200">
                     <div className="w-full h-full rounded-full overflow-hidden relative bg-black">
                       <Image
                         src={ad.image || '/opus-thumb.jpg'}

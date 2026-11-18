@@ -317,7 +317,7 @@ export function PremiumAdsManager({ showToast }: PremiumAdsManagerProps) {
             {/* Left Corner: Crown Badge */}
             <div className="shrink-0 self-start mt-0.5">
               <div
-                className="relative px-2 sm:px-2.5 py-1 rounded-xl bg-gradient-to-b from-[#2e050f] via-[#420816] to-[#1f030a] border border-amber-400/80 shadow-[0_0_10px_rgba(245,158,11,0.35)] flex items-center justify-center"
+                className="relative px-2 sm:px-2.5 py-1 rounded-xl bg-gradient-to-b from-[#2e050f] via-[#420816] to-[#1f030a] border border-amber-400/80 shadow-[0_0_10px_rgba(179, 152, 50,0.35)] flex items-center justify-center"
                 title={config.crownTitle}
               >
                 <div className="relative w-8 h-4 sm:w-10 sm:h-5 shrink-0">
@@ -348,7 +348,7 @@ export function PremiumAdsManager({ showToast }: PremiumAdsManagerProps) {
                     className="flex flex-col items-center group cursor-pointer focus:outline-none"
                     title={`Preview ${ad.name}`}
                   >
-                    <div className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-full border-[3px] border-amber-400 overflow-hidden relative shadow-[0_0_12px_rgba(245,158,11,0.4)] group-hover:scale-105 transition-transform duration-200 bg-black">
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-full border-[3px] border-amber-400 overflow-hidden relative shadow-[0_0_12px_rgba(179, 152, 50,0.4)] group-hover:scale-105 transition-transform duration-200 bg-black">
                       <Image
                         src={ad.image || '/opus-thumb.jpg'}
                         alt={ad.name}

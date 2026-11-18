@@ -43,7 +43,7 @@ export function PropertyNotFoundModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="relative w-full max-w-sm my-auto bg-zinc-950 text-white rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.9),0_0_50px_rgba(217,119,6,0.3)] border border-amber-500/30 overflow-hidden flex flex-col transition-all animate-in zoom-in-95 duration-200 p-6 sm:p-7 text-center space-y-5">
+      <div className="relative w-full max-w-sm my-auto bg-zinc-950 text-white rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.9),0_0_50px_rgba(163, 136, 30,0.3)] border border-amber-500/30 overflow-hidden flex flex-col transition-all animate-in zoom-in-95 duration-200 p-6 sm:p-7 text-center space-y-5">
         {/* Close Button */}
         <button
           onClick={onClose}
@@ -74,7 +74,7 @@ export function PropertyNotFoundModal({
         <div className="pt-2 space-y-2">
           <button
             onClick={handleProceed}
-            className="w-full py-3.5 px-6 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 font-black rounded-xl text-sm transition shadow-[0_0_25px_rgba(217,119,6,0.5)] flex items-center justify-center cursor-pointer tracking-wide"
+            className="w-full py-3.5 px-6 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 font-black rounded-xl text-sm transition shadow-[0_0_25px_rgba(163, 136, 30,0.5)] flex items-center justify-center cursor-pointer tracking-wide"
           >
             <span>Please Fill Your Requirement</span>
           </button>
