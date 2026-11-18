@@ -139,8 +139,30 @@ export function PropertyDetailPageClient({
     return property?.image ? [property.image] : [];
   }, [property]);
 
-  // Video walkthrough URL (custom property video or Opus 4K luxury architectural walkthrough by default)
-  const activeVideoUrl: string = property?.videoUrl?.trim() || '/Opusvideo.mp4';
+  // Check if this property is specifically an Opus luxury property
+  const isOpusProperty = Boolean(
+    (property?.name && /opus/i.test(property.name)) ||
+    (property?.slug && /opus/i.test(property.slug)) ||
+    (property?.developer && /opus/i.test(property.developer)) ||
+    ((property as any)?.realName && /opus/i.test((property as any).realName))
+  );
+
+  // Video walkthrough URL:
+  // - If property has its own assigned videoUrl, use that.
+  // - If it is specifically an Opus property and no custom videoUrl is given, use '/Opusvideo.mp4'.
+  // - For all other properties, do not fall back to Opus video (activeVideoUrl is null).
+  const activeVideoUrl: string | null = (property?.videoUrl && property.videoUrl.trim().length > 0)
+    ? property.videoUrl.trim()
+    : (isOpusProperty ? '/Opusvideo.mp4' : null);
+
+  const hasVideo: boolean = Boolean(activeVideoUrl && activeVideoUrl.length > 0);
+
+  // Auto-switch away from video mode if property has no video
+  useEffect(() => {
+    if (!hasVideo && mediaMode === 'video') {
+      setMediaMode('photos');
+    }
+  }, [hasVideo, mediaMode]);
 
   // Ensure activePhotoIdx stays in bounds when images list changes
   useEffect(() => {
@@ -676,19 +698,21 @@ export function PropertyDetailPageClient({
                     </button>
                   )}
 
-                  <button
-                    type="button"
-                    onClick={() => setMediaMode('video')}
-                    className={`flex-1 sm:flex-initial justify-center px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md sm:rounded-xl text-[11px] sm:text-xs font-bold transition flex items-center gap-1 sm:gap-1.5 cursor-pointer ${
-                      mediaMode === 'video'
-                        ? 'bg-amber-400 text-black font-extrabold shadow-xs hover:bg-amber-300'
-                        : 'text-zinc-700 hover:text-black hover:bg-white'
-                    }`}
-                    title="Switch to Video Tour"
-                  >
-                    <Video className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                    <span>Video Tour</span>
-                  </button>
+                  {hasVideo && (
+                    <button
+                      type="button"
+                      onClick={() => setMediaMode('video')}
+                      className={`flex-1 sm:flex-initial justify-center px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md sm:rounded-xl text-[11px] sm:text-xs font-bold transition flex items-center gap-1 sm:gap-1.5 cursor-pointer ${
+                        mediaMode === 'video'
+                          ? 'bg-amber-400 text-black font-extrabold shadow-xs hover:bg-amber-300'
+                          : 'text-zinc-700 hover:text-black hover:bg-white'
+                      }`}
+                      title="Switch to Video Tour"
+                    >
+                      <Video className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                      <span>Video Tour</span>
+                    </button>
+                  )}
 
                   <button
                     type="button"
@@ -709,7 +733,7 @@ export function PropertyDetailPageClient({
             <div className="lg:col-span-8 space-y-3">
               <div className="relative h-64 sm:h-80 md:h-[460px] w-full rounded-2xl sm:rounded-3xl overflow-hidden bg-zinc-950 shadow-md border border-zinc-200 group">
                 {/* Mode 1: Photos Carousel */}
-                {mediaMode === 'photos' ? (
+                {mediaMode === 'photos' || !hasVideo || !activeVideoUrl ? (
                   <>
                     {mediaImages.length > 0 ? (
                       <Image
@@ -789,7 +813,7 @@ export function PropertyDetailPageClient({
                             muted
                             playsInline
                             className="w-full h-full object-cover"
-                            poster={property.videoThumbnail || mediaImages[0] || '/opus-thumb.jpg'}
+                            poster={property.videoThumbnail || mediaImages[0] || (isOpusProperty ? '/opus-thumb.jpg' : undefined)}
                           >
                             Your browser does not support high-definition video playback.
                           </video>
@@ -845,21 +869,23 @@ export function PropertyDetailPageClient({
                   );
                 })}
 
-                <button
-                  type="button"
-                  onClick={() => setMediaMode('video')}
-                  className={`relative w-20 sm:w-28 h-12 sm:h-16 rounded-xl overflow-hidden shrink-0 border-2 transition-all cursor-pointer bg-zinc-900 flex flex-col items-center justify-center text-center p-1 ${
-                    mediaMode === 'video'
-                      ? 'border-amber-400 ring-2 ring-amber-400/50 scale-102 shadow-md bg-zinc-800'
-                      : 'border-zinc-200 opacity-80 hover:opacity-100'
-                  }`}
-                  title="Play 4K Video Walkthrough"
-                >
-                  <div className="w-5 h-5 rounded-full bg-amber-400 text-black flex items-center justify-center shadow-md">
-                    <Play className="w-2.5 h-2.5 fill-black ml-0.5" />
-                  </div>
-                  <span className="text-[9px] font-extrabold text-white mt-1">Video Tour</span>
-                </button>
+                {hasVideo && (
+                  <button
+                    type="button"
+                    onClick={() => setMediaMode('video')}
+                    className={`relative w-20 sm:w-28 h-12 sm:h-16 rounded-xl overflow-hidden shrink-0 border-2 transition-all cursor-pointer bg-zinc-900 flex flex-col items-center justify-center text-center p-1 ${
+                      mediaMode === 'video'
+                        ? 'border-amber-400 ring-2 ring-amber-400/50 scale-102 shadow-md bg-zinc-800'
+                        : 'border-zinc-200 opacity-80 hover:opacity-100'
+                    }`}
+                    title="Play 4K Video Walkthrough"
+                  >
+                    <div className="w-5 h-5 rounded-full bg-amber-400 text-black flex items-center justify-center shadow-md">
+                      <Play className="w-2.5 h-2.5 fill-black ml-0.5" />
+                    </div>
+                    <span className="text-[9px] font-extrabold text-white mt-1">Video Tour</span>
+                  </button>
+                )}
               </div>
 
               {/* CORE STATS BAR */}
@@ -1448,18 +1474,20 @@ export function PropertyDetailPageClient({
                     <span>Photos ({mediaImages.length})</span>
                   </button>
                 )}
-                <button
-                  type="button"
-                  onClick={() => setMediaMode('video')}
-                  className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-bold transition flex items-center gap-1 sm:gap-1.5 cursor-pointer ${
-                    mediaMode === 'video'
-                      ? 'bg-amber-400 text-black font-extrabold shadow-xs'
-                      : 'text-zinc-300 hover:text-white'
-                  }`}
-                >
-                  <Video className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                  <span>Video Tour</span>
-                </button>
+                {hasVideo && (
+                  <button
+                    type="button"
+                    onClick={() => setMediaMode('video')}
+                    className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-bold transition flex items-center gap-1 sm:gap-1.5 cursor-pointer ${
+                      mediaMode === 'video'
+                        ? 'bg-amber-400 text-black font-extrabold shadow-xs'
+                        : 'text-zinc-300 hover:text-white'
+                    }`}
+                  >
+                    <Video className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                    <span>Video Tour</span>
+                  </button>
+                )}
               </div>
 
               {/* Desktop Close Button */}
@@ -1476,7 +1504,7 @@ export function PropertyDetailPageClient({
           </div>
 
           <div className="relative flex-1 flex items-center justify-center my-4 overflow-hidden">
-            {mediaMode === 'video' ? (
+            {mediaMode === 'video' && hasVideo && activeVideoUrl ? (
               <div className="relative w-full h-full max-w-5xl max-h-[75vh] flex items-center justify-center rounded-2xl overflow-hidden bg-black border border-white/15 shadow-2xl">
                 {(() => {
                   const url = activeVideoUrl;
@@ -1512,7 +1540,7 @@ export function PropertyDetailPageClient({
                       autoPlay
                       playsInline
                       className="w-full h-full object-contain"
-                      poster={property.videoThumbnail || mediaImages[0] || '/opus-thumb.jpg'}
+                      poster={property.videoThumbnail || mediaImages[0] || (isOpusProperty ? '/opus-thumb.jpg' : undefined)}
                     >
                       Your browser does not support high-definition video playback.
                     </video>
