@@ -97,11 +97,10 @@ export function PropertyCardActions({
           {/* 1. COMPARE BUTTON */}
           <button
             onClick={handleToggleCompare}
-            className={`p-2 sm:p-2.5 lg:px-3.5 lg:py-2 rounded-lg sm:rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer border shadow-2xs ${
-              isCompared
-                ? 'bg-amber-400 text-black border-amber-400 font-extrabold ring-2 ring-amber-400/40 shadow-xs'
-                : 'bg-white border-zinc-200 hover:border-zinc-300 text-zinc-700 hover:bg-zinc-50'
-            }`}
+            className={`p-2 sm:p-2.5 lg:px-3.5 lg:py-2 rounded-lg sm:rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer border shadow-2xs ${isCompared
+              ? 'bg-amber-400 text-black border-amber-400 font-extrabold ring-2 ring-amber-400/40 shadow-xs'
+              : 'bg-white border-zinc-200 hover:border-zinc-300 text-zinc-700 hover:bg-zinc-50'
+              }`}
             title={isCompared ? 'Remove from Comparison' : 'Add to Comparison'}
             aria-label={isCompared ? 'Remove from Comparison' : 'Add to Comparison'}
           >
@@ -121,11 +120,10 @@ export function PropertyCardActions({
           {/* 2. SAVE BUTTON */}
           <button
             onClick={handleToggleSave}
-            className={`p-2 sm:p-2.5 lg:p-2.5 border rounded-lg sm:rounded-xl transition-all flex items-center justify-center cursor-pointer shadow-2xs ${
-              saved
-                ? 'bg-rose-50 border-rose-300 text-rose-600 ring-2 ring-rose-200/50'
-                : 'bg-white border-zinc-200 text-zinc-600 hover:bg-zinc-50 hover:border-zinc-300 hover:text-rose-500'
-            }`}
+            className={`p-2 sm:p-2.5 lg:p-2.5 border rounded-lg sm:rounded-xl transition-all flex items-center justify-center cursor-pointer shadow-2xs ${saved
+              ? 'bg-rose-50 border-rose-300 text-rose-600 ring-2 ring-rose-200/50'
+              : 'bg-white border-zinc-200 text-zinc-600 hover:bg-zinc-50 hover:border-zinc-300 hover:text-rose-500'
+              }`}
             title={saved ? 'Remove from saved shortlist' : 'Save Residence'}
             aria-label={saved ? 'Remove from saved shortlist' : 'Save Residence'}
           >
@@ -148,6 +146,7 @@ export function PropertyCardActions({
           {/* 4. VIEW DETAILS DIRECT LINK */}
           <Link
             href={getPropertyUrl(property)}
+            prefetch={true}
             className="flex-1 sm:flex-none px-2.5 py-2 sm:px-3 sm:py-2 lg:px-3.5 lg:py-2 border border-zinc-200 hover:border-zinc-950 bg-white hover:bg-zinc-950 hover:text-white rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold text-zinc-800 transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs group text-center"
             title="View full dedicated property page"
           >

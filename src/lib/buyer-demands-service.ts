@@ -68,7 +68,7 @@ export const VERIFIED_SEED_BUYER_DEMANDS: BuyerDemandRecord[] = [];
 
 let cachedBuyerDemands: BuyerDemandRecord[] | null = null;
 let lastBuyerFetchTime = 0;
-const BUYER_CACHE_TTL = 30 * 1000; // 30 seconds cache for instant response
+const BUYER_CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache for ultra-fast, zero-delay responses
 
 export function clearBuyerDemandsCache(): void {
   cachedBuyerDemands = null;

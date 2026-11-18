@@ -298,7 +298,7 @@ export function SellerLeadCaptureModal({
               <button
                 type="button"
                 onClick={handleFinish}
-                className="w-full bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 text-zinc-950 font-black py-3 px-6 rounded-xl transition shadow-md cursor-pointer text-sm"
+                className="w-full bg-[#b9974f] hover:bg-[#a4823d] text-zinc-950 font-black py-3 px-6 rounded-xl transition shadow-md cursor-pointer text-sm"
               >
                 Done / Continue
               </button>

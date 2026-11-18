@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { query } from '@/lib/db';
 import { getPropertySlug, matchesProperty } from '@/lib/slug';
 import { PropertyItem, ALL_FALLBACK_PROPERTIES } from '@/lib/property-types';
@@ -8,10 +9,14 @@ export type { PropertyItem };
 export { ALL_FALLBACK_PROPERTIES };
 
 let cachedProperties: { data: PropertyItem[]; timestamp: number } | null = null;
+const propertyMapById = new Map<string, PropertyItem>();
+const propertyMapBySlug = new Map<string, PropertyItem>();
 const CACHE_TTL_MS = 60 * 1000; // 60s in-memory cache for ultra-fast page loads
 
 export function clearPropertyCache() {
   cachedProperties = null;
+  propertyMapById.clear();
+  propertyMapBySlug.clear();
 }
 
 export async function fetchAllProperties(forceFresh = false): Promise<PropertyItem[]> {
@@ -177,6 +182,22 @@ export async function fetchAllProperties(forceFresh = false): Promise<PropertyIt
         };
       });
 
+      // Populate direct O(1) lookup maps
+      propertyMapById.clear();
+      propertyMapBySlug.clear();
+      mapped.forEach((item) => {
+        if (item.id !== undefined && item.id !== null) {
+          propertyMapById.set(String(item.id), item);
+        }
+        if (item.slug) {
+          propertyMapBySlug.set(item.slug.toLowerCase(), item);
+        }
+        const compSlug = getPropertySlug(item);
+        if (compSlug) {
+          propertyMapBySlug.set(compSlug.toLowerCase(), item);
+        }
+      });
+
       cachedProperties = { data: mapped, timestamp: Date.now() };
       return mapped;
     }
@@ -187,11 +208,28 @@ export async function fetchAllProperties(forceFresh = false): Promise<PropertyIt
   return ALL_FALLBACK_PROPERTIES;
 }
 
-export async function getPropertyBySlugOrId(identifier: string): Promise<PropertyItem | null> {
+export const getPropertyBySlugOrId = cache(async (identifier: string): Promise<PropertyItem | null> => {
+  if (!identifier) return null;
+  const decoded = decodeURIComponent(identifier).trim().toLowerCase();
+
+  // Fast direct lookup
+  if (propertyMapById.has(decoded)) return propertyMapById.get(decoded)!;
+  if (propertyMapBySlug.has(decoded)) return propertyMapBySlug.get(decoded)!;
+
   const all = await fetchAllProperties();
+  if (propertyMapById.has(decoded)) return propertyMapById.get(decoded)!;
+  if (propertyMapBySlug.has(decoded)) return propertyMapBySlug.get(decoded)!;
+
   const found = all.find((p) => matchesProperty(p, identifier));
-  if (found) return found;
+  if (found) {
+    propertyMapBySlug.set(decoded, found);
+    return found;
+  }
 
   const fallbackFound = ALL_FALLBACK_PROPERTIES.find((p) => matchesProperty(p, identifier));
-  return fallbackFound || null;
-}
+  if (fallbackFound) {
+    propertyMapBySlug.set(decoded, fallbackFound);
+    return fallbackFound;
+  }
+  return null;
+});

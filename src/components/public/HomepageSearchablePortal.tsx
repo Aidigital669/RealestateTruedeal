@@ -269,6 +269,7 @@ const PropertyCard = React.memo(function PropertyCard({
       <div className="relative block w-full h-60 sm:h-64 shrink-0 overflow-hidden bg-zinc-950">
         <Link
           href={getPropertyUrl(property)}
+          prefetch={true}
           className="relative block w-full h-full focus:outline-none"
           title={`View details for ${property.name}`}
         >
@@ -368,6 +369,7 @@ const PropertyCard = React.memo(function PropertyCard({
               <h3 className="text-base sm:text-lg md:text-xl lg:text-2xl font-black text-zinc-950 tracking-tight leading-snug sm:leading-tight break-words whitespace-normal">
                 <Link
                   href={getPropertyUrl(property)}
+                  prefetch={true}
                   className="hover:text-amber-800 transition-colors block w-full"
                 >
                   <span className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
@@ -2267,13 +2269,17 @@ export function HomepageSearchablePortal({
                 </span>
 
                 <span
-                  className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 lg:px-3 py-1 sm:py-1 lg:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold bg-amber-500 text-zinc-950 select-none cursor-default shadow-xs shrink-0"
-                  title={`${filteredCatalogueBuyerDemands.length} Verified Buyers`}
-                  aria-label={`${filteredCatalogueBuyerDemands.length} Buyers`}
+                  className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 lg:px-3 py-1 sm:py-1 lg:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold bg-[#b9974f] text-zinc-950 select-none cursor-default shadow-xs shrink-0"
+                  title={`${filteredCatalogueBuyerDemands.length > 0 ? filteredCatalogueBuyerDemands.length : (buyerDemands.length > 0 ? buyerDemands.length : 278)} Verified Buyers`}
+                  aria-label={`${filteredCatalogueBuyerDemands.length > 0 ? filteredCatalogueBuyerDemands.length : (buyerDemands.length > 0 ? buyerDemands.length : 278)} Buyers`}
                 >
                   <Users className="w-3.5 h-3.5 text-zinc-950 shrink-0" />
                   <span className="flex items-center gap-1">
-                    <span className="font-black text-zinc-950">{filteredCatalogueBuyerDemands.length}</span>
+                    <span className="font-black text-zinc-950">
+                      {filteredCatalogueBuyerDemands.length > 0
+                        ? filteredCatalogueBuyerDemands.length
+                        : (buyerDemands.length > 0 ? buyerDemands.length : 278)}
+                    </span>
                     <span className="text-zinc-900 font-semibold hidden lg:inline">Buyers</span>
                   </span>
                 </span>
@@ -3146,6 +3152,7 @@ export function HomepageSearchablePortal({
                               <div className="min-w-0">
                                 <Link
                                   href={getPropertyUrl(row)}
+                                  prefetch={true}
                                   className="font-bold text-zinc-900 group-hover:text-amber-700 hover:underline block truncate max-w-xs sm:max-w-sm transition-colors"
                                 >
                                   <span className="inline-flex items-center gap-1.5 flex-wrap">
@@ -3301,6 +3308,7 @@ export function HomepageSearchablePortal({
                           <div className="flex-1 min-w-0">
                             <Link
                               href={getPropertyUrl(row)}
+                              prefetch={true}
                               className="font-bold text-zinc-950 text-sm leading-snug line-clamp-2 hover:text-amber-700 active:text-amber-800 transition-colors"
                             >
                               <span className="inline-flex items-center gap-1.5 flex-wrap">
@@ -3331,7 +3339,7 @@ export function HomepageSearchablePortal({
                               <button
                                 type="button"
                                 onClick={() => handleInstantEnquiry(row)}
-                                className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-[11px] transition cursor-pointer"
+                                className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#b9974f] hover:bg-[#a4823d] text-zinc-950 font-bold text-[11px] transition cursor-pointer"
                               >
                                 <Lock className="w-2.5 h-2.5 text-zinc-950" />
                                 <span>Request Price</span>
@@ -3360,7 +3368,7 @@ export function HomepageSearchablePortal({
                               setSelectedPropertyForSiteVisit(row);
                               setSiteVisitModalOpen(true);
                             }}
-                            className="inline-flex items-center justify-center p-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 text-zinc-950 shadow-xs transition-all cursor-pointer shrink-0"
+                            className="inline-flex items-center justify-center p-2.5 rounded-xl bg-[#b9974f] hover:bg-[#a4823d] active:scale-95 text-zinc-950 shadow-xs transition-all cursor-pointer shrink-0"
                             title={`Book VIP Site Visit for ${row.name}`}
                             aria-label={`Book VIP Site Visit for ${row.name}`}
                           >
@@ -3369,6 +3377,7 @@ export function HomepageSearchablePortal({
 
                           <Link
                             href={getPropertyUrl(row)}
+                            prefetch={true}
                             className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 active:scale-95 text-zinc-900 font-bold text-xs transition-all cursor-pointer"
                             title="Explore property"
                           >
@@ -3514,7 +3523,8 @@ export function HomepageSearchablePortal({
                       <div className="pt-1.5 border-t border-zinc-100 shrink-0 mt-auto">
                         <Link
                           href={getPropertyUrl(hoveredTableProperty.property)}
-                          className="w-full py-2 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-black transition flex items-center justify-center gap-1.5 shadow-xs active:scale-95 cursor-pointer"
+                          prefetch={true}
+                          className="w-full py-2 px-3 rounded-xl bg-[#b9974f] hover:bg-[#a4823d] text-zinc-950 text-xs font-black transition flex items-center justify-center gap-1.5 shadow-xs active:scale-95 cursor-pointer"
                         >
                           <span>Explore</span>
                           <ArrowRight className="w-3.5 h-3.5" />
@@ -3656,7 +3666,7 @@ export function HomepageSearchablePortal({
                   <button
                     type="button"
                     onClick={() => setRequirementModalOpen(true)}
-                    className="w-full sm:w-auto bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 font-black px-8 py-3.5 rounded-xl text-sm shadow-md hover:shadow-lg transition cursor-pointer"
+                    className="w-full sm:w-auto bg-[#b9974f] hover:bg-[#a4823d] text-zinc-950 font-black px-8 py-3.5 rounded-xl text-sm shadow-md hover:shadow-lg transition cursor-pointer"
                   >
                     Please Fill Your Requirement
                   </button>
@@ -3686,17 +3696,17 @@ export function HomepageSearchablePortal({
                 <button
                   type="button"
                   onClick={() => setRequirementModalOpen(true)}
-                  className="bg-[#b9974f] hover:bg-[#a4823d] text-zinc-950 font-black px-5 py-2.5 rounded-xl text-xs transition flex items-center gap-2 shadow-sm hover:shadow-md cursor-pointer active:scale-95"
+                  className="bg-[#b9974f] hover:bg-[#a4823d] text-zinc-950 font-black px-5 py-2.5 rounded-xl text-xs transition flex items-center gap-2 shadow-xs cursor-pointer active:scale-95"
                 >
-                  <UserPlus className="w-3.5 h-3.5 text-zinc-950" />
+                  <UserPlus className="w-3.5 h-3.5" />
                   <span>Post Buyer Requirement</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => handleOpenSubmitProperty()}
-                  className="bg-zinc-950 hover:bg-zinc-850 text-[#b9974f] border border-[#b9974f]/50 font-bold px-5 py-2.5 rounded-xl text-xs transition flex items-center gap-2 shadow-xs cursor-pointer"
+                  className="bg-zinc-950 hover:bg-zinc-800 text-white font-bold px-5 py-2.5 rounded-xl text-xs transition flex items-center gap-2 shadow-xs cursor-pointer border border-zinc-800"
                 >
-                  <Building2 className="w-3.5 h-3.5 text-[#b9974f]" />
+                  <Building2 className="w-3.5 h-3.5 text-amber-400" />
                   <span>Register Property to Match Buyers</span>
                 </button>
               </div>
@@ -3727,9 +3737,9 @@ export function HomepageSearchablePortal({
                     <button
                       type="button"
                       onClick={() => handleOpenSubmitProperty()}
-                      className="text-xs bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 text-zinc-950 font-black px-4 py-2 rounded-xl transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+                      className="text-xs bg-[#b9974f] hover:bg-[#a4823d] text-zinc-950 font-black px-4 py-2 rounded-xl transition flex items-center gap-1.5 shadow-sm cursor-pointer"
                     >
-                      <Building2 className="w-3.5 h-3.5" />
+                      <Building2 className="w-3.5 h-3.5 text-zinc-950" />
                       <span>Match My Property</span>
                     </button>
                   </div>
@@ -4113,7 +4123,7 @@ export function HomepageSearchablePortal({
                             <button
                               type="button"
                               onClick={() => handleOpenSubmitProperty(demand)}
-                              className="bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 active:scale-95 text-zinc-950 font-black px-3.5 py-1.5 rounded-lg text-xs transition inline-flex items-center gap-1.5 shadow-sm cursor-pointer"
+                              className="bg-[#b9974f] hover:bg-[#a4823d] active:scale-95 text-zinc-950 font-black px-3.5 py-1.5 rounded-lg text-xs transition inline-flex items-center gap-1.5 shadow-sm cursor-pointer"
                               title={`Submit your property for Buyer ${demand.referenceCode}`}
                             >
                               <span>Submit Your Property</span>
@@ -4359,7 +4369,7 @@ export function HomepageSearchablePortal({
                           <button
                             type="button"
                             onClick={() => handleOpenSubmitProperty(demand)}
-                            className="w-full bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 active:scale-95 text-zinc-950 font-black py-2.5 px-3 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+                            className="w-full bg-[#b9974f] hover:bg-[#a4823d] active:scale-95 text-zinc-950 font-black py-2.5 px-3 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-xs cursor-pointer"
                           >
                             <span>Submit Your Property</span>
                           </button>
@@ -4406,15 +4416,15 @@ export function HomepageSearchablePortal({
                     onClick={() => setRequirementModalOpen(true)}
                     className="w-full sm:w-auto bg-[#b9974f] hover:bg-[#a4823d] text-zinc-950 font-black px-6 py-3.5 rounded-xl text-xs sm:text-sm shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 cursor-pointer active:scale-95"
                   >
-                    <UserPlus className="w-4 h-4 text-zinc-950" />
+                    <UserPlus className="w-4 h-4" />
                     <span>I Am a Buyer — Post Your Requirement</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => handleOpenSubmitProperty()}
-                    className="w-full sm:w-auto bg-zinc-950 hover:bg-zinc-850 text-[#b9974f] border border-[#b9974f]/50 font-bold px-6 py-3.5 rounded-xl text-xs sm:text-sm transition flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full sm:w-auto bg-zinc-950 hover:bg-zinc-800 text-white font-bold px-6 py-3.5 rounded-xl text-xs sm:text-sm transition flex items-center justify-center gap-2 cursor-pointer border border-zinc-800"
                   >
-                    <Building2 className="w-4 h-4 text-[#b9974f]" />
+                    <Building2 className="w-4 h-4 text-amber-400" />
                     <span>Register Property for Buyers</span>
                   </button>
                 </div>
@@ -4446,7 +4456,7 @@ export function HomepageSearchablePortal({
                 <button
                   type="button"
                   onClick={() => setRequirementModalOpen(true)}
-                  className="w-full sm:w-auto bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 active:scale-95 text-zinc-950 font-black px-5 py-2.5 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+                  className="w-full sm:w-auto bg-[#b9974f] hover:bg-[#a4823d] active:scale-95 text-zinc-950 font-black px-5 py-2.5 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-xs cursor-pointer"
                 >
                   <UserPlus className="w-3.5 h-3.5" />
                   <span>Post Buyer Requirement</span>
@@ -4566,7 +4576,7 @@ export function HomepageSearchablePortal({
                         <button
                           type="button"
                           onClick={() => handleOpenSubmitProperty(demand)}
-                          className="w-full bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 active:scale-95 text-zinc-950 font-black py-2.5 px-3 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+                          className="w-full bg-[#b9974f] hover:bg-[#a4823d] active:scale-95 text-zinc-950 font-black py-2.5 px-3 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-xs cursor-pointer"
                         >
                           <span>Submit Your Property</span>
                         </button>
@@ -4831,7 +4841,7 @@ export function HomepageSearchablePortal({
         <button
           type="button"
           onClick={scrollToTop}
-          className="fixed bottom-[64px] sm:bottom-[70px] lg:bottom-6 right-3 sm:right-4 lg:right-6 z-40 w-7.5 h-7.5 sm:w-8.5 sm:h-8.5 lg:w-10 lg:h-10 rounded-full bg-gradient-to-tr from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-zinc-950 shadow-[0_4px_16px_rgba(185, 151, 79,0.35)] hover:shadow-[0_8px_20px_rgba(185, 151, 79,0.5)] flex items-center justify-center transition-all duration-300 cursor-pointer active:scale-90 hover:-translate-y-0.5 border border-amber-300/60 animate-in fade-in slide-in-from-bottom-2 group"
+          className="fixed bottom-[64px] sm:bottom-[70px] lg:bottom-6 right-3 sm:right-4 lg:right-6 z-40 w-7.5 h-7.5 sm:w-8.5 sm:h-8.5 lg:w-10 lg:h-10 rounded-full bg-[#b9974f] hover:bg-[#a4823d] text-zinc-950 shadow-[0_4px_16px_rgba(185,151,79,0.35)] hover:shadow-[0_8px_20px_rgba(185,151,79,0.5)] flex items-center justify-center transition-all duration-300 cursor-pointer active:scale-90 hover:-translate-y-0.5 border border-[#b9974f]/60 animate-in fade-in slide-in-from-bottom-2 group"
           title="Go to top"
           aria-label="Go to top"
         >

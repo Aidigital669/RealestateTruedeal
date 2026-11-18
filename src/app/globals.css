@@ -72,24 +72,3 @@ body {
   -ms-overflow-style: none !important;
   scrollbar-width: none !important;
 }
-
-/* Core #b9974f Brand Button & Accent Styles */
-.bg-brand-gold,
-.btn-brand-gold {
-  background-color: #b9974f !important;
-  color: #09090b !important;
-}
-
-.bg-brand-gold:hover,
-.btn-brand-gold:hover {
-  background-color: #a4823d !important;
-}
-
-.border-brand-gold {
-  border-color: #b9974f !important;
-}
-
-.text-brand-gold {
-  color: #b9974f !important;
-}
-

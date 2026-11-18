@@ -311,11 +311,10 @@ export function BespokePropertyRequirementModal({
                           key={mode.id}
                           type="button"
                           onClick={() => setPreferredMode(mode.id as any)}
-                          className={`py-2 text-[11px] font-bold rounded-lg transition border cursor-pointer ${
-                            preferredMode === mode.id
-                              ? 'bg-amber-500/20 border-amber-500 text-amber-300'
-                              : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
-                          }`}
+                          className={`py-2 text-[11px] font-bold rounded-lg transition border cursor-pointer ${preferredMode === mode.id
+                            ? 'bg-amber-500/20 border-amber-500 text-amber-300'
+                            : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
+                            }`}
                         >
                           {mode.label}
                         </button>
@@ -558,7 +557,7 @@ export function BespokePropertyRequirementModal({
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-8 py-3 bg-[#b9974f] hover:bg-[#a4823d] active:scale-[0.99] text-zinc-950 font-black rounded-xl text-xs sm:text-sm transition shadow-[0_0_20px_rgba(185,151,79,0.4)] hover:shadow-[0_0_30px_rgba(185,151,79,0.6)] flex items-center gap-2 cursor-pointer disabled:opacity-50 uppercase tracking-wider"
+                  className="px-8 py-3 bg-[#b9974f] hover:bg-[#a4823d] text-zinc-950 font-black rounded-xl text-xs sm:text-sm transition shadow-[0_0_20px_rgba(185,151,79,0.35)] hover:shadow-[0_0_30px_rgba(185,151,79,0.5)] flex items-center gap-2 cursor-pointer disabled:opacity-50 uppercase tracking-wider"
                 >
                   <span>{loading ? 'Submitting Requirement...' : 'Submit Buyer Requirement'}</span>
                   <ArrowRight className="w-4 h-4" />

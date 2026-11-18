@@ -110,7 +110,7 @@ export function InstantEnquiryModal({
           message: `[Initiated via WhatsApp Button] ${preferredTime ? `Preferred Timing: ${preferredTime}. ` : ''}${message.trim()}`,
           source: property?.name ? `WhatsApp Enquiry: ${property.name}` : 'Website WhatsApp Enquiry'
         })
-      }).catch(() => {});
+      }).catch(() => { });
     }
   };
 
@@ -378,10 +378,10 @@ export function InstantEnquiryModal({
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3.5 bg-[#b9974f] hover:bg-[#a4823d] active:scale-[0.99] text-zinc-950 font-black text-xs rounded-xl shadow-[0_4px_20px_rgba(185,151,79,0.4)] transition-all flex items-center justify-center gap-2 group disabled:opacity-50 cursor-pointer"
+                className="w-full py-3.5 bg-[#b9974f] hover:bg-[#a4823d] text-zinc-950 font-black text-xs rounded-xl shadow-[0_4px_20px_rgba(185,151,79,0.35)] hover:shadow-[0_4px_25px_rgba(185,151,79,0.5)] transition-all flex items-center justify-center gap-2 group disabled:opacity-50 cursor-pointer"
               >
                 <span>{loading ? 'Submitting to Partner Desk...' : 'Dispatch Confidential Enquiry'}</span>
-                <ArrowRight className="w-4 h-4 text-zinc-950 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </button>
 
               <div className="relative flex items-center justify-center py-0.5">
