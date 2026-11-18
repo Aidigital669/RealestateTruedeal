@@ -1,0 +1,1787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ANV REEALTY / RealityTruedeal - 30-Day Engineering Changelog & Implementation Guide</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 14mm 14mm 16mm 14mm;
+      @bottom-right {
+        content: counter(page);
+      }
+    }
+    
+    * {
+      box-sizing: border-box;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 10pt;
+      line-height: 1.5;
+      color: #1f2937;
+      background-color: #ffffff;
+      margin: 0;
+      padding: 0;
+    }
+    
+    .cover {
+      background: linear-gradient(135deg, #111827 0%, #1e1b18 50%, #2d240a 100%);
+      color: #ffffff;
+      padding: 36px 32px;
+      border-radius: 12px;
+      margin-bottom: 28px;
+      border: 1px solid #c6ab47;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+    
+    .cover-badge {
+      display: inline-block;
+      background: #c6ab47;
+      color: #111827;
+      font-weight: 800;
+      font-size: 9pt;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      margin-bottom: 14px;
+    }
+    
+    .cover h1 {
+      font-size: 24pt;
+      font-weight: 900;
+      margin: 0 0 8px 0;
+      letter-spacing: -0.5px;
+      color: #ffffff;
+    }
+    
+    .cover h2 {
+      font-size: 13pt;
+      font-weight: 500;
+      color: #d8c484;
+      margin: 0 0 18px 0;
+    }
+    
+    .cover-meta {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(198, 171, 71, 0.4);
+    }
+    
+    .meta-box {
+      background: rgba(255,255,255,0.06);
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid rgba(198, 171, 71, 0.25);
+    }
+    
+    .meta-label {
+      font-size: 7.5pt;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #d8c484;
+      margin-bottom: 3px;
+      font-weight: 700;
+    }
+    
+    .meta-val {
+      font-size: 12pt;
+      font-weight: 800;
+      color: #ffffff;
+    }
+    
+    h2.section-title {
+      font-size: 15pt;
+      font-weight: 800;
+      color: #111827;
+      border-bottom: 2px solid #b39832;
+      padding-bottom: 6px;
+      margin-top: 28px;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      page-break-after: avoid;
+    }
+    
+    h3.sub-title {
+      font-size: 11.5pt;
+      font-weight: 700;
+      color: #846d1a;
+      margin-top: 18px;
+      margin-bottom: 8px;
+      page-break-after: avoid;
+    }
+
+    p {
+      margin: 0 0 10px 0;
+      color: #374151;
+    }
+    
+    .card {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-left: 4px solid #b39832;
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 14px;
+      page-break-inside: avoid;
+    }
+    
+    .card-title {
+      font-size: 11pt;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 6px;
+    }
+    
+    .code-box {
+      background: #111827;
+      color: #f3f4f6;
+      padding: 12px 14px;
+      border-radius: 6px;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 8.5pt;
+      line-height: 1.45;
+      overflow-x: auto;
+      margin: 10px 0;
+      border: 1px solid #374151;
+      page-break-inside: avoid;
+    }
+    
+    .badge {
+      display: inline-block;
+      font-size: 7.5pt;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-right: 5px;
+    }
+    
+    .badge-feat { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+    .badge-fix { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+    .badge-style { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+    .badge-db { background: #fdf2f8; color: #9d174d; border: 1px solid #fbcfe8; }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0 20px 0;
+      font-size: 8.5pt;
+      page-break-inside: auto;
+    }
+    
+    tr {
+      page-break-inside: avoid;
+      page-break-after: auto;
+    }
+    
+    th {
+      background: #1f2937;
+      color: #ffffff;
+      font-weight: 700;
+      text-align: left;
+      padding: 8px 10px;
+      border: 1px solid #374151;
+      font-size: 8pt;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    td {
+      padding: 7px 10px;
+      border: 1px solid #e5e7eb;
+      vertical-align: top;
+    }
+    
+    tbody tr:nth-child(even) {
+      background-color: #f9fafb;
+    }
+    
+    .commit-hash {
+      font-family: monospace;
+      font-weight: 700;
+      color: #846d1a;
+      background: #faf8f0;
+      padding: 1px 4px;
+      border-radius: 3px;
+      border: 1px solid #e8dcb4;
+    }
+    
+    .file-path {
+      font-family: monospace;
+      font-size: 7.8pt;
+      color: #4b5563;
+      background: #f3f4f6;
+      padding: 1px 4px;
+      border-radius: 3px;
+      display: inline-block;
+      margin: 1px 0;
+    }
+    
+    .checklist {
+      list-style-type: none;
+      padding-left: 0;
+      margin: 10px 0;
+    }
+    
+    .checklist li {
+      padding: 6px 0 6px 26px;
+      position: relative;
+      font-size: 9.5pt;
+      border-bottom: 1px dashed #e5e7eb;
+    }
+    
+    .checklist li::before {
+      content: "✔";
+      position: absolute;
+      left: 6px;
+      color: #10b981;
+      font-weight: bold;
+    }
+    
+    .page-break {
+      page-break-before: always;
+    }
+    
+    .step-box {
+      background: #ffffff;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+      page-break-inside: avoid;
+    }
+    
+    .step-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      background: #b39832;
+      color: #ffffff;
+      font-weight: 800;
+      border-radius: 50%;
+      font-size: 8.5pt;
+      margin-right: 8px;
+    }
+    
+    .step-title {
+      font-weight: 800;
+      font-size: 10pt;
+      color: #111827;
+      display: inline;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- COVER / HEADER -->
+  <div class="cover">
+    <div class="cover-badge">Engineering & Architecture Report</div>
+    <h1>30-Day Complete Changelog & Migration Playbook</h1>
+    <h2>Full GitHub Base Logs, Schema Alterations, Feature Matrix & Step-by-Step Porting Guide</h2>
+    
+    <div class="cover-meta">
+      <div class="meta-box">
+        <div class="meta-label">Time Window</div>
+        <div class="meta-val">Past 30 Days</div>
+      </div>
+      <div class="meta-box">
+        <div class="meta-label">Total Commits</div>
+        <div class="meta-val">154 Commits</div>
+      </div>
+      <div class="meta-box">
+        <div class="meta-label">Unique Files</div>
+        <div class="meta-val">140 Files</div>
+      </div>
+      <div class="meta-box">
+        <div class="meta-label">Target Architecture</div>
+        <div class="meta-val">Next.js 16 + Postgres</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLE OF CONTENTS -->
+  <div class="card" style="border-left-color: #111827; background: #fafafa;">
+    <div class="card-title" style="font-size: 12pt;">📋 Document Index & Structure</div>
+    <table style="margin-top: 8px; margin-bottom: 4px; font-size: 9pt;">
+      <tr>
+        <td style="width: 25%; font-weight: bold;">Section 1</td>
+        <td><strong>Executive Overview & System Architecture</strong> — High-level summary of all modular enhancements</td>
+      </tr>
+      <tr>
+        <td style="font-weight: bold;">Section 2</td>
+        <td><strong>Database & Schema Migration Guide</strong> — Essential SQL alterations (e.g. TEXT columns in <code>crm_leads</code>, <code>search_history</code>, <code>BusinessPurpose</code>)</td>
+      </tr>
+      <tr>
+        <td style="font-weight: bold;">Section 3</td>
+        <td><strong>Core Functional Modules Detailed Breakdown</strong> — 8 architectural pillars with technical implementation notes</td>
+      </tr>
+      <tr>
+        <td style="font-weight: bold;">Section 4</td>
+        <td><strong>Step-by-Step Implementation Guide for Other Website</strong> — Complete checklist for identical-database setup</td>
+      </tr>
+      <tr>
+        <td style="font-weight: bold;">Section 5</td>
+        <td><strong>File-by-File Change Directory</strong> — Index of top files modified and their exact responsibilities</td>
+      </tr>
+      <tr>
+        <td style="font-weight: bold;">Section 6</td>
+        <td><strong>Complete GitHub Base Commit History</strong> — Exhaustive log of all 154 commits (Hashes, Dates, Authors, Messages, Files)</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- SECTION 1 -->
+  <h2 class="section-title"><span>1.</span> Executive Overview & System Architecture</h2>
+  <p>
+    Over the past 30 days (October 19, 2026 – November 18, 2026), <strong>154 commits</strong> were merged touching <strong>140 unique files</strong> across both client-facing portals, administrative workflows, and background synchronization services. Because your other website shares the same underlying PostgreSQL database schema, these enhancements can be migrated seamlessly by porting the specific frontend components, API handlers, and running two non-destructive SQL table alterations.
+  </p>
+
+  <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 16px 0;">
+    <div class="card" style="margin: 0; border-left-color: #10b981;">
+      <div class="card-title">Buyer-Seller Matching Engine</div>
+      <p style="font-size: 8.5pt; color: #4b5563;">Replaced passive call/WhatsApp buttons with an automated property submission modal that auto-fills buyer requirements, captures seller contact info, and runs instant algorithmic matching against active buyer mandates.</p>
+    </div>
+    <div class="card" style="margin: 0; border-left-color: #8b5cf6;">
+      <div class="card-title">Granular Privacy Governance</div>
+      <p style="font-size: 8.5pt; color: #4b5563;">Direct Advisor Desk ("Jennifer Desai") and WhatsApp direct connect are now hidden by default across all property pages until an admin explicitly unhides them via 1-click toggles in the admin dashboard.</p>
+    </div>
+    <div class="card" style="margin: 0; border-left-color: #f59e0b;">
+      <div class="card-title">Luxury Brand Palette</div>
+      <p style="font-size: 8.5pt; color: #4b5563;">Extracted official ANV REEALTY luxury gold palette (<code>#a3881e</code> / <code>#b39832</code> / <code>#c6ab47</code>) into Tailwind v4 <code>@theme</code>, standardizing all glows, buttons, and responsive ads bar across mobile and desktop.</p>
+    </div>
+  </div>
+
+  <!-- SECTION 2 -->
+  <div class="page-break"></div>
+  <h2 class="section-title"><span>2.</span> Database & Schema Migration Guide</h2>
+  <p>
+    Before deploying code changes to your other website, execute the following SQL scripts in your PostgreSQL database. All statements are non-destructive and idempotent (safe to run on existing production data).
+  </p>
+
+  <div class="step-box">
+    <div class="step-number">1</div>
+    <div class="step-title">Alter <code>crm_leads</code> Column Lengths to <code>TEXT</code></div>
+    <p style="margin-top: 6px; font-size: 9pt;">
+      Previously, fields like <code>bhk</code>, <code>budget</code>, and <code>location</code> were constrained to <code>VARCHAR(50)</code>. During Excel/PDF bulk imports or bespoke buyer submissions with multi-line notes, Postgres threw <em>"value too long for type character varying(50)"</em> errors. Converting them to <code>TEXT</code> permanently resolves this issue:
+    </p>
+    <div class="code-box">
+-- Run this in PostgreSQL database:
+ALTER TABLE crm_leads ALTER COLUMN bhk TYPE TEXT;
+ALTER TABLE crm_leads ALTER COLUMN budget TYPE TEXT;
+ALTER TABLE crm_leads ALTER COLUMN location TYPE TEXT;
+ALTER TABLE crm_leads ALTER COLUMN property_interest TYPE TEXT;
+ALTER TABLE crm_leads ALTER COLUMN status TYPE TEXT;
+ALTER TABLE crm_leads ALTER COLUMN designation TYPE TEXT;
+ALTER TABLE crm_leads ALTER COLUMN residence TYPE TEXT;
+ALTER TABLE crm_leads ALTER COLUMN notes TYPE TEXT;
+    </div>
+  </div>
+
+  <div class="step-box">
+    <div class="step-number">2</div>
+    <div class="step-title">Ensure <code>search_history</code> Table Exists with Indexes</div>
+    <p style="margin-top: 6px; font-size: 9pt;">
+      The unified search engine tracks user queries to prevent false autocorrects and calculate trending searches:
+    </p>
+    <div class="code-box">
+CREATE TABLE IF NOT EXISTS search_history (
+  id SERIAL PRIMARY KEY,
+  query VARCHAR(255) NOT NULL,
+  locality VARCHAR(100),
+  bhk VARCHAR(100),
+  price_range VARCHAR(100),
+  intent VARCHAR(50) DEFAULT 'buyer',
+  results_count INT DEFAULT 0,
+  ip_address VARCHAR(100),
+  user_agent TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_search_history_query ON search_history(query);
+CREATE INDEX IF NOT EXISTS idx_search_history_created_at ON search_history(created_at);
+    </div>
+  </div>
+
+  <div class="step-box">
+    <div class="step-number">3</div>
+    <div class="step-title">Ensure <code>BusinessPurpose</code> Tables for Commercial Suitability</div>
+    <p style="margin-top: 6px; font-size: 9pt;">
+      Required for tagging commercial properties with commercial activities (e.g. IT office, bank branch, retail shop):
+    </p>
+    <div class="code-box">
+CREATE TABLE IF NOT EXISTS "BusinessPurpose" (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  slug VARCHAR(255) NOT NULL UNIQUE,
+  "isActive" BOOLEAN DEFAULT true,
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS "PropertyBusinessPurpose" (
+  "propertyId" INTEGER NOT NULL REFERENCES "Property"(id) ON DELETE CASCADE,
+  "businessPurposeId" INTEGER NOT NULL REFERENCES "BusinessPurpose"(id) ON DELETE CASCADE,
+  PRIMARY KEY ("propertyId", "businessPurposeId")
+);
+
+CREATE INDEX IF NOT EXISTS "PropertyBusinessPurpose_businessPurposeId_idx" 
+ON "PropertyBusinessPurpose"("businessPurposeId");
+    </div>
+  </div>
+
+  <div class="step-box">
+    <div class="step-number">4</div>
+    <div class="step-title">Property Dossier Metadata Structure (Embedded in <code>Property.description</code>)</div>
+    <p style="margin-top: 6px; font-size: 9pt;">
+      Property-level privacy and custom configurations are stored within <code>&lt;!-- DOSSIER_DATA: {...} --&gt;</code> HTML comments inside <code>Property.description</code>. The system automatically preserves and merges these keys:
+    </p>
+    <div class="code-box">
+{
+  "hideName": false,             // When true, displays synthetic title and hides builder name
+  "hidePrice": false,            // When true, displays "Price on Request"
+  "hideDirectContact": true,     // When true (DEFAULT), hides WhatsApp & Advisor desk on public page
+  "hideBreadcrumbs": true,       // When true (DEFAULT), hides top breadcrumbs bar
+  "isSafe": true,                // When true, prevents deletion during bulk delete
+  "customCostSheet": { ... },   // Manual stamp duty, registration, and total outlay override
+  "highlights": [ ... ],         // Structured bullet points
+  "connectivity": [ ... ]        // Distance and commute highlights
+}
+    </div>
+  </div>
+
+  <!-- SECTION 3 -->
+  <div class="page-break"></div>
+  <h2 class="section-title"><span>3.</span> Core Functional Modules Detailed Breakdown</h2>
+
+  <!-- 3.1 -->
+  <h3 class="sub-title">3.1 Active Buyers System & "Submit Your Property" Engine</h3>
+  <div class="card">
+    <p><strong>Primary Files:</strong> <span class="file-path">src/components/public/HomepageSearchablePortal.tsx</span>, <span class="file-path">src/components/public/SellerLeadCaptureModal.tsx</span>, <span class="file-path">src/components/public/BespokePropertyRequirementModal.tsx</span>, <span class="file-path">src/lib/buyer-demands-service.ts</span></p>
+    <ul class="checklist">
+      <li><strong>Replacement of Direct Contact with Lead Generation:</strong> Replaced WhatsApp and Call buttons on buyer demand rows with a high-conversion <code>Submit Your Property</code> button.</li>
+      <li><strong>Requirement Auto-Fill:</strong> Clicking the button pre-populates the property registration form with the buyer's desired locality, configuration, and budget range.</li>
+      <li><strong>Instant Algorithmic Match:</strong> Upon seller form submission, the backend evaluates the property against active buyer requirements. If a match is found, an instant success notification (<em>"We found matching buyers for your property!"</em>) is displayed while simultaneously storing the listing in the database.</li>
+      <li><strong>Post Buyer Requirement Action:</strong> Added an intuitive <em>"I Am a Buyer — Post Your Requirement"</em> modal trigger across empty search states (<code>0 Buyers Found</code>), the Active Buyers header, and comparison tables.</li>
+      <li><strong>Removal of Arbitrary Limits:</strong> Removed legacy <code>LIMIT 50</code> cap in <code>buyer-demands-service.ts</code> so all verified buyer demands from <code>crm_leads</code> load cleanly in real time.</li>
+    </ul>
+  </div>
+
+  <!-- 3.2 -->
+  <h3 class="sub-title">3.2 Granular Privacy & Direct Advisor Governance</h3>
+  <div class="card">
+    <p><strong>Primary Files:</strong> <span class="file-path">src/components/public/PropertyDetailPageClient.tsx</span>, <span class="file-path">src/lib/property-data.ts</span>, <span class="file-path">src/app/admin/page.tsx</span>, <span class="file-path">src/components/admin/Modals.tsx</span></p>
+    <ul class="checklist">
+      <li><strong>Strict Default Hidden Status:</strong> In <code>property-data.ts</code>, <code>hideDirectContact</code> evaluates to <code>true</code> unless explicitly set to <code>false</code> (<code>dossier.hideDirectContact === false ? false : true</code>).</li>
+      <li><strong>Client Guarding:</strong> The WhatsApp button, "or connect via" divider, and the <code>Jennifer Desai - Senior Real Estate Advisor</code> card are wrapped with <code>{property.hideDirectContact === false &amp;&amp; (...)}</code>.</li>
+      <li><strong>Admin 1-Click Toggle:</strong> In the admin property table, admins have an instant toggle button (<code>Advisor: Hidden</code> / <code>Advisor: Visible</code>) to unhide or re-hide the advisor desk with one click.</li>
+    </ul>
+  </div>
+
+  <!-- 3.3 -->
+  <h3 class="sub-title">3.3 Official Luxury Gold Brand System</h3>
+  <div class="card">
+    <p><strong>Primary Files:</strong> <span class="file-path">src/app/globals.css</span>, Tailwind v4 <code>@theme</code></p>
+    <ul class="checklist">
+      <li><strong>Color Token Extraction:</strong> Extracted exact gold hex values from the official ANV REEALTY brand logo (<code>#a3881e</code> / <code>#b39832</code> / <code>#c6ab47</code>).</li>
+      <li><strong>Tailwind Token Override:</strong> Mapped both <code>--color-amber-*</code> and <code>--color-gold-*</code> to this palette in <code>globals.css</code>, guaranteeing consistent visual warmth across all primary buttons, badges, glows, and borders without manual inline styles.</li>
+    </ul>
+  </div>
+
+  <!-- 3.4 -->
+  <h3 class="sub-title">3.4 Sticky Featured Client Ads Strip</h3>
+  <div class="card">
+    <p><strong>Primary Files:</strong> <span class="file-path">src/components/public/FeaturedAdsBar.tsx</span>, <span class="file-path">src/components/admin/PremiumAdsManager.tsx</span>, <span class="file-path">src/app/api/premium-ads/route.ts</span></p>
+    <ul class="checklist">
+      <li><strong>Executive Design Match:</strong> Sticky bottom strip with pure solid black (<code>#000000</code>) background, golden ring avatars, and next/close navigation.</li>
+      <li><strong>Proportional Crown Badge:</strong> The royal burgundy wine crown badge is sized to <code>w-6 h-3</code> / <code>sm:w-8 sm:h-4</code> / <code>md:w-9 md:h-4.5</code> for sleek proportions.</li>
+      <li><strong>Dynamic Administration:</strong> Backed by <code>/api/premium-ads</code> and configured via <code>PremiumAdsManager.tsx</code> for live video/photo uploads, ordering, and active toggles.</li>
+    </ul>
+  </div>
+
+  <!-- 3.5 -->
+  <h3 class="sub-title">3.5 Stability, Hydration & Turbopack Fixes</h3>
+  <div class="card">
+    <p><strong>Primary Files:</strong> <span class="file-path">src/app/layout.tsx</span>, <span class="file-path">src/components/public/ClientLayoutWidgets.tsx</span>, <span class="file-path">next.config.ts</span></p>
+    <ul class="checklist">
+      <li><strong>Server Component <code>ssr: false</code> Prohibition:</strong> Extracted client-only floating widgets into a dedicated <code>"use client"</code> component (<code>ClientLayoutWidgets.tsx</code>), resolving Next.js 16 build exceptions.</li>
+      <li><strong>React Hydration Error 418:</strong> Removed <code>priority</code> props on table thumbnail images to guarantee server-rendered HTML attributes align identically with client DOM properties (<code>loading="lazy"</code>).</li>
+      <li><strong>Turbopack Module Factory Cache:</strong> Replaced dynamic chunk imports of Lucide icons with lightweight, self-contained SVG paths inside the ads strip, preventing module compilation errors.</li>
+    </ul>
+  </div>
+
+  <!-- SECTION 4 -->
+  <div class="page-break"></div>
+  <h2 class="section-title"><span>4.</span> Step-by-Step Implementation Guide for Other Website</h2>
+  <p>
+    Follow this deployment checklist in chronological order to bring your other website to 100% parity:
+  </p>
+
+  <div class="step-box">
+    <div class="step-number">1</div>
+    <div class="step-title">Database SQL Script Execution</div>
+    <p style="margin-top: 6px; font-size: 9pt;">
+      Connect to the PostgreSQL instance used by the other website and execute the schema alteration statements from <strong>Section 2</strong>. Verify that <code>crm_leads</code> columns are of type <code>text</code>:
+    </p>
+    <div class="code-box">SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'crm_leads' AND column_name IN ('bhk', 'budget', 'location');</div>
+  </div>
+
+  <div class="step-box">
+    <div class="step-number">2</div>
+    <div class="step-title">Sync Stylesheet & Brand Tokens</div>
+    <p style="margin-top: 6px; font-size: 9pt;">
+      Copy the <code>@theme</code> gold palette definitions from <span class="file-path">src/app/globals.css</span> to the other website's <code>globals.css</code>. This ensures all buttons, hover states, and card borders render in the authentic luxury gold palette.
+    </p>
+  </div>
+
+  <div class="step-box">
+    <div class="step-number">3</div>
+    <div class="step-title">Copy New Self-Contained Components</div>
+    <p style="margin-top: 6px; font-size: 9pt;">
+      Transfer the following newly created files directly to the other website:
+    </p>
+    <ul style="margin: 6px 0; font-size: 8.5pt; font-family: monospace;">
+      <li>src/components/public/ClientLayoutWidgets.tsx</li>
+      <li>src/components/public/FeaturedAdsBar.tsx</li>
+      <li>src/components/public/BuyerNotFoundModal.tsx</li>
+      <li>src/components/public/BespokePropertyRequirementModal.tsx</li>
+      <li>src/components/public/SellerLeadCaptureModal.tsx</li>
+      <li>src/lib/premium-ads-constants.ts</li>
+      <li>src/app/api/premium-ads/route.ts</li>
+      <li>src/app/api/buyer-demands/route.ts</li>
+    </ul>
+  </div>
+
+  <div class="step-box">
+    <div class="step-number">4</div>
+    <div class="step-title">Update Core Services & Data Mappers</div>
+    <p style="margin-top: 6px; font-size: 9pt;">
+      Overwrite or merge the following files to include default hidden contact logic, CRM buyer harmonization, and dossier metadata:
+    </p>
+    <ul style="margin: 6px 0; font-size: 8.5pt; font-family: monospace;">
+      <li>src/lib/property-data.ts (hideDirectContact default true)</li>
+      <li>src/lib/buyer-demands-service.ts (crm_leads query without LIMIT 50)</li>
+      <li>src/lib/crm-data.ts (isBuyerLead classification)</li>
+      <li>src/app/api/admin/properties/route.ts &amp; [id]/route.ts (privacy field handling)</li>
+    </ul>
+  </div>
+
+  <div class="step-box">
+    <div class="step-number">5</div>
+    <div class="step-title">Update UI Consumers</div>
+    <p style="margin-top: 6px; font-size: 9pt;">
+      Update the public pages and admin views:
+    </p>
+    <ul style="margin: 6px 0; font-size: 8.5pt; font-family: monospace;">
+      <li>src/components/public/HomepageSearchablePortal.tsx (Submit Your Property button &amp; Post Requirement)</li>
+      <li>src/components/public/PropertyDetailPageClient.tsx (Guarded advisor desk &amp; WhatsApp connect)</li>
+      <li>src/components/public/PropertyDetailsModal.tsx (Guarded direct WhatsApp action)</li>
+      <li>src/app/admin/page.tsx (Advisor: Hidden/Visible toggle button in property list)</li>
+      <li>src/components/admin/Modals.tsx (Add/Edit property modals with default hidden toggles)</li>
+    </ul>
+  </div>
+
+  <div class="step-box">
+    <div class="step-number">6</div>
+    <div class="step-title">Verification & Build Testing</div>
+    <p style="margin-top: 6px; font-size: 9pt;">
+      Run the following commands in the terminal of the other website to verify zero compilation errors:
+    </p>
+    <div class="code-box">
+npx tsc --noEmit
+npm run build
+    </div>
+  </div>
+
+  <!-- SECTION 5 -->
+  <div class="page-break"></div>
+  <h2 class="section-title"><span>5.</span> File-by-File Change Directory</h2>
+  <p>Top modified files in the past 30 days and their primary role in the codebase:</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 32%;">File Path</th>
+        <th style="width: 14%;">Module</th>
+        <th style="width: 54%;">Key Enhancements &amp; Role</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>src/components/public/HomepageSearchablePortal.tsx</code></td>
+        <td><span class="badge badge-feat">Portal</span></td>
+        <td>Active buyers table, List/Grid view toggling, Submit Your Property modal integration, search bar debounce, mobile edge-to-edge layout.</td>
+      </tr>
+      <tr>
+        <td><code>src/components/public/PropertyDetailPageClient.tsx</code></td>
+        <td><span class="badge badge-style">Detail</span></td>
+        <td>Direct Advisor Desk &amp; WhatsApp hidden by default; mobile pricing card relocation; 4K media viewer fullscreen modal.</td>
+      </tr>
+      <tr>
+        <td><code>src/components/public/FeaturedAdsBar.tsx</code></td>
+        <td><span class="badge badge-feat">Ads</span></td>
+        <td>Bottom sticky strip with solid black background, rotating 3 ads, compact crown logo, expand/collapse pill.</td>
+      </tr>
+      <tr>
+        <td><code>src/components/admin/Modals.tsx</code></td>
+        <td><span class="badge badge-style">Admin</span></td>
+        <td>Add/Edit Property modals with default <code>hideDirectContact: true</code>, cost sheet overrides, AI standardization.</td>
+      </tr>
+      <tr>
+        <td><code>src/app/admin/page.tsx</code></td>
+        <td><span class="badge badge-feat">Admin</span></td>
+        <td>Property management table with 1-click privacy toggles (<code>Advisor: Hidden/Visible</code>, <code>Price: Hidden/Visible</code>).</td>
+      </tr>
+      <tr>
+        <td><code>src/lib/property-data.ts</code></td>
+        <td><span class="badge badge-db">Data</span></td>
+        <td>Server data mapper enforcing <code>hideDirectContact = true</code> by default unless explicitly <code>false</code>.</td>
+      </tr>
+      <tr>
+        <td><code>src/lib/buyer-demands-service.ts</code></td>
+        <td><span class="badge badge-feat">CRM</span></td>
+        <td>Unified buyer demands service querying <code>crm_leads</code> without LIMIT 50; multi-filter search engine.</td>
+      </tr>
+      <tr>
+        <td><code>src/app/globals.css</code></td>
+        <td><span class="badge badge-style">Theme</span></td>
+        <td>Tailwind v4 <code>@theme</code> luxury gold brand palette (<code>#a3881e</code> / <code>#b39832</code> / <code>#c6ab47</code>).</td>
+      </tr>
+      <tr>
+        <td><code>src/app/layout.tsx</code></td>
+        <td><span class="badge badge-fix">Layout</span></td>
+        <td>Root server layout refactored with <code>ClientLayoutWidgets</code> to eliminate Server Component build errors.</td>
+      </tr>
+      <tr>
+        <td><code>src/components/public/BespokePropertyRequirementModal.tsx</code></td>
+        <td><span class="badge badge-feat">Lead Gen</span></td>
+        <td>Bespoke buyer requirement upload modal for buyers when 0 matching properties exist.</td>
+      </tr>
+      <tr>
+        <td><code>src/components/public/SellerLeadCaptureModal.tsx</code></td>
+        <td><span class="badge badge-feat">Lead Gen</span></td>
+        <td>Modal capturing seller contact and auto-filled property data with instant matching against buyer mandates.</td>
+      </tr>
+      <tr>
+        <td><code>src/components/admin/PremiumAdsManager.tsx</code></td>
+        <td><span class="badge badge-feat">Admin</span></td>
+        <td>Interactive admin simulator and CRUD interface for client advertising items.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- SECTION 6 -->
+  <div class="page-break"></div>
+  <h2 class="section-title"><span>6.</span> Complete GitHub Base Commit History (154 Commits)</h2>
+  <p>Exhaustive log of all commits merged within the past 30 days, sorted from newest to oldest:</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 10%;">Hash</th>
+        <th style="width: 16%;">Date (IST)</th>
+        <th style="width: 15%;">Author</th>
+        <th style="width: 47%;">Commit Message</th>
+        <th style="width: 12%;">Files</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="commit-hash">2bae133</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Wed Nov 18 13:49</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-style">style</span> style: reduce crown logo badge size in premium featured ads bar</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">2</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">0b748f7</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Wed Nov 18 12:58</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">feat</span> feat: hide direct advisor desk and whatsapp contact by default until admin unhides</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">8</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">bd73b7f</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Wed Nov 18 12:29</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">feat</span> feat: add Post Buyer Requirement button for buyers when no matching buyers or uploading requirement</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">2</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">ad5a859</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Wed Nov 18 12:22</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">Update p</span> Update project</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">89b4c3a</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Wed Nov 18 12:19</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-style">style</span> style: align website buttons and brand accents with ANV REEALTY official logo gold palette</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">17</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">74653c6</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Tue Nov 17 18:30</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">feat</span> feat: replace WhatsApp/Call with Submit Your Property form autofill and matching engine</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">3</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">203878c</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Tue Nov 17 17:56</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(hydr</span> fix(hydration): remove priority prop on table thumbnails to align server and client loading attributes</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">34e8c00</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Tue Nov 17 17:40</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(layo</span> fix(layout): extract client layout widgets to dedicated use client component resolving Next.js build error</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">2</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">be6d9b7</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Tue Nov 17 17:33</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(layo</span> fix(layout): add mounted guards to FloatingCompareBar and TimedEnquiryModal and remove ssr false</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">3</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">f9f95cf</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Tue Nov 17 17:23</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(hydr</span> fix(hydration): resolve React error 418 hydration mismatch and harmonize CRM / website buyers loading</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">6</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">f4fe426</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Tue Nov 17 16:52</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">perf(ima</span> perf(images): add sizes, priority and eager loading to eliminate LCP and fill warnings</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">2</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">df19989</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Tue Nov 17 16:15</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(crm)</span> fix(crm): remove buyer import button from leads tab and restrict to buyers tab</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">3</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">cc6a09b</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Tue Nov 17 15:15</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(clie</span> fix(client): decouple isBuyerLead from server pg db module by moving to crm-data</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">3</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">d4766f8</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Tue Nov 17 15:10</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(sync</span> fix(sync): harmonize CRM buyers and website buyers count 1:1 using crm_leads as single source of truth</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">3</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">72039fc</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Tue Nov 17 12:22</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(buye</span> fix(buyers): remove legacy LIMIT 50 cap in buyer-demands-service and unified-search so all active buyers are displayed</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">2</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">c7334d4</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Tue Nov 17 12:08</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(db)</span> fix(db): alter crm_leads varchar(50) columns to TEXT to allow full excel import with long BHK descriptions</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">1cbc371</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Tue Nov 17 11:55</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">feat(crm</span> feat(crm): add dedicated Buyers tab, edit & delete buttons, and bulk delete for buyer mandates</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">8</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">c4826fe</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Tue Nov 17 11:08</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-style">style(ad</span> style(ads): ultra-compact responsive sizing and rounded pill styling across mobile and tablet</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">e5c441b</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Mon Nov 16 22:57</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-style">style(ad</span> style(ads): full responsive scaling across mobile, tablet, and desktop screens</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">e53f885</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Mon Nov 16 19:20</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-style">style(ad</span> style(ads): set pure pitch black #000000 background on ads bar</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">c95d1c9</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Mon Nov 16 19:16</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-style">style(ad</span> style(ads): exact match with user design - solid black background, exactly 3 ads visible, next and cross buttons</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">b8dfce7</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Mon Nov 16 19:12</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">feat(buy</span> feat(buyers): replace Connect button with direct WhatsApp and Call buttons on all buyer rows and cards</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">3254573</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Mon Nov 16 19:04</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(ads)</span> fix(ads): rename to FeaturedAdsBar to permanently clear Turbopack chunk factory cache; fix buyer connect modal</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">4</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">8adee40</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Mon Nov 16 18:44</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">feat(ads</span> feat(ads): restore exact previous sticky ads strip matching screenshot and remove luxury strip</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">2</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">91802aa</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Mon Nov 16 18:32</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">feat(ads</span> feat(ads): auto-rotate ads and match exact mockup UI with solid gold ring frames and sleek pill container</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">501595c</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Mon Nov 16 18:25</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">feat(ads</span> feat(ads): restore user exact design in LuxuryAdsStrip and eliminate stale module chunk error</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">2</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">281190b</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Mon Nov 16 18:15</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">feat(crm</span> feat(crm): support real-estate lead export format with auto field mapping, title synthesis and bulk import</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">2</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">469b579</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Mon Nov 16 17:58</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">feat(ads</span> feat(ads): restore previous sticky ads bar with smooth scroll rail, crown badge and self-contained icons</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">2</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">1df2b2a</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Mon Nov 16 17:36</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(ads)</span> fix(ads): completely decouple StickyAdsStrip from context and lucide to eliminate stale Turbopack chunk error</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">bb94a67</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Mon Nov 16 17:27</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(turb</span> fix(turbopack): remove ssr false in Server Component layout and disable lucide optimizePackageImports to prevent module factory error</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">4</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">ee0e9ac</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Mon Nov 16 17:11</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(ads)</span> fix(ads): explicitly provide ChevronLeft module factory import to satisfy Turbopack package optimize import manifest</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">2</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">e777263</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Mon Nov 16 17:02</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(ads)</span> fix(ads): replace external lucide icon chunk imports with self-contained SVG icons to resolve Turbopack chunk factory error</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">2</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">f987697</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Mon Nov 16 16:46</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">feat(pro</span> feat(property): add admin and seller hide/unhide control for breadcrumbs bar</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">8</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">c957966</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Mon Nov 16 16:29</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">feat(pro</span> feat(property): add admin and seller hide/unhide control for direct advisor and whatsapp desk</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">9</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">f045ccd</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Mon Nov 16 15:52</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">feat(ads</span> feat(ads): remake ads strip component exactly as per user design mockup</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">2</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">a1425c6</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Mon Nov 16 15:41</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-style">style(ad</span> style(ads): implement exact mockup design with top-left crown, golden ring avatars, white labels and right controls</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">9816d74</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Mon Nov 16 15:32</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(ads)</span> fix(ads): restore full visual ad avatars, images and royal crown badge on sticky strip</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">09ab299</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Mon Nov 16 15:17</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-style">Revert "</span> Revert "style(ads): decrease ads premium logo size without changing container area"</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">2</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">4634a86</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Mon Nov 16 15:06</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-style">style(ad</span> style(ads): decrease ads premium logo size without changing container area</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">2</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">90888bf</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Mon Nov 16 13:37</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(prop</span> fix(property): prevent video fluctuation on mobile by avoiding dual mounting and adding muted autoplay</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">df77d63</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Mon Nov 16 13:21</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">Update r</span> Update reviews widget to Elfsight All-in-One Reviews</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">2bf7b49</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Mon Nov 16 13:12</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(prop</span> fix(property): make lightbox and modal headers responsive for mobile and tablet to prevent text clipping</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">2</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">7db106c</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Mon Nov 16 12:24</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">feat(pro</span> feat(property): position pricing card directly after core stats on mobile and tablet screens</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">471540d</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Mon Nov 16 12:09</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(prop</span> fix(property): update custom purpose placeholder in admin and remove verification box from core stats</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">2</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">64833b4</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Mon Nov 16 11:28</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(prop</span> fix(property): display authentic full title under Property Title and prevent listing text from polluting Suitable For area</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">4</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">231a311</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Mon Nov 16 08:56</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(prop</span> fix(property): update site visit title, remove viewing pass text, and hide direct connect buttons until unhidden</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">2</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">541f546</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Mon Nov 16 00:47</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-style">style(ad</span> style(ads): reduce premium crown logo size on left corner of ads strip</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">b13c3ec</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Sun Nov 15 23:55</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(perf</span> fix(perf): resolve hydration mismatch in footer, migrate middleware to proxy, and clean up next.config</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">3</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">102bd42</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Sun Nov 15 13:51</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-style">style(ad</span> style(ads): set compact premium crown badge on left corner of ads strip</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">fb6e859</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Sun Nov 15 11:34</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-style">style(ad</span> style(ads): make premium logo and ads strip ultra-compact micro size</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">2</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">dab32e3</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Sun Nov 15 11:02</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">feat(ui)</span> feat(ui): restore ads strip with sleek compact premium logo set on border</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">3</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">31f6b8a</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Fri Nov 13 23:53</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">feat(crm</span> feat(crm): add buyer Excel upload modal to CRM seller dashboard</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">14</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">11b9432</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Fri Nov 13 18:07</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">Update r</span> Update reviews widget to Elfsight All-in-One Reviews</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">10</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">27cccd9</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Fri Nov 13 17:13</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">perf(spe</span> perf(speed): enable compression, AVIF/WebP image formats, dynamic modal code-splitting, 60s in-memory query caching, parallel SSR queries, and canonical URL normalization middleware</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">8</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">763fb21</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Fri Nov 13 16:53</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(gall</span> fix(gallery): remove unwanted location/status badges from modal header, fix title truncation, and normalize zero-price display</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">4</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">1e7824f</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Fri Nov 13 16:32</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-style">style(ui</span> style(ui): perfect responsive text, button sizes, and font weights on mobile/tablet screens</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">2</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">b4b0464</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Fri Nov 13 16:14</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-style">style(ui</span> style(ui): narrow ads strip on mobile/tablet and position compact scroll-to-top button directly above it</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">2</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">ae52d70</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Fri Nov 13 15:40</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(hydr</span> fix(hydration): add suppressHydrationWarning to layout and search bar elements</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">2</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">166be10</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Fri Nov 13 15:25</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-style">style(ui</span> style(ui): responsive card typography and mobile icon-only compare button</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">3</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">c9dce7d</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Fri Nov 13 15:02</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(sear</span> fix(search): prevent false autocorrect of domain vocabulary like buyer to Baner</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">17d7353</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Fri Nov 13 14:45</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">feat(ui)</span> feat(ui): remove seller query notification banner under search bar</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">6db8abb</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Fri Nov 13 14:26</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(ui)</span> fix(ui): isolate seller alert banner to dedicated full-width row to prevent badge and view-switcher overlap</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">71ad5a9</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Fri Nov 13 14:19</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-style">style(re</span> style(responsive): eliminate excessive left/right gutters on mobile and tablet for edge-to-edge layout</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">7345588</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Fri Nov 13 13:14</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">feat(ui)</span> feat(ui): display only icons for view switcher and compact count badges on mobile and tablet screens</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">8265a12</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Fri Nov 13 13:04</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">feat(sea</span> feat(search): update search bar placeholder to 'Search properties and buyers by location, type, budget or requirements...'</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">93ca9b6</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Fri Nov 13 12:41</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">feat(ui)</span> feat(ui): make search bar fully responsive with adaptive placeholders, touch metrics and mobile pills</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">2</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">2a10590</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Fri Nov 13 11:37</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">feat</span> feat: implement 10 advanced search engine features and enterprise CRM buyer-property matching algorithm</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">9</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">001b18e</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Fri Nov 13 11:08</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">feat</span> feat: make premium clients ads strip fully editable in admin with live preview, reordering, hide/unhide toggles, and workerThreads postcss fix</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">7</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">3cc65cf</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Thu Nov 12 18:12</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">feat</span> feat: complete mobile responsiveness across property dossier, headers, sticky ads, and admin modals</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">4</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">174dcfa</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Thu Nov 12 17:48</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(comm</span> fix(commercial): eliminate duplicate Suitable For heading and add admin suitability picker with custom tagging</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">8</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">1019dfb</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Thu Nov 12 16:17</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(prop</span> fix(property-detail): add useMemo import and fix parameter types</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">855bd6b</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Thu Nov 12 15:53</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">Update r</span> Update reviews widget to Elfsight All-in-One Reviews</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">8</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">f9e3216</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Thu Nov 12 14:59</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">feat(ai)</span> feat(ai): integrate Gemini AI 42-point property description standardizer with strictly ordered non-empty headings</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">6</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">de42301</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Thu Nov 12 13:30</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-style">feat(ads</span> feat(ads): style premium crown with royal velvet burgundy background and golden halo glow</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">2</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">c9c781e</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Thu Nov 12 13:19</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">feat(ads</span> feat(ads): replace 'Premium' text badge with gold crown image in sticky ads strip</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">2</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">b7989b3</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Thu Nov 12 11:38</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(seo)</span> fix(seo): standardize all category headings and metaTitles to use '|' separator and 'Sell' instead of 'Buy'</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">2</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">02dd29b</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Thu Nov 12 11:03</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(seo)</span> fix(seo): update hotel-resort heading to 'Hotel Properties for Sell | Hotel Properties for Rent | Resort Properties for Sell | Resort Properties for Rent in Pune'</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">2</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">01d328a</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Wed Nov 11 21:22</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(seo)</span> fix(seo): update office category heading to 'Office for sell | Office for Rent in Pune | Corporate Office Properties for sell | Corporate Office Properties for Rent in Pune | IT Park offices for sell | IT Park offices for Rent in Pune'</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">2</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">03b197e</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Wed Nov 11 18:28</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(seo)</span> fix(seo): update hospital category heading to 'Hospital Properties for sell | Hospital Properties for Rent in Pune | Medical Properties for sell | Medical Properties for Rent in Pune'</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">2</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">23ae7cc</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Wed Nov 11 13:42</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">feat(pro</span> feat(property): add Request Price button when price is missing, ₹0 or on request across detail page, modal and portal</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">3</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">bce5148</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Wed Nov 11 13:28</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(admi</span> fix(admin): ensure category changes in edit modal persist and sync specs/tags on card</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">2</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">9c59e4b</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Wed Nov 11 12:41</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(prop</span> fix(property-detail): remove geospatial connectivity and commute matrix section</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">d6d0559</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Wed Nov 11 12:28</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(prop</span> fix(property): format property description so every line after # starts on a new line</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">6</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">8169f35</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Wed Nov 11 12:14</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">Revert "</span> Revert "feat(property): add structured PropertyDescriptionFormatter with line-by-line, spec cards and clean text patterns"</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">6</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">66466f4</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Wed Nov 11 12:10</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">feat(pro</span> feat(property): add structured PropertyDescriptionFormatter with line-by-line, spec cards and clean text patterns</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">6</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">afad5b6</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Wed Nov 11 11:51</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(seo)</span> fix(seo): update category headings to 'Properties for Buy & Properties for Rent' format</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">2</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">2e1ca93</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Wed Nov 11 11:47</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(seo)</span> fix(seo): standardize category headings to Properties for Buy & Rent format</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">2</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">49bff84</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Tue Nov 10 11:11</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(layo</span> fix(layout): allow navbar to scroll upward with page flow and dock searchbar at top-0 when scrolling</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">2</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">96e1e24</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Fri Nov 6 16:30:</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(port</span> fix(portal): shorten view switcher label to single word 'List'</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">88151bc</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Fri Nov 6 16:27:</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">feat(lay</span> feat(layout): make navbar permanently fixed with layout spacer and searchbar sticky directly beneath</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">2</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">bde9b04</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Fri Nov 6 14:19:</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(port</span> fix(portal): rename Table to List view with list icon in view switcher</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">8b7d73a</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Fri Nov 6 13:26:</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(ads)</span> fix(ads): center sticky premium ads strip in the middle of screen</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">9de0e2d</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Fri Nov 6 13:21:</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">feat(por</span> feat(portal): remove Both option and set default view to Table with Table/Cards toggle</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">26aa081</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Fri Nov 6 13:07:</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(port</span> fix(portal): remove locality and typology details from mobile comparison card</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">0e63a4a</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Fri Nov 6 12:49:</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(port</span> fix(portal): display icon logo only for site visit button without text</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">166ab95</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Fri Nov 6 12:44:</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(port</span> fix(portal): remove quick specs button from hover preview card and keep full-width explore button</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">f7c1c69</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Thu Nov 5 15:44:</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(scra</span> fix(scraper): eliminate headphone and microphone imagery and enforce real estate photography fallbacks</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">3</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">ea8dddf</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Thu Nov 5 13:29:</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">refactor</span> refactor(categories): consolidate office in IT park and coworking under unified Office Space category</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">11</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">63cff6c</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Thu Nov 5 12:19:</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">chore</span> chore: formatting in gtag.ts</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">c26abec</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Thu Nov 5 12:17:</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(mobi</span> fix(mobile): resolve sort popup left clipping with centered responsive action sheet and backdrop</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">debe319</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Thu Nov 5 12:01:</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">feat(ana</span> feat(analytics): integrate Google Tag gtag.js with measurement ID G-VXHM9WXKHR</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">2</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">2cac894</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Thu Nov 5 11:56:</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">feat(crm</span> feat(crm): make CRM layout fully responsive with mobile drawer sidebar and hamburger navigation</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">4</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">800e16f</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Thu Nov 5 11:24:</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">Add Both</span> Add Both logo to primary view switcher and remove duplicate switcher pill from table and card headers</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">b78c6ff</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Wed Nov 4 18:34:</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">Update r</span> Update reviews widget to Elfsight All-in-One Reviews</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">140ccf4</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Wed Nov 4 18:27:</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">Hide sor</span> Hide sort icon on laptop/desktop and rename ads badge to Premium</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">3</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">f2ca219</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Wed Nov 4 18:16:</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">Remove A</span> Remove Ads-Prime text badge from sticky strip and add custom error boundary</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">2</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">717d06e</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Wed Nov 4 17:18:</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">Optimize</span> Optimize mobile layout: hide properties found heading, use sort icon logo on all screens, and remove down spacing</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">2</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">e26e96b</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Wed Nov 4 16:35:</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">feat(por</span> feat(portal): provide view mode toggle for Table Type and Paragraph Type</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">15fff48</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Wed Nov 4 16:18:</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(cate</span> fix(category-header): remove paragraph description and keep only headings</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">94be672</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Wed Nov 4 16:10:</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">feat(ads</span> feat(ads): display exactly 3 ads at a time and rename badge to Ads-Prime</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">c024ece</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Wed Nov 4 16:02:</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(port</span> fix(portal): restore sticky behavior for properties search bar beneath header</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">3</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">ba29c02</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Wed Nov 4 15:21:</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">feat(scr</span> feat(scraper): overhaul real estate web link scraper, image gallery selector, and database import pipeline</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">4</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">cedae59</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Wed Nov 4 11:46:</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(layo</span> fix(layout): fix React hook order in StickyAdsStrip to prevent fewer hooks error</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">2</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">245553e</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Tue Nov 3 16:57:</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">feat(crm</span> feat(crm): add save property button, safety protection badge, and safe property picker to delete all modal</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">2</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">1403688</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Tue Nov 3 16:03:</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">feat(pro</span> feat(properties): add Safe property button, protection badge, and safe-aware bulk delete</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">7</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">16d524f</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Tue Nov 3 12:07:</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">chore(as</span> chore(assets): add logo assets</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">5</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">25dc564</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Mon Nov 2 18:34:</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">feat(cat</span> feat(category-header): streamline category SEO header to compact 2-3 lines of text</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">d49dc8b</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Mon Nov 2 18:25:</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">feat(cat</span> feat(category-seo): top SEO header with Buy/Lease/Rent intent, breadcrumbs, quick filters and accurate property matching</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">4</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">0a4fa09</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Mon Nov 2 18:04:</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">feat(mob</span> feat(mobile): comprehensive mobile responsiveness, icon-only ads bar on mobile, sticky conversion bar, and viewport config</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">6</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">5bbf24e</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Mon Nov 2 16:42:</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(prop</span> fix(property-detail): remove Commercial Landmark and Grade-A Commercial badge marks</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">b4ddb98</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Mon Nov 2 16:35:</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-fix">fix(prop</span> fix(property-detail): remove all text and buttons from photo overlay and provide 4k video walkthrough in viewer</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">7b1d9e0</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Mon Nov 2 16:21:</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">feat(pro</span> feat(property-detail): clean hero image overlay and unify media view controls for fullscreen</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">a0ac11c</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Mon Nov 2 16:09:</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">Optimize</span> Optimize mobile header with icon-only action buttons for Compare and Share</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">507c0a7</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Mon Nov 2 15:17:</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">Update r</span> Update reviews widget to Elfsight All-in-One Reviews</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">2</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">d216a07</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Mon Nov 2 14:38:</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">Update r</span> Update reviews widget to Elfsight All-in-One Reviews</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">5</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">28a32f5</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Sat Oct 31 16:47</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">Update r</span> Update reviews widget to Elfsight All-in-One Reviews</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">9</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">04ea303</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Sat Oct 31 15:10</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">Update r</span> Update reviews widget to Elfsight All-in-One Reviews</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">3</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">8b30497</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Sat Oct 31 14:40</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">Update r</span> Update reviews widget to Elfsight All-in-One Reviews</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">b01cde0</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Sat Oct 31 12:41</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">Update r</span> Update reviews widget to Elfsight All-in-One Reviews</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">975cc21</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Sat Oct 31 12:19</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">Update r</span> Update reviews widget to Elfsight All-in-One Reviews</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">9</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">4d27f88</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Fri Oct 30 17:30</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">Update r</span> Update reviews widget to Elfsight All-in-One Reviews</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">13</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">1bb608e</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Fri Oct 30 14:37</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">Update r</span> Update reviews widget to Elfsight All-in-One Reviews</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">4</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">12e5096</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Fri Oct 30 12:12</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">Update r</span> Update reviews widget to Elfsight All-in-One Reviews</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">44269af</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Thu Oct 29 18:43</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">Update r</span> Update reviews widget to Elfsight All-in-One Reviews</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">3</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">959cc70</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Thu Oct 29 14:26</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">Update r</span> Update reviews widget to Elfsight All-in-One Reviews</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">6</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">c5a56cd</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Tue Oct 27 14:30</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">Update r</span> Update reviews widget to Elfsight All-in-One Reviews</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">3</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">7063259</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Tue Oct 27 13:55</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">Update r</span> Update reviews widget to Elfsight All-in-One Reviews</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">8</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">9a9616e</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Mon Oct 26 18:24</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">Update r</span> Update reviews widget to Elfsight All-in-One Reviews</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">c27231a</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Mon Oct 26 18:00</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">Update r</span> Update reviews widget to Elfsight All-in-One Reviews</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">9</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">2990f49</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Mon Oct 26 16:18</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">Update r</span> Update reviews widget to Elfsight All-in-One Reviews</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">d8323ac</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Mon Oct 26 15:45</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">Update r</span> Update reviews widget to Elfsight All-in-One Reviews</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">1</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">b1ac81a</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Mon Oct 26 15:23</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">Update r</span> Update reviews widget to Elfsight All-in-One Reviews</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">3</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">e7cd80e</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Mon Oct 26 14:36</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">Update r</span> Update reviews widget to Elfsight All-in-One Reviews</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">5</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">0a9772a</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Mon Oct 26 13:43</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">Update r</span> Update reviews widget to Elfsight All-in-One Reviews</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">25</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">d6c1cfa</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Sat Oct 24 18:27</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">Update r</span> Update reviews widget to Elfsight All-in-One Reviews</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">10</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">66edb55</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Sat Oct 24 17:38</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">Update r</span> Update reviews widget to Elfsight All-in-One Reviews</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">6</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">30076b6</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Sat Oct 24 15:36</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">Update r</span> Update reviews widget to Elfsight All-in-One Reviews</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">10</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">9741b7d</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Sat Oct 24 12:09</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">Update r</span> Update reviews widget to Elfsight All-in-One Reviews</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">5</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">3eca6ef</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Sat Oct 24 11:06</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">Update r</span> Update reviews widget to Elfsight All-in-One Reviews</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">12</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">df4cf60</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Thu Oct 22 14:04</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">Update r</span> Update reviews widget to Elfsight All-in-One Reviews</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">2</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">abe4f4b</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Wed Oct 21 15:40</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">Update r</span> Update reviews widget to Elfsight All-in-One Reviews</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">11</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">9c8feb7</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Mon Oct 19 17:22</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">Update r</span> Update reviews widget to Elfsight All-in-One Reviews</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">8</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">f1b3412</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Mon Oct 19 15:12</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">Update r</span> Update reviews widget to Elfsight All-in-One Reviews</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">3</td>
+      </tr>
+      <tr>
+        <td><span class="commit-hash">ec8f598</span></td>
+        <td style="font-size: 7.5pt; color: #6b7280;">Mon Oct 19 14:13</td>
+        <td style="font-size: 7.5pt; font-weight: 600;">Prem-sharma1</td>
+        <td><span class="badge badge-feat">Update r</span> Update reviews widget to Elfsight All-in-One Reviews</td>
+        <td style="text-align: center; font-weight: bold; font-size: 8pt;">2</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- FOOTER NOTICE -->
+  <div style="margin-top: 32px; padding-top: 16px; border-top: 1px solid #e5e7eb; text-align: center; font-size: 8pt; color: #9ca3af;">
+    ANV REEALTY / RealityTruedeal Engineering Architecture • Generated on November 18, 2026 • Confidential &amp; Proprietary
+  </div>
+
+</body>
+</html>
