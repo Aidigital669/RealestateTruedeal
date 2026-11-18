@@ -12,11 +12,17 @@ const TimedEnquiryModal = dynamic(
   { ssr: false }
 );
 
+const FeaturedAdsBar = dynamic(
+  () => import('@/components/public/FeaturedAdsBar').then((m) => m.FeaturedAdsBar),
+  { ssr: false }
+);
+
 export function ClientLayoutWidgets() {
   return (
     <>
       <FloatingCompareBar />
       <TimedEnquiryModal />
+      <FeaturedAdsBar />
     </>
   );
 }

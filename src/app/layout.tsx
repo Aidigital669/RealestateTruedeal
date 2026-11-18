@@ -4,7 +4,6 @@ import Script from "next/script";
 import "./globals.css";
 import { PropertyComparisonProvider } from "@/context/PropertyComparisonContext";
 import { SavedPropertiesProvider } from "@/context/SavedPropertiesContext";
-import { FeaturedAdsBar } from "@/components/public/FeaturedAdsBar";
 import { ClientLayoutWidgets } from "@/components/public/ClientLayoutWidgets";
 
 const geistSans = Geist({
@@ -74,14 +73,14 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
       </head>
       <body className="min-h-full flex flex-col w-full max-w-full" suppressHydrationWarning>
-        {/* Google tag (gtag.js) */}
+        {/* Google tag (gtag.js) - loaded with lazyOnload to prioritize page render speed */}
         <Script
-          strategy="afterInteractive"
+          strategy="lazyOnload"
           src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
         />
         <Script
           id="google-tag-gtag"
-          strategy="afterInteractive"
+          strategy="lazyOnload"
         >
           {`
             window.dataLayer = window.dataLayer || [];
@@ -98,7 +97,6 @@ export default function RootLayout({
           <PropertyComparisonProvider>
             {children}
             <ClientLayoutWidgets />
-            <FeaturedAdsBar />
           </PropertyComparisonProvider>
         </SavedPropertiesProvider>
       </body>

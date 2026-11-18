@@ -3,6 +3,7 @@ import { queryOne, query } from "@/lib/db";
 import { getPurposesForProperties, setPropertyBusinessPurposes } from "@/lib/business-purposes";
 import { parseDossierData, embedDossierData } from "@/lib/dossier-parser";
 import { parseAndNormalizeVideoUrl } from "@/lib/video-utils";
+import { clearPropertyCache } from "@/lib/property-data";
 
 export async function PATCH(
   req: NextRequest,
@@ -386,6 +387,8 @@ export async function PATCH(
     const purposesMap = await getPurposesForProperties([id]);
     const assignedPurposes = purposesMap[String(id)] || [];
 
+    clearPropertyCache();
+
     return NextResponse.json({
       success: true,
       message: `Property "${updatedFull?.name || id}" updated successfully!`,
@@ -465,6 +468,8 @@ export async function DELETE(
     const deleted = await queryOne(`
       DELETE FROM "Property" WHERE id = $1 RETURNING id, title;
     `, [id]);
+
+    clearPropertyCache();
 
     return NextResponse.json({
       success: true,
