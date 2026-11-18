@@ -361,17 +361,76 @@ export function PropertyDetailPageClient({
   const hideHighlights = Boolean(property?.hideHighlights ?? dossier.hideHighlights);
   const hideConnectivity = Boolean(property?.hideConnectivity ?? dossier.hideConnectivity);
 
-  const highlights: string[] = (property?.highlights && property.highlights.length > 0)
+  const rawHighlights: string[] = (property?.highlights && property.highlights.length > 0)
     ? property.highlights
     : (dossier.highlights && dossier.highlights.length > 0)
     ? dossier.highlights
     : [];
 
-  const connectivity: string[] = (property?.connectivity && property.connectivity.length > 0)
+  // Filter out dummy/placeholder highlights imported from raw Excel columns
+  const filteredHighlights = rawHighlights.filter((hl) => {
+    const lower = (hl || '').toLowerCase().trim();
+    return !(
+      lower.startsWith('listing status:') ||
+      lower.startsWith('property type:') ||
+      lower.startsWith('configuration:') ||
+      lower.startsWith('property tag:') ||
+      lower.startsWith('status:') ||
+      lower === 'new' ||
+      lower === 'office'
+    );
+  });
+
+  const highlights: string[] = useMemo(() => {
+    if (filteredHighlights.length >= 2) return filteredHighlights;
+
+    // Fallback: extract real architectural & engineering lines from cleanDescription or description
+    const descText = cleanDescription || property?.description || '';
+    const extracted: string[] = [];
+    const lines = descText.split('\n');
+    for (const l of lines) {
+      const clean = l.replace(/^[#*\-•\s]+/, '').trim();
+      const lower = clean.toLowerCase();
+      if (
+        lower.startsWith('façade:') || lower.startsWith('facade:') ||
+        lower.startsWith('hvac:') ||
+        lower.startsWith('total retail leasable area:') || lower.startsWith('leasable area:') ||
+        lower.startsWith('floor:') || lower.startsWith('total floors:') ||
+        lower.startsWith('parking:') || lower.startsWith('parking spaces:') ||
+        lower.startsWith('power (kva):') || lower.startsWith('backup power:') ||
+        lower.startsWith('lifts:') || lower.startsWith('flooring:') ||
+        lower.startsWith('retail efficiency:') || lower.startsWith('racking capacity:') ||
+        lower.startsWith('floor strength:') || lower.startsWith('unique feature:')
+      ) {
+        extracted.push(clean);
+      }
+    }
+
+    const combined = [...filteredHighlights, ...extracted];
+    return Array.from(new Set(combined));
+  }, [filteredHighlights, cleanDescription, property?.description]);
+
+  const rawConnectivity: string[] = (property?.connectivity && property.connectivity.length > 0)
     ? property.connectivity
     : (dossier.connectivity && dossier.connectivity.length > 0)
     ? dossier.connectivity
     : [];
+
+  const connectivity: string[] = useMemo(() => {
+    // If description has a specific Connectivity: line, make sure it's included
+    const descText = cleanDescription || property?.description || '';
+    const extractedConn: string[] = [];
+    const lines = descText.split('\n');
+    for (const l of lines) {
+      const clean = l.replace(/^[#*\-•\s]+/, '').trim();
+      if (clean.toLowerCase().startsWith('connectivity:')) {
+        const val = clean.replace(/^connectivity\s*:\s*/i, '').trim();
+        if (val) extractedConn.push(val);
+      }
+    }
+    const merged = [...extractedConn, ...rawConnectivity];
+    return Array.from(new Set(merged));
+  }, [rawConnectivity, cleanDescription, property?.description]);
 
   const amenitiesList = (property?.amenitiesList && property.amenitiesList.length > 0)
     ? property.amenitiesList
@@ -964,52 +1023,94 @@ export function PropertyDetailPageClient({
 
               {/* TAB CONTENT */}
               {activeTab === 'overview' && (() => {
-                // Parse # Field: Value lines from cleanDescription in Excel sequence order
+                // Parse # Field: Value, * Field: Value, - Field: Value lines from cleanDescription
                 const descRaw = cleanDescription || property.description || '';
                 const FIELD_ORDER = [
-                  'Posted Date','Property Title','Landmark, City','Property Age','Possession',
+                  'Posted Date','Property Title','Landmark, City','Location','Property Age','Possession',
                   'Expected Price','JV Ratio','Transaction','Ownership','Building Name',
-                  'Property/Developer Name','Area : Carpet : Saleable','No of Bedroom','Parking Spaces',
-                  'Furnishing','H : W : D','Total Floors','Property on Floor','Suitable For',
-                  'Unique Feature','Lease Period (Month)','Lock-in Period (Year)','Rent Start Date',
+                  'Property/Developer Name','Total Retail Leasable Area','Area : Carpet : Saleable','No of Bedroom','Parking Spaces','Parking',
+                  'Furnishing','H : W : D','Total Floors','Property on Floor','Floor','Suitable For',
+                  'Unique Feature','Retail Efficiency','Façade','HVAC','Lease Period (Month)','Lock-in Period (Year)','Rent Start Date',
                   'Rent Per Month','Rent Escalation %','Maintenance Charges','Security Deposit',
                   'Property Tax','ROI %','Facing','Lifts','Flooring','Power (kVA)',
                   'Backup Power (kVA)','Pollution Color Zone','Racking Capacity (EOT) - tonnes',
                   'Floor Strength - ton per meter cube','STP/ETP Capacity - litres',
-                  'No of loading bays','Canopy Details (Length - Width)','Fire NOC','Dock Levellers'
+                  'No of loading bays','Canopy Details (Length - Width)','Fire NOC','Dock Levellers','Connectivity'
                 ];
-                // Parse all # Key: Value lines
+
                 const lineMap: Record<string, string> = {};
                 let tagsBlock = '';
+
+                // Break by newline or inline bullet separators
+                const rawLines: string[] = [];
                 descRaw.split('\n').forEach(line => {
                   const trimmed = line.trim();
-                  if (!trimmed.startsWith('#')) { tagsBlock += ' ' + trimmed; return; }
-                  const withoutHash = trimmed.replace(/^#+\s*/, '');
-                  const colonIdx = withoutHash.indexOf(':');
-                  if (colonIdx === -1) { lineMap['_extra_' + Math.random()] = withoutHash; return; }
-                  const key = withoutHash.slice(0, colonIdx).trim();
-                  const val = withoutHash.slice(colonIdx + 1).trim();
-                  if (key && val) lineMap[key.toLowerCase()] = val;
+                  if (!trimmed) return;
+                  if (/(?:\s+[*•]\s+[A-Za-z])/g.test(trimmed)) {
+                    trimmed.split(/(?=\s+[*•]\s+[A-Za-z])/).forEach(part => {
+                      if (part.trim()) rawLines.push(part.trim());
+                    });
+                  } else {
+                    rawLines.push(trimmed);
+                  }
                 });
+
+                rawLines.forEach(line => {
+                  const trimmed = line.trim();
+                  // Strip leading #, *, -, •
+                  const cleanLine = trimmed.replace(/^[#*\-•\s]+/, '').trim();
+                  const colonIdx = cleanLine.indexOf(':');
+
+                  if (colonIdx > 0 && colonIdx < 45) {
+                    const key = cleanLine.slice(0, colonIdx).trim();
+                    const val = cleanLine.slice(colonIdx + 1).trim();
+                    if (key && val) {
+                      lineMap[key.toLowerCase()] = val;
+                      return;
+                    }
+                  }
+
+                  // Only non-key and short items become tag blocks (ignore run-on descriptions)
+                  if (!trimmed.includes(':') && !trimmed.startsWith('*')) {
+                    tagsBlock += ' ' + cleanLine;
+                  }
+                });
+
                 // Build ordered rows — only fields with values
                 const rows: { label: string; value: string }[] = [];
+                const addedKeys = new Set<string>();
+
                 FIELD_ORDER.forEach(field => {
                   let v = lineMap[field.toLowerCase()];
                   if (field.toLowerCase() === 'property title') {
                     // Always show authentic full property title (e.g. "900 Sq.Ft. Commercial Shop for Rent in Undri")
                     v = property?.name || v;
                   }
-                  if (v) rows.push({ label: field, value: v });
-                });
-                // Any remaining keys not in FIELD_ORDER
-                Object.keys(lineMap).forEach(k => {
-                  if (!k.startsWith('_extra_') && !FIELD_ORDER.map(f => f.toLowerCase()).includes(k)) {
-                    rows.push({ label: k, value: lineMap[k] });
+                  if (v) {
+                    rows.push({ label: field, value: v });
+                    addedKeys.add(field.toLowerCase());
                   }
                 });
-                // Tags line (pipe-separated values without key)
+
+                // Any remaining keys not in FIELD_ORDER
+                Object.keys(lineMap).forEach(k => {
+                  if (!addedKeys.has(k) && !k.startsWith('_extra_')) {
+                    const formattedLabel = k
+                      .split(' ')
+                      .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+                      .join(' ');
+                    rows.push({ label: formattedLabel, value: lineMap[k] });
+                  }
+                });
+
+                // Tags line (pipe-separated short keyword tags only, never unformatted specification paragraphs)
                 const tagLine = tagsBlock.replace(/\s+/g, ' ').trim();
-                const tags = tagLine ? tagLine.split('|').map(t => t.trim()).filter(Boolean) : [];
+                const tags = tagLine
+                  ? tagLine
+                      .split('|')
+                      .map(t => t.replace(/^[#*\-•\s]+/, '').trim())
+                      .filter(t => t && t.length > 1 && t.length < 50 && !t.includes(':') && !t.includes('*'))
+                  : [];
 
                 return (
                   <div className="bg-white rounded-2xl sm:rounded-3xl border border-zinc-200 p-4 sm:p-6 shadow-xs space-y-4">
