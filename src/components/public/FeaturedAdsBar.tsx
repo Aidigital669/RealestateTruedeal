@@ -143,7 +143,7 @@ export function FeaturedAdsBar() {
   const handlePromoteClick = () => {
     const text = encodeURIComponent(
       config.promoteMessage ||
-        'Hello ANV Realty team, I would like to feature our company ad in your website Ads strip for Pune property buyers and investors.'
+      'Hello ANV Realty team, I would like to feature our company ad in your website Ads strip for Pune property buyers and investors.'
     );
     const phone = config.promoteWhatsAppNumber || '919373020701';
     window.open(`https://wa.me/${phone}?text=${text}`, '_blank');
@@ -180,11 +180,10 @@ export function FeaturedAdsBar() {
       {/* ================= FEATURED ADS BAR (EXACT MATCH WITH DESIGN MOCKUP) ================= */}
       <aside
         aria-label="Sponsored Partners and Ads"
-        className={`fixed ${
-          hasCompareBar
-            ? 'bottom-[76px] sm:bottom-[84px] lg:bottom-24'
-            : 'bottom-2 sm:bottom-3 lg:bottom-5'
-        } left-1/2 -translate-x-1/2 z-40 select-none animate-in fade-in slide-in-from-bottom-3 duration-300 w-max max-w-[calc(100vw-24px)] flex items-center justify-center`}
+        className={`fixed ${hasCompareBar
+          ? 'bottom-[76px] sm:bottom-[84px] lg:bottom-24'
+          : 'bottom-2 sm:bottom-3 lg:bottom-5'
+          } left-1/2 -translate-x-1/2 z-40 select-none animate-in fade-in slide-in-from-bottom-3 duration-300 w-max max-w-[calc(100vw-24px)] flex items-center justify-center`}
       >
         {isMinimized ? (
           /* Minimized Pill to restore */
@@ -216,8 +215,8 @@ export function FeaturedAdsBar() {
             style={{ backgroundColor: '#000000' }}
             className="relative bg-black border border-zinc-800/90 rounded-2xl sm:rounded-3xl shadow-[0_16px_50px_rgba(0,0,0,0.95)] px-2 py-1.5 sm:px-3 sm:py-2 md:px-3.5 md:py-2.5 flex items-center gap-1.5 sm:gap-2 md:gap-2.5 transition-all shrink-0 max-w-[calc(100vw-24px)]"
           >
-            {/* Left Header Image Badge: Compact Luxury Crown Logo */}
-            <div className="flex items-center justify-center shrink-0 pl-0.5 sm:pl-1 pr-1 sm:pr-1.5">
+            {/* Left Corner: Small Crown Logo Aligned Up and in Corner */}
+            <div className="shrink-0 self-start mt-0.5 sm:mt-1 pl-0 sm:pl-0.5">
               <div
                 className="relative px-2 py-0.5 sm:px-2.5 sm:py-0.5 rounded-full bg-gradient-to-b from-[#2e050f] via-[#420816] to-[#1f030a] border border-amber-400/80 shadow-[0_0_8px_rgba(185,151,79,0.35)] flex items-center justify-center shrink-0 group/crown"
                 title={config.crownTitle || 'Premium Collection'}
@@ -238,9 +237,6 @@ export function FeaturedAdsBar() {
                 </div>
               </div>
             </div>
-
-            {/* Vertical Divider separating Logo from Ads */}
-            <div className="h-5 sm:h-6 w-px bg-zinc-800/90 shrink-0 self-center" />
 
             {/* Center: EXACTLY 3 Ad Avatars Visible on the Front */}
             <div className="flex items-center gap-1.5 sm:gap-2.5 md:gap-3 py-0.5 shrink-0">
