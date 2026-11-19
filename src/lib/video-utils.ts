@@ -7,6 +7,7 @@
 export interface ParsedVideoInfo {
   type: 'youtube' | 'vimeo' | 'direct' | 'unknown';
   videoId?: string;
+  isShorts?: boolean;
   embedUrl: string | null;
   normalizedUrl: string;
   isValid: boolean;
@@ -74,11 +75,22 @@ export function parseAndNormalizeVideoUrl(rawUrl?: string | null): ParsedVideoIn
     }
   }
 
+  // Pattern E: Raw 11-character YouTube video ID pasted directly
+  if (!ytId && /^[a-zA-Z0-9_-]{11}$/.test(url)) {
+    ytId = url;
+  }
+
+  const isShorts = Boolean(
+    url.includes('/shorts/') ||
+    rawUrl?.includes('/shorts/')
+  );
+
   if (ytId) {
     return {
       type: 'youtube',
       videoId: ytId,
-      embedUrl: `https://www.youtube.com/embed/${ytId}?autoplay=1&rel=0`,
+      isShorts,
+      embedUrl: `https://www.youtube.com/embed/${ytId}?autoplay=1&enablejsapi=1&rel=0`,
       normalizedUrl: `https://www.youtube.com/watch?v=${ytId}`,
       isValid: true,
     };

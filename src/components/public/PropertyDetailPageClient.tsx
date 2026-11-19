@@ -153,12 +153,19 @@ export function PropertyDetailPageClient({
   // - If it is specifically an Opus property and no custom videoUrl is given, use '/Opusvideo.mp4'.
   // - For all other properties, do not fall back to Opus video (activeVideoUrl is null).
   const rawVideo = property?.videoUrl?.trim();
-  const parsedPropVideo = rawVideo ? parseAndNormalizeVideoUrl(rawVideo) : null;
-  const activeVideoUrl: string | null = parsedPropVideo?.isValid
-    ? parsedPropVideo.normalizedUrl
-    : (rawVideo && rawVideo.length > 0 ? rawVideo : (isOpusProperty ? '/Opusvideo.mp4' : null));
+  const parsedVideo = useMemo(() => {
+    if (rawVideo) {
+      const p = parseAndNormalizeVideoUrl(rawVideo);
+      if (p.isValid) return p;
+    }
+    if (isOpusProperty) {
+      return parseAndNormalizeVideoUrl('/Opusvideo.mp4');
+    }
+    return { type: 'unknown' as const, embedUrl: null, normalizedUrl: '', isValid: false };
+  }, [rawVideo, isOpusProperty]);
 
-  const hasVideo: boolean = Boolean(activeVideoUrl && activeVideoUrl.length > 0);
+  const hasVideo: boolean = parsedVideo.isValid;
+  const activeVideoUrl: string | null = parsedVideo.isValid ? parsedVideo.normalizedUrl : null;
 
   // Auto-switch away from video mode if property has no video
   useEffect(() => {
@@ -870,11 +877,10 @@ export function PropertyDetailPageClient({
                   !isLightboxOpen ? (
                     <div className="w-full h-full relative bg-black flex items-center justify-center">
                       {(() => {
-                        const parsed = parseAndNormalizeVideoUrl(activeVideoUrl);
-                        if (parsed.type === 'youtube' || parsed.type === 'vimeo') {
+                        if (parsedVideo.type === 'youtube' || parsedVideo.type === 'vimeo') {
                           return (
                             <iframe
-                              src={parsed.embedUrl || ''}
+                              src={parsedVideo.embedUrl || ''}
                               className="w-full h-full border-0"
                               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                               allowFullScreen
@@ -882,11 +888,11 @@ export function PropertyDetailPageClient({
                             />
                           );
                         }
-                        if (parsed.type === 'direct') {
+                        if (parsedVideo.type === 'direct') {
                           return (
                             <video
-                              key={parsed.embedUrl || activeVideoUrl}
-                              src={parsed.embedUrl || activeVideoUrl}
+                              key={parsedVideo.embedUrl || activeVideoUrl}
+                              src={parsedVideo.embedUrl || activeVideoUrl}
                               controls
                               autoPlay
                               muted
@@ -903,10 +909,10 @@ export function PropertyDetailPageClient({
                             <Video className="w-10 h-10 text-amber-400" />
                             <p className="text-sm font-semibold text-zinc-300">High-Definition Walkthrough Video Available</p>
                             <a
-                              href={activeVideoUrl}
+                              href={activeVideoUrl || '#'}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold transition shadow-lg"
+                              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#b9974f] hover:bg-[#a4823d] text-zinc-950 text-xs font-black transition shadow-lg"
                             >
                               Open Walkthrough Link ↗
                             </a>
@@ -1074,11 +1080,30 @@ export function PropertyDetailPageClient({
                   const trimmed = line.trim();
                   // Strip leading #, *, -, •
                   const cleanLine = trimmed.replace(/^[#*\-•\s]+/, '').trim();
+
+                  // 1. Compound key: H : W : D
+                  const hwdMatch = cleanLine.match(/^(?:h\s*:\s*w\s*:\s*d)\s*[:\-]\s*(.+)$/i);
+                  if (hwdMatch) {
+                    const cleanVal = hwdMatch[1].replace(/(?:h\s*:\s*w\s*:\s*d\s*[:\-]\s*)+/gi, '').trim();
+                    lineMap['h : w : d'] = cleanVal;
+                    return;
+                  }
+
+                  // 2. Compound key: Area : Carpet : Saleable
+                  const areaMatch = cleanLine.match(/^(?:area\s*:\s*carpet\s*:\s*saleable)\s*[:\-]\s*(.+)$/i);
+                  if (areaMatch) {
+                    lineMap['area : carpet : saleable'] = areaMatch[1].trim();
+                    return;
+                  }
+
                   const colonIdx = cleanLine.indexOf(':');
 
                   if (colonIdx > 0 && colonIdx < 50) {
                     const key = cleanLine.slice(0, colonIdx).trim();
-                    const val = cleanLine.slice(colonIdx + 1).trim();
+                    let val = cleanLine.slice(colonIdx + 1).trim();
+                    if (/h\s*:\s*w\s*:\s*d/i.test(val)) {
+                      val = val.replace(/(?:h\s*:\s*w\s*:\s*d\s*[:\-]\s*)+/gi, '').trim();
+                    }
                     if (key && val) {
                       lineMap[key.toLowerCase()] = val;
                       return;
@@ -1626,11 +1651,10 @@ export function PropertyDetailPageClient({
             {mediaMode === 'video' && hasVideo && activeVideoUrl ? (
               <div className="relative w-full h-full max-w-5xl max-h-[75vh] flex items-center justify-center rounded-2xl overflow-hidden bg-black border border-white/15 shadow-2xl">
                 {(() => {
-                  const parsed = parseAndNormalizeVideoUrl(activeVideoUrl);
-                  if (parsed.type === 'youtube' || parsed.type === 'vimeo') {
+                  if (parsedVideo.type === 'youtube' || parsedVideo.type === 'vimeo') {
                     return (
                       <iframe
-                        src={parsed.embedUrl || ''}
+                        src={parsedVideo.embedUrl || ''}
                         className="w-full h-full border-0"
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                         allowFullScreen
@@ -1638,11 +1662,11 @@ export function PropertyDetailPageClient({
                       />
                     );
                   }
-                  if (parsed.type === 'direct') {
+                  if (parsedVideo.type === 'direct') {
                     return (
                       <video
-                        key={parsed.embedUrl || activeVideoUrl}
-                        src={parsed.embedUrl || activeVideoUrl}
+                        key={parsedVideo.embedUrl || activeVideoUrl}
+                        src={parsedVideo.embedUrl || activeVideoUrl}
                         controls
                         autoPlay
                         playsInline
@@ -1658,7 +1682,7 @@ export function PropertyDetailPageClient({
                       <Video className="w-12 h-12 text-amber-400" />
                       <p className="text-base font-semibold text-zinc-200">High-Definition Walkthrough Video Available</p>
                       <a
-                        href={activeVideoUrl}
+                        href={activeVideoUrl || '#'}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#b9974f] hover:bg-[#a4823d] text-zinc-950 text-xs font-black transition shadow-lg"

@@ -191,20 +191,20 @@ export function FeaturedAdsBar() {
           <button
             type="button"
             onClick={() => setIsMinimized(false)}
-            className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-gradient-to-r from-zinc-950 via-[#2e050f] to-zinc-950 hover:from-zinc-900 hover:to-[#420816] text-white border border-amber-500/50 shadow-xl backdrop-blur-md transition-all hover:scale-105 cursor-pointer shadow-[0_0_14px_rgba(179,152,50,0.3)]"
+            className="flex items-center gap-1.5 px-2 py-1 sm:px-2.5 sm:py-1 rounded-full bg-gradient-to-r from-zinc-950 via-[#2e050f] to-zinc-950 hover:from-zinc-900 hover:to-[#420816] text-white border border-amber-500/50 shadow-xl backdrop-blur-md transition-all hover:scale-105 cursor-pointer shadow-[0_0_12px_rgba(185,151,79,0.3)]"
             title="Expand Premium"
           >
-            <div className="relative w-5 h-3 shrink-0">
+            <div className="relative w-4 h-2.5 sm:w-4.5 sm:h-3 shrink-0">
               <Image
                 src={config.crownImage || '/premium-crown.png'}
                 alt={config.crownTitle || 'Premium'}
                 fill
-                sizes="20px"
+                sizes="18px"
                 unoptimized
                 className="object-contain drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]"
               />
             </div>
-            <span className="text-[10px] text-amber-300 font-bold bg-amber-950/80 border border-amber-500/40 px-1.5 py-0.2 rounded-full">
+            <span className="text-[9px] sm:text-[10px] text-amber-300 font-bold bg-amber-950/80 border border-amber-500/40 px-1.5 py-0.2 rounded-full">
               {adItems.length}
             </span>
           </button>
@@ -214,30 +214,33 @@ export function FeaturedAdsBar() {
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
             style={{ backgroundColor: '#000000' }}
-            className="relative bg-black border border-zinc-800/90 rounded-2xl sm:rounded-3xl shadow-[0_16px_50px_rgba(0,0,0,0.95)] px-2 py-1.5 sm:px-3.5 sm:py-2.5 md:px-4 md:py-3 flex items-center gap-1.5 sm:gap-2.5 md:gap-3 transition-all shrink-0 max-w-[calc(100vw-24px)]"
+            className="relative bg-black border border-zinc-800/90 rounded-2xl sm:rounded-3xl shadow-[0_16px_50px_rgba(0,0,0,0.95)] px-2 py-1.5 sm:px-3 sm:py-2 md:px-3.5 md:py-2.5 flex items-center gap-1.5 sm:gap-2 md:gap-2.5 transition-all shrink-0 max-w-[calc(100vw-24px)]"
           >
-            {/* Left Header Image Badge: Gold Crown with Premium Royal Wine Background */}
-            <div className="flex items-center justify-center shrink-0 pr-1.5 sm:pr-2 border-r border-zinc-800/90">
+            {/* Left Header Image Badge: Compact Luxury Crown Logo */}
+            <div className="flex items-center justify-center shrink-0 pl-0.5 sm:pl-1 pr-1 sm:pr-1.5">
               <div
-                className="relative px-1.5 py-0.5 sm:px-2 sm:py-0.5 rounded-md sm:rounded-lg bg-gradient-to-b from-[#2e050f] via-[#420816] to-[#1f030a] border border-amber-400/80 shadow-[0_0_8px_rgba(179,152,50,0.3)] flex items-center justify-center shrink-0 group/crown"
+                className="relative px-2 py-0.5 sm:px-2.5 sm:py-0.5 rounded-full bg-gradient-to-b from-[#2e050f] via-[#420816] to-[#1f030a] border border-amber-400/80 shadow-[0_0_8px_rgba(185,151,79,0.35)] flex items-center justify-center shrink-0 group/crown"
                 title={config.crownTitle || 'Premium Collection'}
               >
                 {/* Subtle Amber Glow Behind the Crown */}
-                <div className="absolute inset-0 rounded-md sm:rounded-lg bg-[radial-gradient(ellipse_at_center,_rgba(179,152,50,0.25)_0%,_transparent_70%)] pointer-events-none" />
+                <div className="absolute inset-0 rounded-full bg-[radial-gradient(ellipse_at_center,_rgba(185,151,79,0.25)_0%,_transparent_70%)] pointer-events-none" />
 
-                <div className="relative w-6 h-3 sm:w-8 sm:h-4 md:w-9 md:h-4.5 shrink-0">
+                <div className="relative w-4 h-2.5 sm:w-4.5 sm:h-3 md:w-5 md:h-3 shrink-0">
                   <Image
                     src={config.crownImage || '/premium-crown.png'}
                     alt={config.crownTitle || 'Premium'}
                     fill
-                    sizes="(max-width: 640px) 24px, (max-width: 768px) 32px, 36px"
+                    sizes="20px"
                     unoptimized
                     priority
-                    className="object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] group-hover/crown:scale-105 transition-transform duration-200"
+                    className="object-contain drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)] group-hover/crown:scale-105 transition-transform duration-200"
                   />
                 </div>
               </div>
             </div>
+
+            {/* Vertical Divider separating Logo from Ads */}
+            <div className="h-5 sm:h-6 w-px bg-zinc-800/90 shrink-0 self-center" />
 
             {/* Center: EXACTLY 3 Ad Avatars Visible on the Front */}
             <div className="flex items-center gap-1.5 sm:gap-2.5 md:gap-3 py-0.5 shrink-0">

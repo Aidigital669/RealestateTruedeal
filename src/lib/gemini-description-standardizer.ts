@@ -343,14 +343,20 @@ export function fastDeterministicStandardizeDescription(
     } else if (/carpet\s*area|saleable\s*area|super\s*area|built\s*up|total\s*(?:stated\s*)?area|basement|mezzanine/i.test(s)) {
       addBucket(12, s.startsWith('Area') ? s : `Area: ${s}`);
     } else if (/car\s*parking|two\s*wheeler|parking\s*space|car\s*park/i.test(s)) {
-      const formatted = s
-        .replace(/(\d+)\s*(?:car|four\s*wheel(?:er)?)\s*parking/gi, '🚗 $1 Four Wheeler Parking')
-        .replace(/(\d+)\s*two\s*wheeler/gi, '🛵 $1 Two Wheeler Parking');
+      const cleanParking = s
+        .replace(/^(?:#\s*)?(?:parking\s*spaces?\s*[:\-]\s*)+/gi, '')
+        .replace(/^[🚗🛵\s]+/gu, '')
+        .trim();
+      const formatted = cleanParking
+        .replace(/(\d+)\s*(?:car|four\s*wheel(?:er)?)\s*parking(?:\s*spaces?)?/gi, '🚗 $1 Four Wheeler Parking')
+        .replace(/(\d+)\s*two\s*wheeler(?:\s*parking)?/gi, '🛵 $1 Two Wheeler Parking');
       addBucket(14, `Parking Spaces: ${formatted}`);
     } else if (/furnish|bare\s*shell|warm\s*shell|workstation|cabin|conference|reception/i.test(s)) {
-      addBucket(15, s.startsWith('Furnishing') ? s : `Furnishing: ${s}`);
+      const cleanFurn = s.replace(/^(?:#\s*)?(?:furnishing\s*[:\-]\s*)+/gi, '').trim();
+      addBucket(15, `Furnishing: ${cleanFurn}`);
     } else if (/wide\s*road|ceiling\s*height|frontage|depth|80\s*ft|100\s*ft|height\s*[:\-]/i.test(s)) {
-      addBucket(16, `H : W : D: ${s}`);
+      const cleanHWD = s.replace(/^(?:#\s*)?(?:h\s*:\s*w\s*:\s*d\s*[:\-]\s*)+/gi, '').trim();
+      addBucket(16, `H : W : D: ${cleanHWD}`);
     } else if (/total\s*floors?|floors?\s*building/i.test(s)) {
       addBucket(17, `Total Floors: ${s}`);
     } else if (/façade|facade/i.test(s)) {

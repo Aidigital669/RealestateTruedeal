@@ -314,13 +314,13 @@ export function PremiumAdsManager({ showToast }: PremiumAdsManagerProps) {
         <div className="py-4 flex items-center justify-center bg-zinc-900/60 rounded-2xl border border-zinc-800/80 min-h-[90px] overflow-x-auto">
           {/* Live Mockup Match Container */}
           <div className="relative bg-[#0a0a0c]/98 backdrop-blur-xl border border-zinc-800/80 rounded-[32px] sm:rounded-[38px] shadow-[0_20px_50px_rgba(0,0,0,0.85)] px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-4 sm:gap-7 lg:gap-10 transition-all max-w-[calc(100vw-32px)]">
-            {/* Left Corner: Crown Badge */}
-            <div className="shrink-0 self-start mt-0.5">
+            {/* Left Corner: Small Crown Logo Badge */}
+            <div className="shrink-0 self-center">
               <div
-                className="relative px-1.5 sm:px-2 py-0.5 sm:py-0.5 rounded-md sm:rounded-lg bg-gradient-to-b from-[#2e050f] via-[#420816] to-[#1f030a] border border-amber-400/80 shadow-[0_0_8px_rgba(179,152,50,0.3)] flex items-center justify-center"
+                className="relative px-2 py-0.5 sm:px-2.5 sm:py-0.5 rounded-full bg-gradient-to-b from-[#2e050f] via-[#420816] to-[#1f030a] border border-amber-400/80 shadow-[0_0_8px_rgba(185,151,79,0.35)] flex items-center justify-center"
                 title={config.crownTitle}
               >
-                <div className="relative w-6 h-3 sm:w-8 sm:h-4 shrink-0">
+                <div className="relative w-4 h-2.5 sm:w-4.5 sm:h-3 shrink-0">
                   <Image
                     src={config.crownImage || '/premium-crown.png'}
                     alt="Premium Crown"
