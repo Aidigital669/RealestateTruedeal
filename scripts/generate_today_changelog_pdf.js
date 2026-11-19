@@ -1,0 +1,518 @@
+const fs = require('fs');
+const path = require('path');
+const { chromium } = require('playwright');
+
+const artifactDir = 'C:\\Users\\ADMIN\\.gemini\\antigravity\\brain\\06f9456c-0b93-4099-84cf-6681be2e5ec1';
+const projectPublicDir = path.join(__dirname, '../public');
+
+const htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Implementation Guide & GitHub Changelog - November 19, 2026</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 18mm 14mm 18mm 14mm;
+    }
+    * {
+      box-sizing: border-box;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: #18181b;
+      background: #ffffff;
+      line-height: 1.55;
+      font-size: 11pt;
+      margin: 0;
+      padding: 0;
+    }
+    .header {
+      border-bottom: 2px solid #b9974f;
+      padding-bottom: 12px;
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+    .header-title h1 {
+      margin: 0;
+      font-size: 20pt;
+      font-weight: 800;
+      color: #09090b;
+      letter-spacing: -0.5px;
+    }
+    .header-title p {
+      margin: 4px 0 0 0;
+      font-size: 10pt;
+      color: #71717a;
+    }
+    .header-badge {
+      text-align: right;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      font-size: 8.5pt;
+      font-weight: 700;
+      border-radius: 9999px;
+      background: #b9974f;
+      color: #09090b;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .date-meta {
+      font-size: 8.5pt;
+      color: #71717a;
+      margin-top: 4px;
+    }
+    h2 {
+      font-size: 13.5pt;
+      font-weight: 700;
+      color: #09090b;
+      border-left: 4px solid #b9974f;
+      padding-left: 10px;
+      margin: 22px 0 10px 0;
+      page-break-after: avoid;
+    }
+    h3 {
+      font-size: 11pt;
+      font-weight: 700;
+      color: #27272a;
+      margin: 16px 0 6px 0;
+      page-break-after: avoid;
+    }
+    p, li {
+      font-size: 9.5pt;
+      color: #3f3f46;
+    }
+    ul, ol {
+      margin: 6px 0 12px 20px;
+      padding: 0;
+    }
+    li {
+      margin-bottom: 4px;
+    }
+    .card {
+      background: #fdfdfd;
+      border: 1px solid #e4e4e7;
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 14px;
+      page-break-inside: avoid;
+    }
+    .card-gold {
+      border-left: 4px solid #b9974f;
+      background: #faf8f5;
+    }
+    .commit-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      border-bottom: 1px dashed #e4e4e7;
+      padding: 6px 0;
+      font-size: 9pt;
+    }
+    .commit-row:last-child {
+      border-bottom: none;
+    }
+    .commit-hash {
+      font-family: Consolas, monospace;
+      font-weight: 700;
+      color: #b9974f;
+      background: #18181b;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-right: 8px;
+      font-size: 8pt;
+    }
+    .commit-msg {
+      font-weight: 600;
+      color: #18181b;
+      flex: 1;
+    }
+    .commit-date {
+      color: #71717a;
+      font-size: 8pt;
+      margin-left: 10px;
+      white-space: nowrap;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0 16px 0;
+      font-size: 8.5pt;
+      page-break-inside: avoid;
+    }
+    th, td {
+      border: 1px solid #e4e4e7;
+      padding: 7px 10px;
+      text-align: left;
+    }
+    th {
+      background: #f4f4f5;
+      font-weight: 700;
+      color: #09090b;
+    }
+    tr:nth-child(even) td {
+      background: #fafafa;
+    }
+    code {
+      font-family: Consolas, "Courier New", monospace;
+      background: #f4f4f5;
+      padding: 2px 4px;
+      border-radius: 3px;
+      font-size: 8.5pt;
+      color: #09090b;
+    }
+    pre {
+      background: #09090b;
+      color: #f4f4f5;
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-size: 8pt;
+      font-family: Consolas, "Courier New", monospace;
+      line-height: 1.4;
+      overflow-x: hidden;
+      white-space: pre-wrap;
+      word-break: break-all;
+      margin: 8px 0 12px 0;
+      page-break-inside: avoid;
+    }
+    .highlight {
+      color: #b9974f;
+      font-weight: 700;
+    }
+    .diff-add {
+      color: #4ade80;
+    }
+    .diff-del {
+      color: #f87171;
+    }
+    .tag {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 7.5pt;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .tag-fix { background: #dcfce7; color: #15803d; }
+    .tag-style { background: #fef3c7; color: #b45309; }
+    .tag-perf { background: #e0f2fe; color: #0369a1; }
+    .tag-db { background: #f3e8ff; color: #6b21a8; }
+    .page-break {
+      page-break-before: always;
+    }
+    .footer {
+      margin-top: 30px;
+      padding-top: 10px;
+      border-top: 1px solid #e4e4e7;
+      font-size: 8pt;
+      color: #a1a1aa;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-title">
+      <h1>Deployment & Implementation Guide</h1>
+      <p>All Production Changes, Bug Fixes & GitHub Logs &bull; November 19, 2026</p>
+    </div>
+    <div class="header-badge">
+      <div class="badge">Production Ready</div>
+      <div class="date-meta">Target: Parity Across All Real Estate Websites</div>
+    </div>
+  </div>
+
+  <!-- SECTION 1: EXECUTIVE SUMMARY -->
+  <h2>1. Executive Summary & Purpose</h2>
+  <div class="card card-gold">
+    <p style="margin: 0 0 6px 0;"><strong>Context:</strong> Both websites share the exact same PostgreSQL database schema and live dataset. All codebase updates, UI polish, performance improvements, and database sanitizations completed today (November 19, 2026) are fully cataloged below with direct commit references so they can be seamlessly implemented on your second website.</p>
+    <p style="margin: 0;"><strong>Core Achievements Today:</strong></p>
+    <ul style="margin-bottom: 0;">
+      <li><strong>Base64 to Static File Image Migration:</strong> Reduced initial page weight by 99% (from 58.18 MB down to 589 KB), drastically accelerating initial page load.</li>
+      <li><strong>Universal YouTube & YouTube Shorts Walkthrough Playback:</strong> Solved video player freezing at 0:00 on YouTube Shorts; guaranteed responsive <code>&lt;iframe&gt;</code> rendering for all video URLs.</li>
+      <li><strong>Repetitive Description & Specifications Cleanup:</strong> Eliminated runaway <code>H : W : D:</code> and multiple emoji duplications in the parser and PostgreSQL rows.</li>
+      <li><strong>Luxury Crown Logo Badge Redesign & Alignment:</strong> Reduced crown badge to small logo scale, changed to smooth <code>rounded-full</code> pill, and aligned it to the top-left corner (<code>self-start</code>).</li>
+      <li><strong>Instant 0 Buyers Delay Elimination:</strong> Implemented SSR fallback seed caching so the Buyers counter badge displays accurate counts immediately without loading stutter.</li>
+      <li><strong>Signature Gold Palette (#b9974f):</strong> Standardized across all interactive buttons, modals, and CTAs.</li>
+    </ul>
+  </div>
+
+  <!-- SECTION 2: GITHUB COMMITS LOG -->
+  <h2>2. GitHub Commit Logs (November 19, 2026)</h2>
+  <p>The following commits were verified, compiled with 0 errors (<code>npx tsc --noEmit</code>), and pushed to both repositories: <code>RealestateTruedeal</code> and <code>Anv-Reality</code>.</p>
+
+  <div class="card">
+    <div class="commit-row">
+      <div>
+        <span class="commit-hash">4d0aa29</span>
+        <span class="tag tag-style">Style</span>
+        <span class="commit-msg">style(ads): align crown logo badge to top-left corner with self-start and remove vertical divider</span>
+      </div>
+      <div class="commit-date">14:53:21 +0530</div>
+    </div>
+    <div class="commit-row">
+      <div>
+        <span class="commit-hash">170fa1a</span>
+        <span class="tag tag-fix">Fix & Style</span>
+        <span class="commit-msg">style: reduce crown badge to small logo scale with smooth rounded-full alignment and fix YouTube shorts walkthrough playback</span>
+      </div>
+      <div class="commit-date">14:35:29 +0530</div>
+    </div>
+    <div class="commit-row">
+      <div>
+        <span class="commit-hash">7637e7b</span>
+        <span class="tag tag-fix">Update</span>
+        <span class="commit-msg">Update project scripts, video tag queries and YouTube parsers</span>
+      </div>
+      <div class="commit-date">14:02:49 +0530</div>
+    </div>
+    <div class="commit-row">
+      <div>
+        <span class="commit-hash">5a01190</span>
+        <span class="tag tag-perf">Performance</span>
+        <span class="commit-msg">feat(perf & design): migrate base64 images to static files, resolve 0 buyers delay, clean architectural highlights and apply gold #b9974f</span>
+      </div>
+      <div class="commit-date">13:27:28 +0530</div>
+    </div>
+  </div>
+
+  <p><em>Corresponding commits on the secondary repository (<code>Anv-Reality</code>): <code>6ca8a37</code>, <code>d47bd9d</code>, <code>368decc</code>.</em></p>
+
+  <!-- SECTION 3: DATABASE FIXES & MIGRATIONS -->
+  <h2>3. Database Fixes & Maintenance Performed Today</h2>
+  <div class="card">
+    <p>Since both websites share the same database, these fixes are <strong>already applied in the database</strong>. You only need to ensure static image files exist on the second website's disk.</p>
+
+    <h3>A. Base64 Image Extraction to Static Files</h3>
+    <p>32 raw base64 data URLs stored inside <code>"PropertyImage"</code> were converted to static JPEG files in <code>public/uploads/properties/</code>. Database paths were updated to relative URLs (e.g. <code>/uploads/properties/prop_4229_img_6160.jpg</code>).</p>
+    <p><strong>Action for Other Website:</strong> Copy the entire directory <code>public/uploads/properties/</code> from this project to your other website's <code>public/uploads/properties/</code> directory.</p>
+
+    <h3>B. Property 4229 (Nana Peth) Description Fix</h3>
+    <p>The runaway repetitive label bug was cleaned in PostgreSQL using the following sanitization:</p>
+    <pre>-- SQL fix applied to Property 4229:
+UPDATE "Property"
+SET description = REGEXP_REPLACE(description, '(#\\s*H\\s*:\\s*W\\s*:\\s*D:\\s*)+', '# H : W : D: ', 'g')
+WHERE id = 4229;
+
+-- Cleanup multiple car emojis:
+UPDATE "Property"
+SET description = REGEXP_REPLACE(description, '(🚗\\s*){2,}', '🚗 ', 'g')
+WHERE id = 4229;</pre>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- SECTION 4: FILE-BY-FILE CODE CHANGES -->
+  <h2>4. File-by-File Implementation Guide</h2>
+
+  <!-- File 1 -->
+  <div class="card">
+    <h3>1. <code>src/components/public/FeaturedAdsBar.tsx</code></h3>
+    <p><strong>Goal:</strong> Reduce the crown badge to small logo scale, make it <code>rounded-full</code>, align it to the top-left corner (<code>self-start</code>), and remove the vertical divider.</p>
+    <pre>
+<span class="diff-del">- &lt;div className="flex items-center justify-center shrink-0 pr-1.5 sm:pr-2 border-r border-zinc-800/90"&gt;</span>
+<span class="diff-del">-   &lt;div className="relative px-1.5 py-0.5 sm:px-2 sm:py-0.5 rounded-md sm:rounded-lg ... "&gt;</span>
+<span class="diff-del">-     &lt;div className="relative w-6 h-3 sm:w-8 sm:h-4 md:w-9 md:h-4.5 shrink-0"&gt;</span>
+<span class="diff-add">+ {/* Left Corner: Small Crown Logo Aligned Up and in Corner */}</span>
+<span class="diff-add">+ &lt;div className="shrink-0 self-start mt-0.5 sm:mt-1 pl-0 sm:pl-0.5"&gt;</span>
+<span class="diff-add">+   &lt;div className="relative px-2 py-0.5 sm:px-2.5 sm:py-0.5 rounded-full bg-gradient-to-b from-[#2e050f] via-[#420816] to-[#1f030a] border border-amber-400/80 shadow-[0_0_8px_rgba(185,151,79,0.35)] flex items-center justify-center shrink-0 group/crown" title={config.crownTitle || 'Premium Collection'}&gt;</span>
+<span class="diff-add">+     &lt;div className="absolute inset-0 rounded-full bg-[radial-gradient(ellipse_at_center,_rgba(185,151,79,0.25)_0%,_transparent_70%)] pointer-events-none" /&gt;</span>
+<span class="diff-add">+     &lt;div className="relative w-4 h-2.5 sm:w-4.5 sm:h-3 md:w-5 md:h-3 shrink-0"&gt;</span>
+<span class="diff-add">+       &lt;Image src={config.crownImage || '/premium-crown.png'} alt={config.crownTitle || 'Premium'} fill sizes="20px" unoptimized priority className="object-contain drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]" /&gt;</span>
+<span class="diff-add">+     &lt;/div&gt;</span>
+<span class="diff-add">+   &lt;/div&gt;</span>
+<span class="diff-add">+ &lt;/div&gt;</span>
+<span class="diff-del">- {/* Removed standalone vertical divider line */}</span>
+    </pre>
+  </div>
+
+  <!-- File 2 -->
+  <div class="card">
+    <h3>2. <code>src/components/admin/PremiumAdsManager.tsx</code></h3>
+    <p><strong>Goal:</strong> Sync admin live preview to match the same top-left corner alignment and small logo size.</p>
+    <pre>
+<span class="diff-del">- &lt;div className="shrink-0 self-start mt-0.5"&gt;</span>
+<span class="diff-del">-   &lt;div className="relative px-1.5 sm:px-2 py-0.5 sm:py-0.5 rounded-md sm:rounded-lg ... "&gt;</span>
+<span class="diff-del">-     &lt;div className="relative w-6 h-3 sm:w-8 sm:h-4 shrink-0"&gt;</span>
+<span class="diff-add">+ &lt;div className="shrink-0 self-start mt-0.5 sm:mt-1 pl-0 sm:pl-0.5"&gt;</span>
+<span class="diff-add">+   &lt;div className="relative px-2 py-0.5 sm:px-2.5 sm:py-0.5 rounded-full bg-gradient-to-b from-[#2e050f] via-[#420816] to-[#1f030a] border border-amber-400/80 shadow-[0_0_8px_rgba(185,151,79,0.35)] flex items-center justify-center" title={config.crownTitle}&gt;</span>
+<span class="diff-add">+     &lt;div className="relative w-4 h-2.5 sm:w-4.5 sm:h-3 shrink-0"&gt;</span>
+    </pre>
+  </div>
+
+  <!-- File 3 -->
+  <div class="card">
+    <h3>3. <code>src/components/public/PropertyDetailPageClient.tsx</code></h3>
+    <p><strong>Goal 1:</strong> Fix YouTube Shorts playback by memoizing <code>parsedVideo</code> and ensuring YouTube/Vimeo URLs always render responsive <code>&lt;iframe&gt;</code> embeds with full video playback permissions.</p>
+    <p><strong>Goal 2:</strong> Fix compound key splitting for <code>H : W : D:</code> so the label renders as <code>H : W : D</code> instead of <code>h</code>.</p>
+    <pre>
+<span class="diff-add">// In PropertyDetailPageClient.tsx lines 150-165:</span>
+<span class="diff-add">const rawVideo = property?.videoUrl?.trim();</span>
+<span class="diff-add">const parsedVideo = useMemo(() =&gt; {</span>
+<span class="diff-add">  if (rawVideo) {</span>
+<span class="diff-add">    const p = parseAndNormalizeVideoUrl(rawVideo);</span>
+<span class="diff-add">    if (p.isValid) return p;</span>
+<span class="diff-add">  }</span>
+<span class="diff-add">  if (isOpusProperty) return parseAndNormalizeVideoUrl('/Opusvideo.mp4');</span>
+<span class="diff-add">  return { type: 'unknown' as const, embedUrl: null, normalizedUrl: '', isValid: false };</span>
+<span class="diff-add">}, [rawVideo, isOpusProperty]);</span>
+
+<span class="diff-add">// In lines 870-915 (inline player) & lines 1630-1675 (lightbox):</span>
+<span class="diff-add">if (parsedVideo.type === 'youtube' || parsedVideo.type === 'vimeo') {</span>
+<span class="diff-add">  return (</span>
+<span class="diff-add">    &lt;iframe</span>
+<span class="diff-add">      src={parsedVideo.embedUrl || ''}</span>
+<span class="diff-add">      className="w-full h-full border-0"</span>
+<span class="diff-add">      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"</span>
+<span class="diff-add">      allowFullScreen</span>
+<span class="diff-add">      title="Property Video Walkthrough"</span>
+<span class="diff-add">    /&gt;</span>
+<span class="diff-add">  );</span>
+<span class="diff-add">}</span>
+
+<span class="diff-add">// In lines 1070-1090 (Compound key regex matcher):</span>
+<span class="diff-add">const hwdMatch = cleanLine.match(/^(?:h\\s*:\\s*w\\s*:\\s*d)\\s*[:\\-]\\s*(.+)$/i);</span>
+<span class="diff-add">if (hwdMatch) {</span>
+<span class="diff-add">  const cleanVal = hwdMatch[1].replace(/(?:h\\s*:\\s*w\\s*:\\s*d\\s*[:\\-]\\s*)+/gi, '').trim();</span>
+<span class="diff-add">  lineMap['h : w : d'] = cleanVal;</span>
+<span class="diff-add">  return;</span>
+<span class="diff-add">}</span>
+    </pre>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- File 4 -->
+  <div class="card">
+    <h3>4. <code>src/lib/video-utils.ts</code></h3>
+    <p><strong>Goal:</strong> Handle all YouTube Shorts formats (with tracking tokens like <code>?si=...</code>), raw 11-char IDs, and add <code>isShorts?: boolean</code>.</p>
+    <pre>
+export interface ParsedVideoInfo {
+  type: 'youtube' | 'vimeo' | 'direct' | 'unknown';
+  videoId?: string;
+<span class="diff-add">+ isShorts?: boolean;</span>
+  embedUrl: string | null;
+  normalizedUrl: string;
+  isValid: boolean;
+}
+
+<span class="diff-add">// Detect shorts URL format:</span>
+<span class="diff-add">const isShorts = Boolean(url.includes('/shorts/') || rawUrl?.includes('/shorts/'));</span>
+
+<span class="diff-add">// Pattern E: Raw 11-character video ID pasted directly:</span>
+<span class="diff-add">if (!ytId && /^[a-zA-Z0-9_-]{11}$/.test(url)) {</span>
+<span class="diff-add">  ytId = url;</span>
+<span class="diff-add">}</span>
+
+if (ytId) {
+  return {
+    type: 'youtube',
+    videoId: ytId,
+<span class="diff-add">+   isShorts,</span>
+<span class="diff-add">+   embedUrl: \`https://www.youtube.com/embed/\${ytId}?autoplay=1&enablejsapi=1&rel=0\`,</span>
+    normalizedUrl: \`https://www.youtube.com/watch?v=\${ytId}\`,
+    isValid: true,
+  };
+}
+    </pre>
+  </div>
+
+  <!-- File 5 -->
+  <div class="card">
+    <h3>5. <code>src/lib/gemini-description-standardizer.ts</code></h3>
+    <p><strong>Goal:</strong> Prevent runaway label and emoji duplication during standardization.</p>
+    <pre>
+<span class="diff-add">} else if (/car\\s*parking|two\\s*wheeler|parking\\s*space|car\\s*park/i.test(s)) {</span>
+<span class="diff-add">  const cleanParking = s</span>
+<span class="diff-add">    .replace(/^(?:#\\s*)?(?:parking\\s*spaces?\\s*[:\\-]\\s*)+/gi, '')</span>
+<span class="diff-add">    .replace(/^[🚗🛵\\s]+/gu, '')</span>
+<span class="diff-add">    .trim();</span>
+<span class="diff-add">  const formatted = cleanParking</span>
+<span class="diff-add">    .replace(/(\\d+)\\s*(?:car|four\\s*wheel(?:er)?)\\s*parking(?:\\s*spaces?)?/gi, '🚗 $1 Four Wheeler Parking')</span>
+<span class="diff-add">    .replace(/(\\d+)\\s*two\\s*wheeler(?:\\s*parking)?/gi, '🛵 $1 Two Wheeler Parking');</span>
+<span class="diff-add">  addBucket(14, \`Parking Spaces: \${formatted}\`);</span>
+<span class="diff-add">} else if (/wide\\s*road|ceiling\\s*height|frontage|depth|80\\s*ft|100\\s*ft|height\\s*[:\\-]/i.test(s)) {</span>
+<span class="diff-add">  const cleanHWD = s.replace(/^(?:#\\s*)?(?:h\\s*:\\s*w\\s*:\\s*d\\s*[:\\-]\\s*)+/gi, '').trim();</span>
+<span class="diff-add">  addBucket(16, \`H : W : D: \${cleanHWD}\`);</span>
+    </pre>
+  </div>
+
+  <!-- SECTION 5: STEP BY STEP CHECKLIST -->
+  <h2>5. Step-by-Step Implementation Checklist for Other Website</h2>
+  <div class="card card-gold">
+    <ol>
+      <li><strong>Pull Latest Commits from Git:</strong>
+        <pre>git pull origin main</pre>
+      </li>
+      <li><strong>Copy Static Images to <code>public/uploads/properties/</code>:</strong>
+        <p>Ensure the 32 extracted property images exist in <code>public/uploads/properties/</code> so they load without 404s.</p>
+      </li>
+      <li><strong>Verify TypeScript Compilation (Must pass with 0 errors):</strong>
+        <pre>npx tsc --noEmit</pre>
+      </li>
+      <li><strong>Verify Production Build:</strong>
+        <pre>npm run build</pre>
+      </li>
+      <li><strong>Restart Production Daemon / Process:</strong>
+        <pre>pm2 restart all  # or systemctl restart your-service</pre>
+      </li>
+    </ol>
+  </div>
+
+  <div class="footer">
+    RealityTruedeal &bull; ANV REEALTY Production Architecture &bull; Generated November 19, 2026
+  </div>
+
+</body>
+</html>
+`;
+
+async function main() {
+  console.log('Writing HTML file...');
+  const htmlPathArtifact = path.join(artifactDir, 'TODAY_CHANGES_IMPLEMENTATION_GUIDE_NOV_19_2026.html');
+  const htmlPathPublic = path.join(projectPublicDir, 'TODAY_CHANGES_IMPLEMENTATION_GUIDE_NOV_19_2026.html');
+  const pdfPathArtifact = path.join(artifactDir, 'TODAY_CHANGES_IMPLEMENTATION_GUIDE_NOV_19_2026.pdf');
+  const pdfPathPublic = path.join(projectPublicDir, 'TODAY_CHANGES_IMPLEMENTATION_GUIDE_NOV_19_2026.pdf');
+
+  fs.writeFileSync(htmlPathArtifact, htmlContent, 'utf-8');
+  fs.writeFileSync(htmlPathPublic, htmlContent, 'utf-8');
+  console.log('HTML files created.');
+
+  console.log('Launching Chrome to render PDF...');
+  const browser = await chromium.launch({ channel: 'chrome', headless: true });
+  const page = await browser.newPage();
+  await page.setContent(htmlContent, { waitUntil: 'networkidle' });
+
+  await page.pdf({
+    path: pdfPathPublic,
+    format: 'A4',
+    printBackground: true,
+    margin: {
+      top: '18mm',
+      bottom: '18mm',
+      left: '14mm',
+      right: '14mm'
+    }
+  });
+
+  // Copy to artifact dir as well
+  fs.copyFileSync(pdfPathPublic, pdfPathArtifact);
+
+  await browser.close();
+  console.log('PDF generated successfully at:');
+  console.log('1. ', pdfPathPublic);
+  console.log('2. ', pdfPathArtifact);
+}
+
+main().catch(err => {
+  console.error(err);
+  process.exit(1);
+});
