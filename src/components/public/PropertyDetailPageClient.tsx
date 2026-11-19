@@ -431,17 +431,17 @@ export function PropertyDetailPageClient({
     // Professional fallback for properties without specific engineering specs
     return property?.isCommercial
       ? [
-          "High-efficiency corporate floor plate with optimized workspace layout",
-          "Double-glazed acoustic glass façade with superior thermal insulation",
-          "100% DG power backup and high-speed passenger & service elevators",
-          "Multi-tier 24x7 security surveillance and visitor access management"
-        ]
+        "High-efficiency corporate floor plate with optimized workspace layout",
+        "Double-glazed acoustic glass façade with superior thermal insulation",
+        "100% DG power backup and high-speed passenger & service elevators",
+        "Multi-tier 24x7 security surveillance and visitor access management"
+      ]
       : [
-          "Vastu-compliant architectural orientation with cross-ventilation",
-          "Acoustic double-glazed windows and expansive living deck",
-          "Premium Italian marble flooring in living and dining zones",
-          "100% DG power backup and 3-tier smart security infrastructure"
-        ];
+        "Vastu-compliant architectural orientation with cross-ventilation",
+        "Acoustic double-glazed windows and expansive living deck",
+        "Premium Italian marble flooring in living and dining zones",
+        "100% DG power backup and 3-tier smart security infrastructure"
+      ];
   }, [filteredHighlights, cleanDescription, property?.description, property?.isCommercial]);
 
   const rawConnectivity: string[] = (property?.connectivity && property.connectivity.length > 0)
