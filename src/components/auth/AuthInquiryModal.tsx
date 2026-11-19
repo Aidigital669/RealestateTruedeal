@@ -272,7 +272,7 @@ export function AuthInquiryModal({
               type="button"
               onClick={() => { setMode('login'); setError(null); }}
               className={`flex-1 py-1.5 px-3 rounded-xl font-bold text-xs transition-all duration-200 ${mode === 'login'
-                  ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-zinc-950 shadow-md scale-[1.02]'
+                  ? 'bg-[#b9974f] text-zinc-950 font-black shadow-md scale-[1.02]'
                   : 'text-zinc-300 hover:text-white'
                 }`}
             >
@@ -282,7 +282,7 @@ export function AuthInquiryModal({
               type="button"
               onClick={() => { setMode('signup'); setError(null); }}
               className={`flex-1 py-1.5 px-3 rounded-xl font-bold text-xs transition-all duration-200 ${mode === 'signup'
-                  ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-zinc-950 shadow-md scale-[1.02]'
+                  ? 'bg-[#b9974f] text-zinc-950 font-black shadow-md scale-[1.02]'
                   : 'text-zinc-300 hover:text-white'
                 }`}
             >
@@ -371,10 +371,10 @@ export function AuthInquiryModal({
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full mt-2 py-3 px-4 bg-gradient-to-r from-zinc-950 via-zinc-900 to-zinc-950 hover:from-amber-600 hover:to-amber-500 hover:text-zinc-950 text-white text-xs font-bold rounded-xl shadow-lg transition-all duration-300 flex items-center justify-center gap-2 group disabled:opacity-50 cursor-pointer"
+                  className="w-full mt-2 py-3 px-4 bg-zinc-950 hover:bg-[#b9974f] hover:text-zinc-950 text-white text-xs font-bold rounded-xl shadow-lg transition-all duration-300 flex items-center justify-center gap-2 group disabled:opacity-50 cursor-pointer"
                 >
                   <span>{loading ? 'Signing in...' : 'Sign In to Portal'}</span>
-                  <ArrowRight className="w-3.5 h-3.5 text-amber-400 group-hover:text-zinc-950 group-hover:translate-x-1 transition-transform" />
+                  <ArrowRight className="w-3.5 h-3.5 text-[#b9974f] group-hover:text-zinc-950 group-hover:translate-x-1 transition-transform" />
                 </button>
 
               </form>
@@ -490,7 +490,7 @@ export function AuthInquiryModal({
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full mt-2 py-3 px-4 bg-gradient-to-r from-zinc-950 via-zinc-900 to-zinc-950 hover:from-amber-600 hover:to-amber-500 hover:text-zinc-950 text-white text-xs font-bold rounded-xl shadow-lg transition-all duration-300 flex items-center justify-center gap-2 group disabled:opacity-50"
+                className="w-full mt-2 py-3 px-4 bg-zinc-950 hover:bg-[#b9974f] hover:text-zinc-950 text-white text-xs font-bold rounded-xl shadow-lg transition-all duration-300 flex items-center justify-center gap-2 group disabled:opacity-50 cursor-pointer"
               >
                 <span>{loading ? 'Creating Account...' : 'Complete Registration'}</span>
                 <ShieldCheck className="w-4 h-4 text-emerald-400 group-hover:text-zinc-950 transition-colors" />

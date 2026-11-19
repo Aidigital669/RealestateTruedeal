@@ -206,7 +206,7 @@ function CompareContent() {
                   setAuthModalMode('login');
                   setAuthModalOpen(true);
                 }}
-                className="flex-1 py-3 px-5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-zinc-950 font-black text-xs transition shadow-lg shadow-amber-500/20 cursor-pointer"
+                className="flex-1 py-3 px-5 rounded-xl bg-[#b9974f] hover:bg-[#a4823d] text-zinc-950 font-black text-xs transition shadow-lg shadow-[#b9974f]/20 cursor-pointer"
               >
                 Sign In to Your Account
               </button>
@@ -295,7 +295,7 @@ function CompareContent() {
                     onClick={() => setHighlightDiffs(!highlightDiffs)}
                     className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer border ${
                       highlightDiffs
-                        ? 'bg-amber-400 text-black border-amber-400'
+                        ? 'bg-[#b9974f] text-zinc-950 border-[#b9974f]'
                         : 'bg-zinc-900 border-zinc-700 text-zinc-200 hover:bg-zinc-800'
                     }`}
                   >
@@ -307,7 +307,7 @@ function CompareContent() {
                 {compareList.length < 4 && (
                   <button
                     onClick={() => setAddModalOpen(true)}
-                    className="bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs px-4 py-2 rounded-xl transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+                    className="bg-[#b9974f] hover:bg-[#a4823d] text-zinc-950 font-black text-xs px-4 py-2 rounded-xl transition flex items-center gap-1.5 shadow-sm cursor-pointer"
                   >
                     <Plus className="w-4 h-4" />
                     <span>Add Property ({compareList.length}/4)</span>
@@ -363,7 +363,7 @@ function CompareContent() {
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-6">
                 <button
                   onClick={() => setAddModalOpen(true)}
-                  className="w-full sm:w-auto bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs px-6 py-3 rounded-xl transition shadow-md cursor-pointer flex items-center justify-center gap-2"
+                  className="w-full sm:w-auto bg-[#b9974f] hover:bg-[#a4823d] text-zinc-950 font-black text-xs px-6 py-3 rounded-xl transition shadow-md cursor-pointer flex items-center justify-center gap-2"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Choose from Portfolio</span>

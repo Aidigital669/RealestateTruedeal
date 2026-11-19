@@ -122,7 +122,7 @@ export function CategoryDetailPageClient({
               <div className="pt-4 flex flex-wrap items-center gap-3.5">
                 <button
                   onClick={() => setIsModalOpen(true)}
-                  className="px-6 py-3.5 rounded-xl bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-zinc-950 text-xs sm:text-sm font-bold tracking-wider uppercase transition shadow-lg shadow-amber-500/20 flex items-center gap-2 cursor-pointer"
+                  className="px-6 py-3.5 rounded-xl bg-[#b9974f] hover:bg-[#a4823d] active:bg-[#896a2e] text-zinc-950 text-xs sm:text-sm font-black tracking-wider uppercase transition shadow-lg shadow-[#b9974f]/20 flex items-center gap-2 cursor-pointer"
                 >
                   <Sparkles className="w-4 h-4" />
                   <span>Request Bespoke Dossier</span>
@@ -340,7 +340,7 @@ export function CategoryDetailPageClient({
               <div className="pt-6">
                 <button
                   onClick={() => setIsModalOpen(true)}
-                  className="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold tracking-wider uppercase transition shadow-md cursor-pointer"
+                  className="w-full py-3 rounded-xl bg-[#b9974f] hover:bg-[#a4823d] text-zinc-950 text-xs font-black tracking-wider uppercase transition shadow-md cursor-pointer"
                 >
                   Register Requirement
                 </button>

@@ -90,9 +90,9 @@ export function BusinessPurposeFilter({
         onClick={() => setIsOpen(!isOpen)}
         className={`w-full min-h-[42px] px-3.5 py-2 rounded-xl text-xs sm:text-sm font-medium transition flex items-center justify-between gap-2 cursor-pointer border ${
           activePurposeObj
-            ? 'bg-amber-500 text-zinc-950 font-bold border-amber-600 shadow-xs'
+            ? 'bg-[#b9974f] text-zinc-950 font-black border-[#b9974f] shadow-xs'
             : isCommercialActive
-            ? 'bg-amber-50/80 hover:bg-amber-100/90 text-amber-950 border-amber-300 font-semibold shadow-2xs'
+            ? 'bg-[#b9974f]/15 hover:bg-[#b9974f]/25 text-zinc-950 border-[#b9974f]/40 font-semibold shadow-2xs'
             : 'bg-zinc-50 hover:bg-zinc-100 text-zinc-700 border-zinc-200'
         }`}
         title="Filter properties by suitable business purpose"
@@ -168,7 +168,7 @@ export function BusinessPurposeFilter({
               onClick={() => handleSelect('All')}
               className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition text-left cursor-pointer ${
                 !activePurposeObj
-                  ? 'bg-amber-500 text-zinc-950 font-bold shadow-xs'
+                  ? 'bg-[#b9974f] text-zinc-950 font-black shadow-xs'
                   : 'hover:bg-zinc-100 text-zinc-700'
               }`}
             >
@@ -190,8 +190,8 @@ export function BusinessPurposeFilter({
                     onClick={() => handleSelect(item.slug)}
                     className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition text-left cursor-pointer ${
                       isSelected
-                        ? 'bg-amber-500 text-zinc-950 font-bold shadow-xs'
-                        : 'hover:bg-amber-50/60 text-zinc-800'
+                        ? 'bg-[#b9974f] text-zinc-950 font-black shadow-xs'
+                        : 'hover:bg-[#b9974f]/10 text-zinc-800'
                     }`}
                   >
                     <span className="truncate pr-2">{item.name}</span>

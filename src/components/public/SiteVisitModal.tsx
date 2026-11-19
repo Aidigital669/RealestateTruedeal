@@ -419,7 +419,7 @@ export function SiteVisitModal({
                       type="button"
                       onClick={() => setPassengers(slot)}
                       className={`py-2 px-2 rounded-xl text-[11px] font-semibold border transition text-center cursor-pointer ${passengers === slot
-                        ? 'bg-amber-400 text-zinc-950 border-amber-400 font-bold'
+                        ? 'bg-[#b9974f] text-zinc-950 border-[#b9974f] font-black'
                         : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700'
                         }`}
                     >

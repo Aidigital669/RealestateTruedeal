@@ -106,9 +106,21 @@ export async function fetchAllProperties(forceFresh = false): Promise<PropertyIt
           ? p.all_images.filter((url: any) => typeof url === 'string' && url.trim().length > 0)
           : [];
 
-        const resolvedImages = rawImages.length > 0
+        const candidateImages = rawImages.length > 0
           ? rawImages
           : (p.image ? [p.image] : []);
+
+        // Guard against any runaway base64 data URLs in SSR payloads
+        const resolvedImages = candidateImages.map((u: string) => {
+          if (typeof u === 'string' && u.startsWith('data:image/') && u.length > 10240) {
+            return 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
+          }
+          return u;
+        });
+
+        const coverImage = (typeof p.image === 'string' && p.image.startsWith('data:image/') && p.image.length > 10240)
+          ? resolvedImages[0] || 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
+          : (p.image || resolvedImages[0]);
 
         const videoUrl: string | null = (p.videoUrl && String(p.videoUrl).trim().length > 0) ? String(p.videoUrl).trim() : null;
         const videoThumbnail: string | null = videoUrl ? (resolvedImages[0] || null) : null;
@@ -169,7 +181,7 @@ export async function fetchAllProperties(forceFresh = false): Promise<PropertyIt
           highlights,
           connectivity,
           amenitiesList,
-          image: p.image,
+          image: coverImage,
           images: resolvedImages,
           videoUrl,
           videoThumbnail,

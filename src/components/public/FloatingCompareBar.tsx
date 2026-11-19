@@ -93,7 +93,7 @@ export function FloatingCompareBar() {
 
           <Link
             href={`/compare?ids=${compareList.map((p) => p.id).join(',')}`}
-            className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-extrabold text-xs px-5 py-2.5 rounded-xl shadow-lg transition flex items-center gap-1.5 cursor-pointer"
+            className="bg-[#b9974f] hover:bg-[#a4823d] text-zinc-950 font-black text-xs px-5 py-2.5 rounded-xl shadow-lg transition flex items-center gap-1.5 cursor-pointer"
           >
             <span>Compare Now ({compareList.length})</span>
             <ArrowRight className="w-3.5 h-3.5" />

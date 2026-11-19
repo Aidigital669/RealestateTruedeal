@@ -319,7 +319,7 @@ export function TimedEnquiryModal() {
                 }}
                 className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
                   activeTab === 'enquiry'
-                    ? 'bg-amber-500 text-zinc-950 shadow-sm'
+                    ? 'bg-[#b9974f] text-zinc-950 font-black shadow-sm'
                     : 'text-zinc-400 hover:text-white'
                 }`}
               >
@@ -335,7 +335,7 @@ export function TimedEnquiryModal() {
                 }}
                 className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
                   activeTab === 'visit'
-                    ? 'bg-amber-500 text-zinc-950 shadow-sm'
+                    ? 'bg-[#b9974f] text-zinc-950 font-black shadow-sm'
                     : 'text-zinc-400 hover:text-white'
                 }`}
               >

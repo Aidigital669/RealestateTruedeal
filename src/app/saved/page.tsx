@@ -363,7 +363,7 @@ export default function SavedPropertiesPage() {
                   setAuthModalMode('login');
                   setAuthModalOpen(true);
                 }}
-                className="flex-1 py-3 px-5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-zinc-950 font-black text-xs transition shadow-lg shadow-amber-500/20 cursor-pointer"
+                className="flex-1 py-3 px-5 rounded-xl bg-[#b9974f] hover:bg-[#a4823d] text-zinc-950 font-black text-xs transition shadow-lg shadow-[#b9974f]/20 cursor-pointer"
               >
                 Sign In to Your Account
               </button>
@@ -461,7 +461,7 @@ export default function SavedPropertiesPage() {
                   <>
                     <button
                       onClick={handleCompareAll}
-                      className="px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-black text-xs font-black transition flex items-center gap-1.5 shadow-xs cursor-pointer"
+                      className="px-3.5 py-2 rounded-xl bg-[#b9974f] hover:bg-[#a4823d] text-zinc-950 text-xs font-black transition flex items-center gap-1.5 shadow-xs cursor-pointer"
                       title="Compare all saved properties side-by-side"
                     >
                       <Scale className="w-4 h-4" />
@@ -710,7 +710,7 @@ export default function SavedPropertiesPage() {
                           {prop.label || 'Prime Asset'}
                         </span>
                         {prop.isCommercial && (
-                          <span className="bg-amber-400 text-black text-[10px] font-black px-2 py-1 rounded-xl">
+                          <span className="bg-[#b9974f] text-zinc-950 text-[10px] font-black px-2 py-1 rounded-xl">
                             Corporate
                           </span>
                         )}
@@ -793,7 +793,7 @@ export default function SavedPropertiesPage() {
                             onClick={() => toggleCompare(prop)}
                             className={`p-2 sm:px-3 sm:py-2 rounded-lg sm:rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer border ${
                               isCompared
-                                ? 'bg-amber-400 text-black border-amber-400 font-extrabold shadow-xs'
+                                ? 'bg-[#b9974f] text-zinc-950 border-[#b9974f] font-extrabold shadow-xs'
                                 : 'bg-white border-zinc-200 hover:border-zinc-300 text-zinc-700 hover:bg-zinc-50'
                             }`}
                             title={isCompared ? 'Remove from Compare' : 'Add to Compare'}

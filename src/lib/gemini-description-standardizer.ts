@@ -245,10 +245,14 @@ export function fastDeterministicStandardizeDescription(
 ): string {
   if (!rawDescription && !context.title && !context.suitableFor) return '';
 
-  // Extract raw hashtag segments or lines
-  const rawSegments = rawDescription
+  // Extract raw hashtag segments, bullet lines (*, •, -), or newlines
+  const normalized = rawDescription
     .replace(/\r/g, '')
-    .split(/(?:^|\n|\s+)#/)
+    .replace(/(?:^|\s+)[*•\-]\s+/g, '\n# ')
+    .replace(/\s*#\s*/g, '\n# ');
+
+  const rawSegments = normalized
+    .split(/\n+/)
     .map(s => s.trim().replace(/^#+/, '').trim())
     .filter(Boolean);
 
@@ -349,12 +353,27 @@ export function fastDeterministicStandardizeDescription(
       addBucket(16, `H : W : D: ${s}`);
     } else if (/total\s*floors?|floors?\s*building/i.test(s)) {
       addBucket(17, `Total Floors: ${s}`);
-    } else if (/on\s*floor|floor\s*no|(\d+)(?:st|nd|rd|th)\s*floor/i.test(s)) {
+    } else if (/façade|facade/i.test(s)) {
+      addBucket(20, /^fa[cç]ade/i.test(s) ? s : `Façade: ${s}`);
+    } else if (/hvac|chiller/i.test(s)) {
+      addBucket(20, /^hvac/i.test(s) ? s : `HVAC: ${s}`);
+    } else if (/retail\s*efficiency/i.test(s)) {
+      addBucket(20, /^retail\s*efficiency/i.test(s) ? s : `Retail Efficiency: ${s}`);
+    } else if (/connectivity\s*[:\-]/i.test(s)) {
+      addBucket(20, /^connectivity/i.test(s) ? s : `Connectivity: ${s}`);
+    } else if (/on\s*floor|floor\s*no|(\d+)(?:st|nd|rd|th)\s*floor|^floor\s*[:\-]/i.test(s)) {
       addBucket(18, `Property on Floor: ${s}`);
     } else if (/suitable\s*for/i.test(s) || (/(?:retail|showroom|clinic|bank|corporate|godown|storage)/i.test(s) && !/(?:available\s*in|for\s*rent|for\s*sale|at\s*undri)/i.test(s))) {
-      const cleanSuit = s.replace(/^(?:#\s*)?(?:suitable\s*for\s*[:\-]?\s*)+/i, '').trim();
-      if (!/(?:available\s*in|for\s*rent|for\s*sale)/i.test(cleanSuit)) {
-        addBucket(19, cleanSuit);
+      // Guard: strictly ignore engineering specifications, multi-colon dumps, and hardware lines
+      if (!s.includes(':') || /^suitable\s*for\s*[:\-]/i.test(s)) {
+        const cleanSuit = s.replace(/^(?:#\s*)?(?:suitable\s*for\s*[:\-]?\s*)+/i, '').trim();
+        if (
+          cleanSuit &&
+          cleanSuit.length <= 50 &&
+          !/(?:available\s*in|for\s*rent|for\s*sale|total\s*retail|leasable|sq\.?\s*ft|approx|chiller|double\-glazed|parking|connectivity|fa[cç]ade|hvac)/i.test(cleanSuit)
+        ) {
+          addBucket(19, cleanSuit);
+        }
       }
     } else if (/lock[\s\-]*in/i.test(s)) {
       addBucket(22, `Lock-in Period: ${s}`);

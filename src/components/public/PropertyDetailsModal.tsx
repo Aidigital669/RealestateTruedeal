@@ -245,7 +245,7 @@ export function PropertyDetailsModal({
                           setEnquiryOpen(true);
                         }
                       }}
-                      className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-black text-xs transition shadow-xs flex items-center gap-1.5 cursor-pointer"
+                      className="px-3.5 py-2 rounded-xl bg-[#b9974f] hover:bg-[#a4823d] text-zinc-950 font-black text-xs transition shadow-xs flex items-center gap-1.5 cursor-pointer"
                     >
                       <span>Request Price</span>
                       <ArrowRight className="w-3.5 h-3.5" />
@@ -356,18 +356,34 @@ export function PropertyDetailsModal({
                   <div className="p-3.5 bg-zinc-50 rounded-2xl border border-zinc-200">
                     <span className="font-bold text-zinc-900 block mb-1">Architectural Highlights</span>
                     <ul className="space-y-1 text-zinc-600 list-disc list-inside">
-                      <li>East/West orientation with maximum cross-ventilation</li>
-                      <li>High ceilings with acoustic double-glazed windows</li>
-                      <li>Zero dead-space layout engineered for private entertaining</li>
+                      {property.highlights && property.highlights.length > 0 ? (
+                        property.highlights.slice(0, 4).map((h, i) => (
+                          <li key={i} className="break-words">{h}</li>
+                        ))
+                      ) : (
+                        <>
+                          <li>East/West orientation with maximum cross-ventilation</li>
+                          <li>High ceilings with acoustic double-glazed windows</li>
+                          <li>Zero dead-space layout engineered for private entertaining</li>
+                        </>
+                      )}
                     </ul>
                   </div>
 
                   <div className="p-3.5 bg-zinc-50 rounded-2xl border border-zinc-200">
                     <span className="font-bold text-zinc-900 block mb-1">Locality Advantage</span>
                     <ul className="space-y-1 text-zinc-600 list-disc list-inside">
-                      <li>Prime micro-market in {property.locality || 'Pune'}</li>
-                      <li>Fast arterial access to Metro Line 3 and Expressway</li>
-                      <li>Within 10 mins of leading international academies & hospitals</li>
+                      {property.connectivity && property.connectivity.length > 0 ? (
+                        property.connectivity.slice(0, 4).map((c, i) => (
+                          <li key={i} className="break-words">{c}</li>
+                        ))
+                      ) : (
+                        <>
+                          <li>Prime micro-market in {property.locality || 'Pune'}</li>
+                          <li>Fast arterial access to Metro Line 3 and Expressway</li>
+                          <li>Within 10 mins of leading international academies &amp; hospitals</li>
+                        </>
+                      )}
                     </ul>
                   </div>
                 </div>
@@ -482,7 +498,7 @@ export function PropertyDetailsModal({
                 onClick={handleToggleCompare}
                 className={`flex-1 sm:flex-initial px-3.5 py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer border ${
                   isCompared
-                    ? 'bg-amber-500 text-black border-amber-500 hover:bg-amber-400'
+                    ? 'bg-[#b9974f] text-zinc-950 border-[#b9974f] hover:bg-[#a4823d]'
                     : 'bg-white border-zinc-300 text-zinc-800 hover:bg-zinc-100'
                 }`}
               >
@@ -529,10 +545,10 @@ export function PropertyDetailsModal({
                     setEnquiryOpen(true);
                   }
                 }}
-                className="flex-1 sm:flex-initial bg-zinc-950 hover:bg-zinc-800 text-white font-bold text-xs px-6 py-3 rounded-xl shadow-lg transition flex items-center justify-center gap-2 cursor-pointer"
+                className="flex-1 sm:flex-initial bg-[#b9974f] hover:bg-[#a4823d] text-zinc-950 font-black text-xs px-6 py-3 rounded-xl shadow-lg transition flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>Instant Enquiry / Site Visit</span>
-                <ArrowRight className="w-3.5 h-3.5 text-amber-400" />
+                <ArrowRight className="w-3.5 h-3.5 text-zinc-950" />
               </button>
             </div>
           </div>

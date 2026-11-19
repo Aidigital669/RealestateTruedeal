@@ -154,7 +154,7 @@ export function PropertyGalleryModal({
               onClick={() => setActiveMediaMode('photos')}
               className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
                 activeMediaMode === 'photos'
-                  ? 'bg-amber-500 text-zinc-950 shadow-xs'
+                  ? 'bg-[#b9974f] text-zinc-950 font-black shadow-xs'
                   : 'text-zinc-300 hover:text-white hover:bg-white/5'
               }`}
             >
@@ -167,7 +167,7 @@ export function PropertyGalleryModal({
               onClick={() => setActiveMediaMode('video')}
               className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
                 activeMediaMode === 'video'
-                  ? 'bg-amber-500 text-zinc-950 shadow-xs'
+                  ? 'bg-[#b9974f] text-zinc-950 font-black shadow-xs'
                   : 'text-zinc-300 hover:text-white hover:bg-white/5'
               }`}
             >
@@ -311,7 +311,7 @@ export function PropertyGalleryModal({
                   onClick={() => setActivePhotoIdx(idx)}
                   className={`relative w-14 h-10 sm:w-18 sm:h-12 rounded-lg overflow-hidden shrink-0 border-2 transition-all cursor-pointer ${
                     isActive
-                      ? 'border-amber-400 ring-2 ring-amber-400/50 scale-105'
+                      ? 'border-[#b9974f] ring-2 ring-[#b9974f]/50 scale-105'
                       : 'border-white/20 opacity-60 hover:opacity-100 hover:border-white/60'
                   }`}
                 >
@@ -360,7 +360,7 @@ export function PropertyGalleryModal({
                   onClose();
                   onBookSiteVisit(property);
                 }}
-                className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-black text-xs transition cursor-pointer shadow-md"
+                className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-xl bg-[#b9974f] hover:bg-[#a4823d] text-zinc-950 font-black text-xs transition cursor-pointer shadow-md"
               >
                 <Calendar className="w-3.5 h-3.5 text-zinc-950 shrink-0" />
                 <span>Book Site Visit</span>

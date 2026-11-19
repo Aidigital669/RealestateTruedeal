@@ -72,3 +72,93 @@ body {
   -ms-overflow-style: none !important;
   scrollbar-width: none !important;
 }
+
+/* ANV REEALTY Signature Luxury Gold Utilities (#b9974f) */
+.bg-brand-gold,
+.btn-gold {
+  background-color: #b9974f !important;
+  color: #09090b !important;
+}
+
+.bg-brand-gold:hover,
+.btn-gold:hover {
+  background-color: #a4823d !important;
+}
+
+.text-brand-gold {
+  color: #b9974f !important;
+}
+
+.border-brand-gold {
+  border-color: #b9974f !important;
+}
+
+/* Global button & accent overrides ensuring #b9974f is applied across the entire site */
+.bg-amber-500,
+.bg-amber-400,
+.bg-amber-600,
+.bg-yellow-400,
+.bg-yellow-500 {
+  background-color: #b9974f !important;
+}
+
+.hover\:bg-amber-400:hover,
+.hover\:bg-amber-500:hover,
+.hover\:bg-amber-300:hover,
+.hover\:bg-yellow-400:hover,
+.hover\:bg-yellow-300:hover {
+  background-color: #a4823d !important;
+}
+
+.text-amber-400,
+.text-amber-500,
+.text-amber-600 {
+  color: #b9974f !important;
+}
+
+.hover\:text-amber-400:hover,
+.hover\:text-amber-300:hover {
+  color: #caa960 !important;
+}
+
+.border-amber-400,
+.border-amber-500,
+.border-amber-600 {
+  border-color: #b9974f !important;
+}
+
+.hover\:border-amber-400:hover,
+.hover\:border-amber-500:hover {
+  border-color: #a4823d !important;
+}
+
+.focus\:border-amber-500:focus,
+.focus\:border-amber-400:focus {
+  border-color: #b9974f !important;
+}
+
+.ring-amber-400\/40,
+.ring-amber-500\/30 {
+  --tw-ring-color: rgba(185, 151, 79, 0.4) !important;
+}
+
+/* Gradient overrides to ensure gradients use authentic #b9974f tone */
+.from-amber-500,
+.from-amber-400,
+.from-amber-600 {
+  --tw-gradient-from: #b9974f var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgba(185, 151, 79, 0) var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
+.via-amber-400,
+.via-amber-500 {
+  --tw-gradient-to: rgba(185, 151, 79, 0) var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), #caa960 var(--tw-gradient-via-position), var(--tw-gradient-to) !important;
+}
+
+.to-amber-500,
+.to-amber-400,
+.to-amber-600 {
+  --tw-gradient-to: #a4823d var(--tw-gradient-to-position) !important;
+}

@@ -330,7 +330,7 @@ export function FeaturedAdsBar() {
                     <h3 className="font-extrabold text-base text-white tracking-tight truncate">
                       {activeAd.name}
                     </h3>
-                    <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-amber-500 text-zinc-950">
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-[#b9974f] text-zinc-950">
                       {activeAd.badge || 'Sponsored'}
                     </span>
                   </div>
@@ -407,7 +407,7 @@ export function FeaturedAdsBar() {
                 <button
                   type="button"
                   onClick={() => handleAdCta(activeAd)}
-                  className="w-full sm:flex-1 py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition shadow-md cursor-pointer"
+                  className="w-full sm:flex-1 py-3 px-4 rounded-xl bg-[#b9974f] hover:bg-[#a4823d] text-zinc-950 font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition shadow-md cursor-pointer"
                 >
                   <span>{activeAd.ctaText}</span>
                   <ExternalLinkIcon className="w-4 h-4" />

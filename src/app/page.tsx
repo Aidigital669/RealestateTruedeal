@@ -96,7 +96,9 @@ export default async function Home(props: {
       dbLocs = cachedPageData.dbLocs;
       dbTypes = cachedPageData.dbTypes;
       dbStatuses = cachedPageData.dbStatuses;
-      buyerDemands = cachedPageData.buyerDemands || [];
+      buyerDemands = (cachedPageData.buyerDemands && cachedPageData.buyerDemands.length > 0)
+        ? cachedPageData.buyerDemands
+        : await getAllLiveBuyerDemands().catch(() => []);
     } else {
       const [fetchedProps, fetchedBlogs, fetchedLocs, fetchedTypes, fetchedStatuses, fetchedBuyers] = await Promise.all([
         fetchAllProperties(),

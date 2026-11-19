@@ -218,7 +218,7 @@ export default function BlogDetailPage() {
                 <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
                   <button
                     onClick={() => setAuthModalOpen(true)}
-                    className="w-full sm:w-auto px-6 py-3 bg-amber-500 hover:bg-amber-400 text-black text-xs font-black rounded-xl transition shadow-lg flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full sm:w-auto px-6 py-3 bg-[#b9974f] hover:bg-[#a4823d] text-zinc-950 text-xs font-black rounded-xl transition shadow-lg flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <LogIn className="w-4 h-4" />
                     <span>Sign In to Read Article</span>
@@ -318,7 +318,7 @@ export default function BlogDetailPage() {
               </div>
               <Link
                 href="/#properties-section"
-                className="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold rounded-xl transition shrink-0 cursor-pointer"
+                className="px-5 py-2.5 bg-[#b9974f] hover:bg-[#a4823d] text-zinc-950 text-xs font-black rounded-xl transition shrink-0 cursor-pointer"
               >
                 Explore Curated Properties
               </Link>
