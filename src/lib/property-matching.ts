@@ -124,72 +124,147 @@ export const KNOWN_PUNE_LOCALITIES = [
   'wagholi',
   'kothrud',
   'talegaon',
-  'mohammadwadi'
+  'mohammadwadi',
+  'talawade',
+  'gultekadi',
+  'aundh',
+  'senapati bapat road',
+  'sb road',
+  'boat club road',
+  'model colony',
+  'pashan',
+  'pimple saudagar',
+  'pimple nilakh',
+  'chinchwad',
+  'pimpri',
+  'ravet',
+  'moshi',
+  'chakan',
+  'bhosari',
+  'dhanori',
+  'kondhwa',
+  'wanowrie',
+  'fatima nagar',
+  'swargate',
+  'bibwewadi',
+  'katraj',
+  'dhankawadi',
+  'sinhagad road',
+  'warje',
+  'karve nagar',
+  'erandwane',
+  'deccan',
+  'deccan gymkhana',
+  'fc road',
+  'jm road',
+  'yerawada',
+  'tingre nagar',
+  'loni kalbhor',
+  'phursungi',
+  'tathawade',
+  'punawale',
+  'marunji',
+  'maan',
+  'dighi',
+  'charholi',
+  'alandi',
+  'pcmc',
+  'pune'
 ];
 
 /**
  * Extracts numeric budget bounds (in INR) from user search text
- * Handles expressions like "under 2 cr", "below 1.5 crore", "between 2 and 4 cr", "budget 80 lakh"
+ * Handles expressions like "under 2 cr", "below 1.5 crore", "between 2 and 4 cr", "budget 80 lakh", "range 1 to 2 cr", "under 50k"
  */
 export function parseBudgetAmounts(text: string): { minBudget: number | null; maxBudget: number | null } {
   if (!text) return { minBudget: null, maxBudget: null };
-  const lower = text.toLowerCase();
+  const lower = text.toLowerCase().replace(/,/g, '');
 
   const toINR = (val: string, unit?: string): number => {
     const num = parseFloat(val);
-    if (isNaN(num)) return 0;
-    const u = (unit || '').toLowerCase();
-    if (u.startsWith('cr')) return Math.round(num * 10000000);
-    if (u.startsWith('l') || u.startsWith('lac')) return Math.round(num * 100000);
-    if (u.startsWith('k')) return Math.round(num * 1000);
+    if (isNaN(num) || num <= 0) return 0;
+    const u = (unit || '').toLowerCase().trim();
+    if (u.startsWith('cr') || u.startsWith('crore')) return Math.round(num * 10000000);
+    if (u.startsWith('l') || u.startsWith('lac') || u.startsWith('lakh')) return Math.round(num * 100000);
+    if (u.startsWith('k') || u.startsWith('thousand')) return Math.round(num * 1000);
     // If no unit but number is small like "2", check if "cr" or "crore" was anywhere nearby
     if (num <= 100 && /\b(?:cr|crore|crores)\b/i.test(lower)) return Math.round(num * 10000000);
     if (num <= 999 && /\b(?:lakh|lakhs|lac|lacs)\b/i.test(lower)) return Math.round(num * 100000);
     return Math.round(num);
   };
 
-  // 1. Range: "1 to 2 cr", "1 - 2 cr", "between 1 cr and 2 cr", "1.5 - 3 crore"
-  const rangeMatch = lower.match(/(?:between|from)?\s*(?:rs\.?|₹|inr)?\s*(\d+(?:\.\d+)?)\s*(cr|crore|crores|lakh|lakhs|lac|lacs|l)?\s*(?:to|-|and)\s*(?:rs\.?|₹|inr)?\s*(\d+(?:\.\d+)?)\s*(cr|crore|crores|lakh|lakhs|lac|lacs|l)\b/i);
+  // 1. Range: "between 1 cr to 2 cr", "between 1 and 2 cr", "1 to 2 cr", "1 - 2 cr", "1-2 cr", "range 1 to 2 cr", "50 to 80 lakh", "50l - 1cr"
+  const rangeMatch = lower.match(
+    /(?:between|range|from)?\s*(?:rs\.?|₹|inr)?\s*(\d+(?:\.\d+)?)\s*(cr|crore|crores|lakh|lakhs|lac|lacs|l|k)?\s*(?:to|-|and|till)\s*(?:rs\.?|₹|inr)?\s*(\d+(?:\.\d+)?)\s*(cr|crore|crores|lakh|lakhs|lac|lacs|l|k)\b/i
+  );
   if (rangeMatch) {
     const unit1 = rangeMatch[2] || rangeMatch[4];
     const unit2 = rangeMatch[4];
     const minBudget = toINR(rangeMatch[1], unit1);
     const maxBudget = toINR(rangeMatch[3], unit2);
-    return { minBudget, maxBudget };
+    if (minBudget > 0 && maxBudget > 0) {
+      return {
+        minBudget: Math.min(minBudget, maxBudget),
+        maxBudget: Math.max(minBudget, maxBudget)
+      };
+    }
   }
 
-  // 2. Max: "under 2 cr", "below 2 cr", "less than 2 cr", "max 2 cr", "within 2 cr", "upto 2 cr", "up to 2 cr", "< 2 cr", "budget under 2 cr", "sub-2 cr"
-  const maxMatch = lower.match(/(?:under|below|less\s*than|up\s*to|upto|within|sub[-_\s]*|max(?:imum)?|<)\s*(?:rs\.?|₹|inr)?\s*(\d+(?:\.\d+)?)\s*(cr|crore|crores|lakh|lakhs|lac|lacs|l)?\b/i);
+  // 2. Max: "under 2 cr", "below 2 cr", "less than 2 cr", "max 2 cr", "within 2 cr", "upto 2 cr", "up to 2 cr", "<= 2 cr", "< 2 cr", "budget under 2 cr", "sub-2 cr", "under 50l", "under 75k"
+  const maxMatch = lower.match(
+    /(?:under|below|less\s*than|up\s*to|upto|within|sub[-_\s]*|max(?:imum)?|<=?)\s*(?:budget\s*(?:of)?)?\s*(?:rs\.?|₹|inr)?\s*(\d+(?:\.\d+)?)\s*(cr|crore|crores|lakh|lakhs|lac|lacs|l|k)?\b/i
+  );
   if (maxMatch) {
     const maxBudget = toINR(maxMatch[1], maxMatch[2]);
-    return { minBudget: null, maxBudget };
+    if (maxBudget > 0) {
+      return { minBudget: null, maxBudget };
+    }
   }
 
-  // 3. Min: "above 2 cr", "over 2 cr", "more than 2 cr", "min 2 cr", "at least 2 cr", "> 2 cr"
-  const minMatch = lower.match(/(?:above|over|more\s*than|min(?:imum)?|at\s*least|>)\s*(?:rs\.?|₹|inr)?\s*(\d+(?:\.\d+)?)\s*(cr|crore|crores|lakh|lakhs|lac|lacs|l)?\b/i);
+  // 3. Min: "above 2 cr", "over 2 cr", "more than 2 cr", "min 2 cr", "at least 2 cr", ">= 2 cr", "> 2 cr", "starting 2 cr", "starts from 2 cr"
+  const minMatch = lower.match(
+    /(?:above|over|more\s*than|min(?:imum)?|at\s*least|>=?|starting\s*(?:at|from)?|starts?\s*(?:at|from)?)\s*(?:rs\.?|₹|inr)?\s*(\d+(?:\.\d+)?)\s*(cr|crore|crores|lakh|lakhs|lac|lacs|l|k)?\b/i
+  );
   if (minMatch) {
     const minBudget = toINR(minMatch[1], minMatch[2]);
-    return { minBudget, maxBudget: null };
+    if (minBudget > 0) {
+      return { minBudget, maxBudget: null };
+    }
   }
 
-  // 4. Exact/Target: "budget 2 cr", "budget of 2 cr", "budget: 2 cr", "around 2 cr", "in 2 cr", "for 2 cr"
-  const targetMatch = lower.match(/\b(?:budget\s*(?:is|of|around|:|approx)?|in|for)\s*(?:rs\.?|₹|inr)?\s*(\d+(?:\.\d+)?)\s*(cr|crore|crores|lakh|lakhs|lac|lacs|l)\b/i);
+  // 4. Exact/Target: "budget 2 cr", "budget of 2 cr", "budget: 2 cr", "around 2 cr", "in 2 cr", "for 2 cr", "approx 2 cr"
+  const targetMatch = lower.match(
+    /\b(?:budget\s*(?:is|of|around|:|approx)?|around|approx(?:imate)?|in|for)\s*(?:rs\.?|₹|inr)?\s*(\d+(?:\.\d+)?)\s*(cr|crore|crores|lakh|lakhs|lac|lacs|l|k)\b/i
+  );
   if (targetMatch) {
     const target = toINR(targetMatch[1], targetMatch[2]);
-    return {
-      minBudget: Math.round(target * 0.7),
-      maxBudget: Math.round(target * 1.15)
-    };
+    if (target > 0) {
+      return {
+        minBudget: Math.round(target * 0.7),
+        maxBudget: Math.round(target * 1.15)
+      };
+    }
   }
 
-  // 5. Standalone budget: "6cr", "6 cr", "6 crore", "₹6 cr", "around 6 cr"
-  const standaloneMatch = lower.match(/(?:rs\.?|₹|inr)?\s*(\d+(?:\.\d+)?)\s*(cr|crore|crores|lakh|lakhs|lac|lacs|l)\b/i);
+  // 5. Standalone budget: "6cr", "6 cr", "6 crore", "₹6 cr", "around 6 cr", "50 lakh", "80l"
+  const standaloneMatch = lower.match(/(?:rs\.?|₹|inr)?\s*(\d+(?:\.\d+)?)\s*(cr|crore|crores|lakh|lakhs|lac|lacs|l|k)\b/i);
   if (standaloneMatch) {
     const target = toINR(standaloneMatch[1], standaloneMatch[2]);
-    return {
-      minBudget: Math.round(target * 0.7),
-      maxBudget: Math.round(target * 1.15)
-    };
+    if (target > 0) {
+      return {
+        minBudget: Math.round(target * 0.7),
+        maxBudget: Math.round(target * 1.15)
+      };
+    }
+  }
+
+  // 6. Raw standalone numbers >= 10,000 (e.g. "under 5000000" or "under 50000")
+  const rawNumMatch = lower.match(/(?:under|below|upto|within|<=?)\s*(?:rs\.?|₹|inr)?\s*(\d{5,10})\b/i);
+  if (rawNumMatch) {
+    const num = parseInt(rawNumMatch[1], 10);
+    if (!isNaN(num) && num > 0) {
+      return { minBudget: null, maxBudget: num };
+    }
   }
 
   return { minBudget: null, maxBudget: null };
@@ -211,31 +286,65 @@ export function getPropertyRawPrice(prop: {
   if (crMatch) return Math.round(parseFloat(crMatch[1]) * 10000000);
   const lMatch = str.match(/(\d+(?:\.\d+)?)\s*(?:lakh|lac|l)/i);
   if (lMatch) return Math.round(parseFloat(lMatch[1]) * 100000);
+  const kMatch = str.match(/(\d+(?:\.\d+)?)\s*k/i);
+  if (kMatch) return Math.round(parseFloat(kMatch[1]) * 1000);
   const num = parseFloat(str.replace(/[^\d.]/g, ''));
   return isNaN(num) ? 0 : Math.round(num);
 }
 
 const STOP_NAME_WORDS = new Set([
-  'i', 'want', 'to', 'buy', 'a', 'an', 'the', 'in', 'at', 'for', 'need', 'property',
-  'properties', 'related', 'please', 'provide', 'proivde', 'give', 'show', 'of', 'do', 'you',
-  'have', 'with', 'from', 'is', 'are', 'me', 'some', 'any', 'all', 'pune', 'ready',
-  'move', 'can', 'cant', "can't", 'see', 'find', 'looking', 'look', 'search', 'around', 'budget',
-  'price', 'cost', 'cr', 'crore', 'lakh', 'lakhs', 'lac', 'lacs', 'sqft', 'feet',
-  'which', 'fits', 'your', 'requirement', 'explore', 'available', 'options',
-  'things', 'correct', 'correctly', 'coreectly', 'filteration', 'filtration', 'filter',
-  'according', 'words', 'word', 'using', 'typography', 'typology', 'how', 'many', 'type',
-  'types', 'what', 'kind', 'searchbar', 'corrrect', 'searchable', 'sort', 'sortby',
-  // Typology, category and junction terms (filtered semantically, not as project name words)
-  'shop', 'shops', 'showroom', 'showrooms', 'office', 'offices', 'commercial', 'residential',
-  'apartment', 'apartments', 'flat', 'flats', 'villa', 'villas', 'bungalow', 'bunglow', 'bungalows',
-  'penthouse', 'penthouses', 'hospital', 'hospitals', 'clinic', 'clinics', 'medical', 'healthcare',
-  'industrial', 'warehouse', 'warehouses', 'factory', 'godown', 'shed', 'land', 'plot', 'plots',
-  'preleased', 'pre-leased', 'retail', 'store', 'stores', 'and', 'or', 'both', 'plus', '&', 'also',
+  // Conversational & Search Filler
+  'i', 'me', 'my', 'mine', 'we', 'us', 'our', 'you', 'your', 'he', 'she', 'it', 'they', 'them',
+  'a', 'an', 'the', 'in', 'at', 'on', 'by', 'for', 'of', 'to', 'from', 'with', 'without', 'into',
+  'is', 'am', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did',
+  'can', 'cant', "can't", 'could', 'should', 'would', 'will', 'shall',
+  'want', 'wants', 'wanted', 'need', 'needs', 'needed', 'give', 'gives', 'gave', 'show', 'shows', 'showing',
+  'tell', 'provide', 'providing', 'share', 'send', 'get', 'please', 'kindly', 'help',
+  'search', 'searching', 'find', 'finding', 'look', 'looking', 'around',
+  'some', 'any', 'all', 'every', 'other', 'this', 'that', 'these', 'those', 'here', 'there',
+  'where', 'which', 'what', 'who', 'how', 'much', 'many',
+  'like', 'type', 'types', 'kind', 'kinds', 'sort', 'sorts', 'thing', 'things', 'stuff', 'item', 'items',
+  'related', 'fitting', 'fits', 'fitted', 'according', 'filter', 'filters', 'filtering', 'filtration',
+  'filteration', 'searchbar', 'searchable', 'query', 'queries', 'wording', 'word', 'words', 'mean', 'means', 'meaning',
+  'ready', 'move', 'available', 'availability', 'option', 'options', 'suggest', 'suggestions',
+  'recommend', 'recommendation', 'recommendations', 'suitable', 'good', 'best', 'top', 'new', 'latest',
+  'verified', 'verifieds', 'requirement', 'requirements', 'detail', 'details', 'info', 'information',
+  'dossier', 'walkthrough', 'brochure', 'contact', 'call', 'inquiry', 'enquiry',
+  'lead', 'leads', 'buyer', 'buyers', 'seller', 'sellers', 'owner', 'owners', 'investor', 'investors',
+  'client', 'clients', 'person', 'persons', 'party', 'parties', 'match', 'matches', 'matched', 'matching',
+  'connect', 'quote', 'quoting', 'explore',
+
+  // Budget, Range & Number Terms
+  'budget', 'budgets', 'budgeting', 'price', 'prices', 'pricing', 'cost', 'costs', 'costing',
+  'rate', 'rates', 'value', 'valuation', 'target', 'range', 'ranges', 'bracket', 'segment',
+  'under', 'below', 'above', 'over', 'upto', 'up', 'less', 'than', 'more', 'between',
+  'min', 'minimum', 'max', 'maximum', 'sub', 'within', 'approx', 'approximate', 'approximately',
+  'starting', 'starts', 'start', 'nearly', 'about', 'affordable', 'cheap', 'inexpensive',
+  'low', 'high', 'mid', 'premium', 'luxury', 'ultra',
+  'cr', 'crore', 'crores', 'lakh', 'lakhs', 'lac', 'lacs', 'k', 'thousand', 'thousands',
+  'rs', 'inr', 'rupee', 'rupees', 'sqft', 'sq', 'ft', 'feet', 'foot', 'meter', 'meters',
+  'yard', 'yards', 'carpet', 'builtup', 'super',
+
+  // Typology, Category and Functional Terms (evaluated semantically, never as project names)
+  'property', 'properties', 'real', 'estate', 'realty', 'commercial', 'residential',
+  'office', 'offices', 'workspace', 'coworking', 'shop', 'shops', 'retail', 'store', 'stores',
+  'showroom', 'showrooms', 'boutique', 'restaurant', 'restaurants', 'cafe', 'cafes', 'dining',
+  'food', 'bistro', 'eatery', 'lounge', 'bar', 'pub', 'bakery', 'apartment', 'apartments',
+  'flat', 'flats', 'villa', 'villas', 'bungalow', 'bunglow', 'bungalows', 'rowhouse', 'rowhouses',
+  'penthouse', 'penthouses', 'home', 'homes', 'house', 'houses', 'bhk', 'rk', 'bed', 'bedroom', 'bedrooms',
+  'hospital', 'hospitals', 'clinic', 'clinics', 'medical', 'healthcare', 'doctor', 'nursing',
+  'dispensary', 'pharmacy', 'chemist', 'diagnostic', 'pathology', 'lab', 'dentist',
+  'industrial', 'warehouse', 'warehouses', 'godown', 'godowns', 'factory', 'factories',
+  'manufacturing', 'shed', 'sheds', 'logistics', 'land', 'plot', 'plots', 'agricultural',
+  'preleased', 'pre-leased', 'prerent', 'prerented', 'pre-rented', 'roi', 'yield',
   'space', 'spaces', 'premise', 'premises', 'unit', 'units', 'floor', 'floors', 'tower', 'towers',
-  'building', 'buildings', 'buy', 'sale', 'lease', 'rent', 'rented', 'leasing',
-  'suitable', 'jewellery', 'jewelry', 'clothing', 'clothes', 'restaurant', 'restaurants', 'cafe',
-  'cafes', 'dining', 'gym', 'salon', 'spa', 'pharmacy', 'supermarket', 'grocery', 'bakery', 'bank',
-  'furniture', 'hardware', 'decor', 'footwear', 'shoes', 'optical', 'coaching'
+  'building', 'buildings', 'complex', 'center', 'centre', 'plaza',
+  'buy', 'buyer', 'buying', 'bought', 'sale', 'sales', 'sell', 'seller', 'selling', 'sold',
+  'lease', 'leasing', 'leased', 'rent', 'renting', 'rented', 'rental', 'rentals', 'tenanted', 'tenant', 'tenants',
+  'jewellery', 'jewelry', 'gold', 'diamond', 'clothing', 'clothes', 'apparel', 'fashion', 'garment',
+  'gym', 'fitness', 'crossfit', 'salon', 'spa', 'beauty', 'parlour', 'parlor',
+  'supermarket', 'grocery', 'mart', 'bank', 'banking', 'atm', 'furniture', 'hardware', 'decor',
+  'interior', 'footwear', 'shoes', 'optical', 'eyewear', 'glasses', 'coaching', 'tuition', 'classes', 'institute'
 ]);
 
 /**
@@ -255,6 +364,7 @@ export function parseQueryCriteria(queryText: string, conversationContext?: stri
   const hasIndustrial = /\b(?:industrial|warehouse|godown|factory|manufacturing|shed|logistics)\b/i.test(lowerQuery);
   const hasShowroom = /\b(?:showroom|display\s*center)\b/i.test(lowerQuery);
   const hasShop = /\b(?:shop|retail|store|boutique)\b/i.test(lowerQuery);
+  const hasRestaurant = /\b(?:restaurant|restaurants|cafe|cafes|dining|food\s*court|coffee\s*shop|bistro|eatery|lounge|bar|pub|f&b)\b/i.test(lowerQuery);
   const hasOffice = /\b(?:office|it\s*park|tech\s*park|workspace|corporate|business\s*tower|coworking|commercial\s*space|office\s*space)\b/i.test(lowerQuery);
   const hasPreleased = /\b(?:pre[-_\s]*leased|prelease|pre[-_\s]*rented|rental\s*yield|roi|yield)\b/i.test(lowerQuery);
   const hasLand = /\b(?:plot|land|agricultural)\b/i.test(lowerQuery);
@@ -264,13 +374,13 @@ export function parseQueryCriteria(queryText: string, conversationContext?: stri
   if (hasHospital) typologyIntents.push('healthcare_hospital');
   if (hasIndustrial) typologyIntents.push('industrial');
   if (hasShowroom) typologyIntents.push('commercial_showroom');
-  if (hasShop) typologyIntents.push('commercial_shop');
+  if (hasShop || hasRestaurant) typologyIntents.push('commercial_shop');
   if (hasOffice) typologyIntents.push('commercial_office');
   if (hasPreleased) typologyIntents.push('preleased');
   if (hasLand) typologyIntents.push('land_plot');
 
   // If user searched general "commercial" without specifying office/shop/etc.
-  if (/\bcommercial\b/i.test(lowerQuery) && !hasOffice && !hasShop && !hasShowroom && !hasIndustrial) {
+  if (/\bcommercial\b/i.test(lowerQuery) && !hasOffice && !hasShop && !hasShowroom && !hasIndustrial && !hasRestaurant) {
     typologyIntents.push('commercial_office', 'commercial_showroom', 'commercial_shop');
   }
 
@@ -408,11 +518,25 @@ export function parseQueryCriteria(queryText: string, conversationContext?: stri
     }
   }
 
-  // Name words extracted from query
+  // Locality tokens to exclude from project name words
+  const localityWordTokens = new Set<string>();
+  for (const loc of KNOWN_PUNE_LOCALITIES) {
+    loc.toLowerCase().split(/\s+/).forEach((tok) => {
+      if (tok.length >= 2) localityWordTokens.add(tok);
+    });
+  }
+
+  // Name words extracted from query (distinctive project/developer/building names)
   const nameWords = lowerQuery
     .replace(/[^a-z0-9\s]/g, ' ')
     .split(/\s+/)
-    .filter((w) => w.length >= 3 && !STOP_NAME_WORDS.has(w));
+    .filter((w) => {
+      if (w.length < 3) return false;
+      if (STOP_NAME_WORDS.has(w)) return false;
+      if (localityWordTokens.has(w)) return false;
+      if (/^\d+(?:cr|crore|lakh|lac|l|k)?$/.test(w)) return false;
+      return true;
+    });
 
   const isViewOrProvideRequest = /\b(?:prov(?:ide|iede)|show|view|see|give|send|share|details|dossier|walkthrough)\b/i.test(lowerQuery);
 
@@ -510,6 +634,16 @@ export function scorePropertyMatch(
         );
       }
       if (intent === 'commercial_shop') {
+        if (criteria.purposeSlugs && criteria.purposeSlugs.includes('restaurant-cafe')) {
+          const isFnb =
+            titleAndDesc.includes('restaurant') ||
+            titleAndDesc.includes('cafe') ||
+            titleAndDesc.includes('dining') ||
+            titleAndDesc.includes('terrace') ||
+            titleAndDesc.includes('food') ||
+            titleAndDesc.includes('f&b');
+          if (!isFnb && pTypology !== 'commercial_shop') return false;
+        }
         return (
           pTypology === 'commercial_shop' ||
           pTypology === 'commercial_showroom' ||
@@ -564,25 +698,13 @@ export function scorePropertyMatch(
     for (const word of criteria.nameWords) {
       if (titleAndDesc.includes(word)) {
         matchedNameWordsCount++;
-        score += 90;
+        score += 120;
       }
     }
-    // If specific name/project keywords were typed, but this property doesn't match any of them
+    // Strict Project / Name Enforcement:
+    // If user searched distinctive project/entity keywords, any property matching 0 of them is disqualified.
     if (matchedNameWordsCount === 0) {
-      const hasOtherFilters =
-        criteria.locality ||
-        (criteria.localities && criteria.localities.length > 0) ||
-        criteria.isExplicitLocality ||
-        criteria.bhkNum !== null ||
-        (criteria.bhkNums && criteria.bhkNums.length > 0) ||
-        intentsToCheck.length > 0 ||
-        (criteria.purposeSlugs && criteria.purposeSlugs.length > 0);
-
-      if (!hasOtherFilters) {
-        return -999;
-      }
-      score -= 100;
-      if (score <= 0) return -999;
+      return -999;
     }
   }
 
@@ -699,6 +821,11 @@ export function getBestMatchingProperties<
     })
     .sort((a, b) => b.score - a.score);
 
-  return scored.slice(0, maxResults).map((s) => s.property);
+  const topScore = scored.length > 0 ? scored[0].score : 0;
+  const filteredByRelevance = topScore >= 200
+    ? scored.filter((item) => item.score >= topScore * 0.45)
+    : scored;
+
+  return filteredByRelevance.slice(0, maxResults).map((s) => s.property);
 }
 

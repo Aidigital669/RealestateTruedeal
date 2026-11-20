@@ -371,16 +371,15 @@ STRICT INSTRUCTIONS:
       }
 
       if (criteria.hasSpecificIntent || cleanSearch.trim() || locFilterLower || (!isMultiCat && bhkFilterLower && bhkFilterLower !== 'all')) {
-        const qTokens = cleanSearch.toLowerCase().trim().split(/\s+/).filter(Boolean);
-        properties = properties
+        const scoredProperties = properties
           .map((p) => ({ p, score: scorePropertyMatch(p, criteria) }))
           .filter((item) => {
             if (item.score <= 0) return false;
-            if (qTokens.length > 0 && !criteria.locality && !criteria.bhkNum && (!criteria.bhkNums || criteria.bhkNums.length === 0)) {
-              const bpText = (item.p.businessPurposes || []).map((bp: any) => `${bp.name} ${bp.slug}`).join(' ');
-              const text = `${item.p.name || ''} ${item.p.developer || ''} ${item.p.locality || ''} ${item.p.location || ''} ${item.p.description || ''} ${item.p.bhk || ''} ${bpText}`.toLowerCase();
-              const someMatch = qTokens.some((t) => text.includes(t));
-              if (!someMatch) return false;
+            // If criteria has specific name/project words, property MUST match at least one
+            if (criteria.nameWords && criteria.nameWords.length > 0) {
+              const pText = `${item.p.name || ''} ${item.p.title || ''} ${item.p.developer || ''} ${item.p.description || ''} ${item.p.configuration || ''} ${item.p.bhk || ''}`.toLowerCase();
+              const matchesAnyNameWord = criteria.nameWords.some((w) => pText.includes(w));
+              if (!matchesAnyNameWord) return false;
             }
             const price = getPropertyRawPrice(item.p);
             if (price > 0) {
@@ -389,8 +388,14 @@ STRICT INSTRUCTIONS:
             }
             return true;
           })
-          .sort((a, b) => b.score - a.score)
-          .map((item) => item.p);
+          .sort((a, b) => b.score - a.score);
+
+        const topScore = scoredProperties.length > 0 ? scoredProperties[0].score : 0;
+        const filteredByRelevance = topScore >= 200
+          ? scoredProperties.filter((item) => item.score >= topScore * 0.45)
+          : scoredProperties;
+
+        properties = filteredByRelevance.map((item) => item.p);
       }
 
       // Filter by Business Purpose

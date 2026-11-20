@@ -559,10 +559,16 @@ Return ONLY valid JSON (no markdown formatting).`;
 
     let finalProperties = properties;
     if (queryCriteria.hasSpecificIntent || cleanSearch.trim()) {
-      finalProperties = properties
+      const scoredProperties = properties
         .map((prop) => ({ prop, matchScore: scorePropertyMatch(prop, queryCriteria) }))
         .filter((item) => {
           if (item.matchScore <= 0) return false;
+          // If criteria has specific name/project words, property MUST match at least one
+          if (queryCriteria.nameWords && queryCriteria.nameWords.length > 0) {
+            const pText = `${item.prop.name || ''} ${(item.prop as any).title || ''} ${item.prop.developer || ''} ${item.prop.description || ''} ${(item.prop as any).configuration || ''} ${item.prop.bhk || ''}`.toLowerCase();
+            const matchesAnyNameWord = queryCriteria.nameWords.some((w) => pText.includes(w));
+            if (!matchesAnyNameWord) return false;
+          }
           const price = getPropertyRawPrice(item.prop);
           if (price > 0) {
             if (queryCriteria.maxBudget && price > queryCriteria.maxBudget) return false;
@@ -570,8 +576,14 @@ Return ONLY valid JSON (no markdown formatting).`;
           }
           return true;
         })
-        .sort((a, b) => b.matchScore - a.matchScore)
-        .map((item) => item.prop);
+        .sort((a, b) => b.matchScore - a.matchScore);
+
+      const topScore = scoredProperties.length > 0 ? scoredProperties[0].matchScore : 0;
+      const filteredByRelevance = topScore >= 200
+        ? scoredProperties.filter((item) => item.matchScore >= topScore * 0.45)
+        : scoredProperties;
+
+      finalProperties = filteredByRelevance.map((item) => item.prop);
     }
 
     // Similar Properties Alternative Recommendations (when exact match returns 0 or low count)

@@ -76,7 +76,13 @@ import { getPropertyUrl } from '@/lib/slug';
 import { parseQueryCriteria, getPropertyRawPrice, scorePropertyMatch } from '@/lib/property-matching';
 import { findMatchingCategorySlug } from '@/lib/categories-data';
 import { isUserSeller } from '@/lib/seller-intent';
-import { detectQueryIntent, filterBuyerDemandsByQuery, extractQueryLines } from '@/lib/search-training-corpus';
+import {
+  detectQueryIntent,
+  filterBuyerDemandsByQuery,
+  extractQueryLines,
+  classifySearchIntent,
+  getSuggestionsFromCorpus
+} from '@/lib/search-training-corpus';
 import { generateSearchSuggestions, detectQueryAutocorrect, SearchSuggestion } from '@/lib/search-autocorrect';
 import { formatPropertyDescription } from '@/lib/dossier-parser';
 import { usePropertyComparison } from '@/context/PropertyComparisonContext';
@@ -1091,9 +1097,26 @@ export function HomepageSearchablePortal({
       limit: 6
     });
 
-    setSearchSuggestions(localRes.suggestions);
+    const trainedMatches = getSuggestionsFromCorpus(q, 4).map((queryStr, idx) => {
+      const { intent } = classifySearchIntent(queryStr);
+      return {
+        id: `trained-${idx}-${encodeURIComponent(queryStr.slice(0, 15))}`,
+        type: 'intent' as const,
+        label: queryStr,
+        value: queryStr,
+        subtitle: intent === 'seller' ? 'Seller Intent • Switch to Active Buyers' : 'Buyer Intent • Switch to Properties',
+        badge: intent === 'seller' ? 'SELLER INTENT' : 'BUYER INTENT'
+      };
+    });
+
+    const isConversational = /\b(?:say|says|sayas|said|person|want|need|buyer|seller|looking|have)\b/i.test(q);
+    const initialSuggestions = isConversational
+      ? [...trainedMatches, ...localRes.suggestions].slice(0, 8)
+      : [...localRes.suggestions, ...trainedMatches].slice(0, 8);
+
+    setSearchSuggestions(initialSuggestions);
     setDidYouMean(localRes.didYouMean);
-    setIsSearchSuggestionsOpen(localRes.suggestions.length > 0 || !!localRes.didYouMean);
+    setIsSearchSuggestionsOpen(initialSuggestions.length > 0 || !!localRes.didYouMean);
     setSelectedSuggestionIndex(-1);
 
     // 2. Fetch server-side suggestions for comprehensive database matching
@@ -1136,6 +1159,13 @@ export function HomepageSearchablePortal({
       setSelectedDeveloper(s.value);
     } else if (s.type === 'typology') {
       setSelectedBhk(s.value);
+    } else if (s.type === 'intent') {
+      const result = classifySearchIntent(s.value);
+      if (result.intent === 'seller') {
+        setActiveResultTab('buyer_leads');
+      } else {
+        setActiveResultTab('properties');
+      }
     }
   };
 
@@ -1247,17 +1277,15 @@ export function HomepageSearchablePortal({
     }
 
     if (criteria.hasSpecificIntent || qSearch.trim() || (qLocality && qLocality !== 'All') || (!isMultiCat && qBhk && qBhk !== 'All')) {
-      const qTokens = qSearch.toLowerCase().trim().split(/\s+/).filter(Boolean);
-      list = list
+      const scoredItems = list
         .map((p) => ({ p, score: scorePropertyMatch(p, criteria) }))
         .filter((item) => {
           if (item.score <= 0) return false;
-          if (qTokens.length > 0 && !criteria.locality && !criteria.bhkNum && (!criteria.bhkNums || criteria.bhkNums.length === 0)) {
-            const bpText = (item.p.businessPurposes || []).map((bp) => `${bp.name} ${bp.slug}`).join(' ');
-            const typeName = (item.p as any).type_name || item.p.label || '';
-            const text = `${item.p.name || ''} ${item.p.developer || ''} ${item.p.locality || ''} ${item.p.location || ''} ${item.p.description || ''} ${item.p.bhk || ''} ${item.p.configuration || ''} ${typeName} ${bpText}`.toLowerCase().replace(/[\/\\_-]+/g, ' ');
-            const someMatch = qTokens.some((t) => text.includes(t));
-            if (!someMatch) return false;
+          // If criteria has specific name/project words, property MUST match at least one
+          if (criteria.nameWords && criteria.nameWords.length > 0) {
+            const pText = `${item.p.name || ''} ${(item.p as any).title || ''} ${item.p.developer || ''} ${item.p.description || ''} ${item.p.configuration || ''} ${item.p.bhk || ''}`.toLowerCase();
+            const matchesAnyNameWord = criteria.nameWords.some((w) => pText.includes(w));
+            if (!matchesAnyNameWord) return false;
           }
           const price = getPropertyRawPrice(item.p);
           if (price > 0) {
@@ -1266,8 +1294,16 @@ export function HomepageSearchablePortal({
           }
           return true;
         })
-        .sort((a, b) => b.score - a.score)
-        .map((item) => item.p);
+        .sort((a, b) => b.score - a.score);
+
+      // Dynamic relevance cutoff: if top result has a strong project/name score (>= 200),
+      // discard items scoring below 45% of the top score
+      const topScore = scoredItems.length > 0 ? scoredItems[0].score : 0;
+      const filteredByRelevance = topScore >= 200
+        ? scoredItems.filter((item) => item.score >= topScore * 0.45)
+        : scoredItems;
+
+      list = filteredByRelevance.map((item) => item.p);
     }
 
     // Direct Typography / Configuration exact filtering (only applied when NOT a multi-category search)
@@ -1294,6 +1330,11 @@ export function HomepageSearchablePortal({
             full.includes('boutique') ||
             (p.isCommercial && (p.configuration?.toLowerCase().includes('shop') || p.bhk?.toLowerCase().includes('shop')))
           );
+        });
+      } else if (lower.includes('restaurant') || lower.includes('cafe')) {
+        list = list.filter((p) => {
+          const full = `${p.configuration || ''} ${p.bhk || ''} ${p.name || ''} ${p.description || ''}`.toLowerCase();
+          return full.includes('restaurant') || full.includes('cafe') || full.includes('dining') || full.includes('food');
         });
       } else if (lower.includes('industrial') || lower.includes('factory') || lower.includes('warehouse') || lower.includes('godown') || lower.includes('shed') || lower.includes('manufacturing')) {
         list = list.filter((p) => {
@@ -1612,6 +1653,8 @@ export function HomepageSearchablePortal({
           detectedBhk = 'Commercial Office';
         } else if (/\b(?:showroom)\b/i.test(normalizedSearch)) {
           detectedBhk = 'Showroom';
+        } else if (/\b(?:restaurant|cafe|dining|food\s*court|bistro|eatery)\b/i.test(normalizedSearch)) {
+          detectedBhk = 'Restaurant';
         } else if (/\b(?:shop|retail)\b/i.test(normalizedSearch)) {
           detectedBhk = 'Shop';
         } else if (/\b(?:hospital|clinic)\b/i.test(normalizedSearch)) {

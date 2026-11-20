@@ -1,12 +1,10 @@
-'use client';
-
+// Server Component — no 'use client' directive
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
   Building2,
   Phone,
-  Mail,
   MapPin,
   ShieldCheck,
   ExternalLink,
@@ -14,10 +12,10 @@ import {
   Clock
 } from 'lucide-react';
 import { CATEGORIES_DATA } from '@/lib/categories-data';
-import { usePageHeadings } from '@/hooks/usePageHeadings';
+import { getPageHeadings } from '@/lib/get-page-headings.server';
 
-export function PublicFooter() {
-  const { headings } = usePageHeadings();
+export async function PublicFooter() {
+  const headings = await getPageHeadings();
   const currentYear = new Date().getFullYear();
 
   // Split categories for clean column layout
@@ -182,10 +180,12 @@ export function PublicFooter() {
           </div>
           <div className="flex flex-wrap items-center gap-4 text-[11px] text-zinc-500" suppressHydrationWarning>
             <span>Verified Portfolio</span>
-            <span>&bull;</span>
-            <span>Institutional Due Diligence</span>
-            <span>&bull;</span>
-            <span>Zero Brokerage on Primary Inventory</span>
+            <span>·</span>
+            <Link href="/privacy-policy" className="hover:text-zinc-300 transition">Privacy Policy</Link>
+            <span>·</span>
+            <Link href="/terms" className="hover:text-zinc-300 transition">Terms of Service</Link>
+            <span>·</span>
+            <span>MahaRERA Compliant</span>
           </div>
         </div>
       </div>

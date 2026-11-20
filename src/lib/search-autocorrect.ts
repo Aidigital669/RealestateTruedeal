@@ -6,7 +6,7 @@
 
 export interface SearchSuggestion {
   id: string;
-  type: 'location' | 'typology' | 'developer' | 'property';
+  type: 'location' | 'typology' | 'developer' | 'property' | 'intent';
   label: string;
   value: string;
   subtitle?: string;

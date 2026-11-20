@@ -5,6 +5,8 @@
  * with multi-line entity extraction (Persona, Locality, Typology/BHK, Budget, Purpose, Status).
  */
 
+import { parseBudgetAmounts } from './property-matching';
+
 export type QueryIntent = 'buyer' | 'seller' | 'general';
 export type PrimaryView = 'properties' | 'buyer_leads';
 
@@ -88,6 +90,11 @@ export const TYPOLOGY_MAP = [
     isCommercial: true
   },
   {
+    category: 'Restaurant / Cafe',
+    matches: ['restaurant', 'restaurants', 'cafe', 'cafes', 'dining', 'food court', 'bistro', 'eatery', 'bar', 'lounge', 'f&b'],
+    isCommercial: true
+  },
+  {
     category: 'Commercial Medical / Hospital',
     matches: ['hospital', 'clinic', 'medical', 'healthcare', 'doctor clinic', 'diagnostic center'],
     isCommercial: true
@@ -115,7 +122,7 @@ export const TYPOLOGY_MAP = [
   }
 ];
 
-// Conversational filler words for seller queries
+// Conversational filler words for seller and search queries
 export const SELLER_FILLERS = new Set([
   'i', 'me', 'my', 'we', 'our', 'us', 'you', 'please', 'can', 'could', 'would', 'will',
   'want', 'wants', 'wanted', 'need', 'needs', 'needed', 'looking', 'look', 'looks',
@@ -131,7 +138,12 @@ export const SELLER_FILLERS = new Set([
   'is', 'am', 'are', 'was', 'were', 'be', 'been',
   'sell', 'selling', 'sold', 'sale', 'list', 'listing', 'registered',
   'help', 'assist', 'connect', 'match', 'matching', 'matched',
-  'pune', 'maharashtra'
+  'pune', 'maharashtra',
+  // Budget & range modifiers (so dangling words e.g. "under" don't become rogue keyword filters)
+  'budget', 'budgets', 'price', 'prices', 'cost', 'costs', 'range', 'ranges',
+  'under', 'below', 'above', 'over', 'upto', 'up', 'less', 'than', 'more', 'between',
+  'min', 'max', 'minimum', 'maximum', 'sub', 'within', 'around', 'approx', 'starting',
+  'cr', 'crore', 'crores', 'lakh', 'lakhs', 'lac', 'lacs', 'k', 'sqft', 'feet'
 ]);
 
 // =========================================================================
@@ -240,37 +252,14 @@ export function extractQueryLines(rawQuery: string): ExtractedQueryLines {
   }
 
   // C. Budget Parsing
-  let minBudget: number | null = null;
-  let maxBudget: number | null = null;
+  const { minBudget, maxBudget } = parseBudgetAmounts(text);
   let budgetLabel: string | null = null;
-
-  // Pattern 1: Under / Below / Less than X Cr / L
-  const underMatch = lower.match(/(?:under|below|less than|up to|upto|within|budget(?:\s*of)?)\s*(?:₹|rs\.?|inr)?\s*([\d.]+)\s*(cr|crore|crores|l|lakh|lakhs|k)?/i);
-  if (underMatch) {
-    const val = parseFloat(underMatch[1]);
-    const unit = (underMatch[2] || 'cr').toLowerCase();
-    if (unit.startsWith('cr')) {
-      maxBudget = val * 10000000;
-      budgetLabel = `Under ₹${val} Cr`;
-    } else if (unit.startsWith('l')) {
-      maxBudget = val * 100000;
-      budgetLabel = `Under ₹${val} Lakhs`;
-    } else if (val < 100) {
-      maxBudget = val * 10000000;
-      budgetLabel = `Under ₹${val} Cr`;
-    }
-  }
-
-  // Pattern 2: Range between X and Y Cr / L
-  const rangeMatch = lower.match(/(?:between|from)?\s*(?:₹|rs\.?|inr)?\s*([\d.]+)\s*(?:cr|l)?\s*(?:to|-|and)\s*(?:₹|rs\.?|inr)?\s*([\d.]+)\s*(cr|crore|l|lakh)?/i);
-  if (rangeMatch) {
-    const v1 = parseFloat(rangeMatch[1]);
-    const v2 = parseFloat(rangeMatch[2]);
-    const unit = (rangeMatch[3] || 'cr').toLowerCase();
-    const mult = unit.startsWith('l') ? 100000 : 10000000;
-    minBudget = Math.min(v1, v2) * mult;
-    maxBudget = Math.max(v1, v2) * mult;
-    budgetLabel = `₹${Math.min(v1, v2)} - ₹${Math.max(v1, v2)} ${unit.toUpperCase()}`;
+  if (minBudget && maxBudget) {
+    budgetLabel = `₹${(minBudget / 10000000).toFixed(1)} - ₹${(maxBudget / 10000000).toFixed(1)} Cr`;
+  } else if (maxBudget) {
+    budgetLabel = maxBudget >= 10000000 ? `Under ₹${(maxBudget / 10000000).toFixed(1)} Cr` : `Under ₹${(maxBudget / 100000).toFixed(0)} L`;
+  } else if (minBudget) {
+    budgetLabel = minBudget >= 10000000 ? `Above ₹${(minBudget / 10000000).toFixed(1)} Cr` : `Above ₹${(minBudget / 100000).toFixed(0)} L`;
   }
 
   // D. Transaction Type
@@ -376,6 +365,10 @@ export function filterBuyerDemandsByQuery<T extends { locality: string; bhk: str
         if (!demandText.includes('showroom') && !demandText.includes('retail') && !demandText.includes('shop')) {
           return false;
         }
+      } else if (tLower.includes('restaurant') || tLower.includes('cafe')) {
+        if (!demandText.includes('restaurant') && !demandText.includes('cafe') && !demandText.includes('food') && !demandText.includes('shop') && !demandText.includes('retail') && !demandText.includes('commercial')) {
+          return false;
+        }
       } else if (tLower.includes('plot') || tLower.includes('land')) {
         if (!demandText.includes('plot') && !demandText.includes('land')) {
           return false;
@@ -393,7 +386,21 @@ export function filterBuyerDemandsByQuery<T extends { locality: string; bhk: str
       if (!hasComm) return false;
     }
 
-    // Line 5: Remaining meaningful keywords if no specific lines were extracted
+    // Line 5: Budget matching for buyers
+    if (lines.maxBudget || lines.minBudget) {
+      const bText = (demand.budget || '').toLowerCase().replace(/,/g, '');
+      const crMatch = bText.match(/(\d+(?:\.\d+)?)\s*(?:cr|crore)/i);
+      const lMatch = bText.match(/(\d+(?:\.\d+)?)\s*(?:lakh|lac|l)/i);
+      let dPrice = 0;
+      if (crMatch) dPrice = parseFloat(crMatch[1]) * 10000000;
+      else if (lMatch) dPrice = parseFloat(lMatch[1]) * 100000;
+      if (dPrice > 0) {
+        if (lines.maxBudget && dPrice > lines.maxBudget * 1.35) return false;
+        if (lines.minBudget && dPrice < lines.minBudget * 0.65) return false;
+      }
+    }
+
+    // Line 6: Remaining meaningful keywords if no specific lines were extracted
     if (!lines.locality && !lines.bhk && !lines.typology && lines.keywords.length > 0) {
       return lines.keywords.some((kw) => demandText.includes(kw));
     }
