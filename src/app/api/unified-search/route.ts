@@ -11,6 +11,7 @@ import {
 } from "@/lib/property-matching";
 import { isUserSeller } from "@/lib/seller-intent";
 import { getPurposesForProperties } from "@/lib/business-purposes";
+import { detectQueryIntent, extractQueryLines, filterBuyerDemandsByQuery } from "@/lib/search-training-corpus";
 
 export const dynamic = 'force-dynamic';
 
@@ -86,20 +87,19 @@ export async function GET(req: NextRequest) {
         /\b(?:i am a buyer|buyer seeking|buyer looking for)\b/i.test(t);
     };
 
-    const sellerMatch = isSellerQuery(cleanSearch);
-    const buyerMatch = isBuyerQuery(cleanSearch);
+    const trainedClassification = detectQueryIntent(cleanSearch);
+    const sellerMatch = trainedClassification.intent === "seller" || isSellerQuery(cleanSearch);
+    const buyerMatch = trainedClassification.intent === "buyer" || isBuyerQuery(cleanSearch);
 
-    if (sellerMatch && !buyerMatch) {
+    if (trainedClassification.intent === "seller") {
       intent = "seller";
       primaryView = "buyer_leads";
-    } else if (sellerMatch && buyerMatch) {
-      if (/\bbuyers?\b/i.test(cleanSearch) || /\bsell/i.test(cleanSearch)) {
-        intent = "seller";
-        primaryView = "buyer_leads";
-      } else {
-        intent = "buyer";
-        primaryView = "properties";
-      }
+    } else if (trainedClassification.intent === "buyer") {
+      intent = "buyer";
+      primaryView = "properties";
+    } else if (sellerMatch && !buyerMatch) {
+      intent = "seller";
+      primaryView = "buyer_leads";
     } else if (buyerMatch) {
       intent = "buyer";
       primaryView = "properties";
@@ -266,16 +266,9 @@ STRICT INSTRUCTIONS:
       return true;
     });
 
-    const parsedSearchCrit = parseQueryCriteria(cleanSearch);
-    const isMultiSearch = parsedSearchCrit.isMultiCategory || (parsedSearchCrit.typologyIntents && parsedSearchCrit.typologyIntents.length > 1) || (parsedSearchCrit.bhkNums && parsedSearchCrit.bhkNums.length > 1) || /\b(?:and|or|,|\/|both)\b/i.test(cleanSearch);
-
-    if (searchKeywords.length > 0) {
-      filteredDemands = filteredDemands.filter((demand) => {
-        const text = `${demand.maskedName} ${demand.locality} ${demand.bhk} ${demand.budget} ${demand.requirements} ${demand.purpose}`.toLowerCase();
-        return isMultiSearch
-          ? searchKeywords.some((kw) => text.includes(kw))
-          : searchKeywords.every((kw) => text.includes(kw));
-      });
+    // Use intelligent trained NLP multi-line buyer filter
+    if (cleanSearch) {
+      filteredDemands = filterBuyerDemandsByQuery(filteredDemands, cleanSearch);
     }
 
     // 3. Fetch Properties from Database

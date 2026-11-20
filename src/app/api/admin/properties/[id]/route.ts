@@ -4,6 +4,7 @@ import { getPurposesForProperties, setPropertyBusinessPurposes } from "@/lib/bus
 import { parseDossierData, embedDossierData } from "@/lib/dossier-parser";
 import { parseAndNormalizeVideoUrl } from "@/lib/video-utils";
 import { clearPropertyCache } from "@/lib/property-data";
+import { processImageList, saveImageIfBase64 } from "@/lib/image-storage";
 
 export async function PATCH(
   req: NextRequest,
@@ -249,9 +250,7 @@ export async function PATCH(
 
     // 8. Update Property Images (Single or Multiple)
     if (body.images !== undefined && Array.isArray(body.images)) {
-      const cleanImages = body.images
-        .map((u: any) => String(u || '').trim())
-        .filter((u: string) => u.length > 0);
+      const cleanImages = processImageList(body.images, id);
 
       await query(`DELETE FROM "PropertyImage" WHERE "propertyId" = $1;`, [id]);
       for (let i = 0; i < cleanImages.length; i++) {
@@ -262,8 +261,9 @@ export async function PATCH(
         );
       }
     } else {
-      const newImageUrl = body.imageUrl || body.image;
-      if (newImageUrl && typeof newImageUrl === "string" && newImageUrl.trim()) {
+      const rawNewImageUrl = body.imageUrl || body.image;
+      if (rawNewImageUrl && typeof rawNewImageUrl === "string" && rawNewImageUrl.trim()) {
+        const newImageUrl = saveImageIfBase64(rawNewImageUrl.trim(), id, 1);
         const existingImg = await queryOne(
           `SELECT id FROM "PropertyImage" WHERE "propertyId" = $1 ORDER BY "isPrimary" DESC, "sortOrder" ASC LIMIT 1;`,
           [id]
@@ -271,13 +271,13 @@ export async function PATCH(
         if (existingImg) {
           await query(
             `UPDATE "PropertyImage" SET url = $1, "altText" = $2 WHERE id = $3;`,
-            [newImageUrl.trim(), body.name || body.title || "Property Cover", existingImg.id]
+            [newImageUrl, body.name || body.title || "Property Cover", existingImg.id]
           );
         } else {
           await query(
             `INSERT INTO "PropertyImage" ("propertyId", url, "altText", "sortOrder", "isPrimary", "createdAt")
              VALUES ($1, $2, $3, 1, true, NOW());`,
-            [id, newImageUrl.trim(), body.name || body.title || "Property Cover"]
+            [id, newImageUrl, body.name || body.title || "Property Cover"]
           );
         }
       }

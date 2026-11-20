@@ -76,6 +76,7 @@ import { getPropertyUrl } from '@/lib/slug';
 import { parseQueryCriteria, getPropertyRawPrice, scorePropertyMatch } from '@/lib/property-matching';
 import { findMatchingCategorySlug } from '@/lib/categories-data';
 import { isUserSeller } from '@/lib/seller-intent';
+import { detectQueryIntent, filterBuyerDemandsByQuery, extractQueryLines } from '@/lib/search-training-corpus';
 import { generateSearchSuggestions, detectQueryAutocorrect, SearchSuggestion } from '@/lib/search-autocorrect';
 import { formatPropertyDescription } from '@/lib/dossier-parser';
 import { usePropertyComparison } from '@/context/PropertyComparisonContext';
@@ -557,7 +558,8 @@ export function HomepageSearchablePortal({
     const timer = setTimeout(() => {
       setActiveFilterQuery(raw);
       if (raw.length >= 3) {
-        if (isUserSeller(raw)) {
+        const detected = detectQueryIntent(raw);
+        if (detected.intent === 'seller' || isUserSeller(raw)) {
           setActiveResultTab('buyer_leads');
         } else {
           setActiveResultTab('properties');
@@ -714,35 +716,8 @@ export function HomepageSearchablePortal({
     const rawSearchInput = (catalogueBuyerFilter || deferredQuery).trim();
     if (!rawSearchInput) return list;
 
-    const isSeller = isUserSeller(rawSearchInput);
-    const SELLER_STOP_WORDS = new Set([
-      'i', 'want', 'a', 'an', 'the', 'buyer', 'buyers', 'for', 'my', 'me', 'we', 'our',
-      'property', 'properties', 'sell', 'selling', 'seller', 'sellers', 'need', 'needs',
-      'find', 'get', 'looking', 'look', 'seeking', 'seek', 'require', 'required', 'leads',
-      'lead', 'clients', 'client', 'to', 'in', 'at', 'with', 'and', 'or', 'is', 'am', 'are',
-      'please', 'show', 'give', 'help', 'connect', 'interested', 'available', 'have'
-    ]);
-
-    const words = rawSearchInput.toLowerCase().split(/\s+/).filter(Boolean);
-    const meaningfulTokens = isSeller
-      ? words.filter((w) => !SELLER_STOP_WORDS.has(w))
-      : words;
-
-    // For a general seller query like "i want a buyer for my property", meaningfulTokens will be empty.
-    // Return all verified active buyers!
-    if (meaningfulTokens.length === 0) {
-      return list;
-    }
-
-    const parsed = parseQueryCriteria(rawSearchInput);
-    const isMulti = parsed.isMultiCategory || (parsed.typologyIntents && parsed.typologyIntents.length > 1) || (parsed.bhkNums && parsed.bhkNums.length > 1) || /\b(?:and|or|,|\/|both)\b/i.test(rawSearchInput);
-
-    return list.filter((demand) => {
-      const haystack = `${demand.referenceCode} ${demand.maskedName} ${demand.locality} ${demand.bhk} ${demand.budget} ${demand.requirements || ''} ${demand.purpose || ''}`.toLowerCase();
-      return isMulti
-        ? meaningfulTokens.some((t) => haystack.includes(t))
-        : meaningfulTokens.every((t) => haystack.includes(t));
-    });
+    // Use intelligent trained NLP multi-line buyer filter
+    return filterBuyerDemandsByQuery(list, rawSearchInput);
   }, [deferredQuery, buyerDemands, catalogueBuyerFilter, buyerBhkFilter, buyerLocalityFilter]);
 
   const sortedBuyerDemands = useMemo(() => {

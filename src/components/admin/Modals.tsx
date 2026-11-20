@@ -268,7 +268,23 @@ export function AddPropertyModal({
       return [item, ...rest];
     });
   };
-  const handleFileUpload = (index: number, file: File) => {
+  const handleFileUpload = async (index: number, file: File) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('propertyId', 'new');
+      const res = await fetch('/api/admin/upload-image', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (data?.success && data.url) {
+        handleImageChange(index, data.url);
+        return;
+      }
+    } catch {
+      // Fallback to local FileReader
+    }
     const reader = new FileReader();
     reader.onloadend = () => {
       handleImageChange(index, reader.result as string);
@@ -1230,7 +1246,23 @@ export function EditPropertyModal({
       return [item, ...rest];
     });
   };
-  const handleFileUpload = (index: number, file: File) => {
+  const handleFileUpload = async (index: number, file: File) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('propertyId', String(property?.id || 'edit'));
+      const res = await fetch('/api/admin/upload-image', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (data?.success && data.url) {
+        handleImageChange(index, data.url);
+        return;
+      }
+    } catch {
+      // Fallback to local FileReader
+    }
     const reader = new FileReader();
     reader.onloadend = () => {
       handleImageChange(index, reader.result as string);

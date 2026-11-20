@@ -4,6 +4,7 @@ import { getPropertySlug, matchesProperty } from '@/lib/slug';
 import { PropertyItem, ALL_FALLBACK_PROPERTIES } from '@/lib/property-types';
 import { getPurposesForProperties } from '@/lib/business-purposes';
 import { parseDossierData, getDefaultHighlights, getDefaultConnectivity } from '@/lib/dossier-parser';
+import { saveImageIfBase64 } from '@/lib/image-storage';
 
 export type { PropertyItem };
 export { ALL_FALLBACK_PROPERTIES };
@@ -110,16 +111,16 @@ export async function fetchAllProperties(forceFresh = false): Promise<PropertyIt
           ? rawImages
           : (p.image ? [p.image] : []);
 
-        // Guard against any runaway base64 data URLs in SSR payloads
-        const resolvedImages = candidateImages.map((u: string) => {
-          if (typeof u === 'string' && u.startsWith('data:image/') && u.length > 10240) {
-            return 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
+        // Automatically save any base64 images to disk so the user's authentic photos are always preserved
+        const resolvedImages = candidateImages.map((u: string, idx: number) => {
+          if (typeof u === 'string' && u.startsWith('data:image/')) {
+            return saveImageIfBase64(u, p.id, idx + 1);
           }
           return u;
         });
 
-        const coverImage = (typeof p.image === 'string' && p.image.startsWith('data:image/') && p.image.length > 10240)
-          ? resolvedImages[0] || 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
+        const coverImage = (typeof p.image === 'string' && p.image.startsWith('data:image/'))
+          ? saveImageIfBase64(p.image, p.id, 0)
           : (p.image || resolvedImages[0]);
 
         const videoUrl: string | null = (p.videoUrl && String(p.videoUrl).trim().length > 0) ? String(p.videoUrl).trim() : null;

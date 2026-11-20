@@ -30,9 +30,9 @@ export function isUserSeller(queryText: string, conversationContext?: string): b
 
   // 2. Direct seller phrases in current query
   const directSellerRegex =
-    /\b(?:sell|selling|seller|list\s*(?:my)?\s*property|owner|(?:want|need|looking\s*for|find|match|get)\s*(?:a\s*)?buyers?|have\s*a\s*(?:flat|apartment|office|property|commercial|plot|house)\s*to\s*sell|i\s*want\s*buyer|buyers?\s*for\s*my)\b/i;
+    /\b(?:sell|selling|seller|list\s*(?:my)?\s*property|owner|property\s*person\s*says|(?:want|need|looking\s*for|find|match|get|connect\s*(?:with)?)\s*(?:a\s*|me\s*)?buyers?|have\s*a\s*(?:flat|apartment|office|property|commercial|plot|house)\s*to\s*sell|i\s*want\s*buyer|buyers?\s*for\s*my|buyers?\s*needed|buyers?\s*wanted)\b/i;
   const ownerPropertyRegex =
-    /\b(?:my\s+(?:property|flat|apartment|office|shop|showroom|penthouse|building|land|plot|commercial|residence)\s*(?:is|in|at|located|asking)|i\s+(?:have|own)\s+(?:a\s+)?(?:\d+\s*bhk|flat|apartment|office|property|commercial)|asking\s*price|quoting\s*price|expected\s*price|carpet\s*area\s*of\s*my|builtup\s*area\s*of\s*my)\b/i;
+    /\b(?:my\s+(?:this\s+)?(?:property|flat|apartment|office|shop|showroom|penthouse|building|land|plot|commercial|residence)\s*(?:is|in|at|located|asking|needs?)|i\s+(?:have|own|got)\s+(?:a\s+)?(?:\d+\s*bhk|flat|apartment|office|property|commercial)|asking\s*price|quoting\s*price|expected\s*price|carpet\s*area\s*of\s*my|builtup\s*area\s*of\s*my)\b/i;
 
   if (directSellerRegex.test(lowerQuery) || ownerPropertyRegex.test(lowerQuery)) {
     return true;
