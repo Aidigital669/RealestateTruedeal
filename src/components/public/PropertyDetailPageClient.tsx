@@ -1007,35 +1007,7 @@ export function PropertyDetailPageClient({
                 {renderPriceCard()}
               </div>
 
-              {/* SUITABLE FOR BUSINESS PURPOSES */}
-              {suitableForList.length > 0 && (
-                <div className="bg-white rounded-2xl border border-amber-200/80 p-3.5 sm:p-5 shadow-xs space-y-2 bg-gradient-to-br from-white to-amber-50/30">
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-xl bg-amber-100 text-amber-900 flex items-center justify-center font-bold shrink-0 shadow-2xs">
-                      <Briefcase className="w-4 h-4 text-amber-700" />
-                    </div>
-                    <div className="min-w-0">
-                      <span className="text-xs font-black text-zinc-950 uppercase tracking-wider block">
-                        Suitable For:
-                      </span>
-                      <span className="text-[10px] sm:text-[11px] text-zinc-500 block leading-tight">
-                        Admin-assigned commercial suitability labels for customer operations
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5 sm:gap-2 pt-0.5">
-                    {suitableForList.map((item, idx) => (
-                      <span
-                        key={idx}
-                        className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-bold bg-white text-zinc-900 border border-amber-300 shadow-2xs hover:border-amber-400 transition"
-                      >
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
-                        <span className="break-words">{item}</span>
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
+
 
               {/* TABS NAVIGATION */}
               <div className="bg-white rounded-2xl border border-zinc-200 p-1 sm:p-2 flex items-center gap-1 sm:gap-2 overflow-x-auto scrollbar-none shadow-xs">
