@@ -16,7 +16,7 @@ import {
   Layout,
   Info
 } from 'lucide-react';
-import { DEFAULT_PAGE_HEADINGS, PageHeadings } from '@/app/api/admin/page-headings/route';
+import { DEFAULT_PAGE_HEADINGS, PageHeadings } from '@/lib/page-headings-config';
 import { clearPageHeadingsCache } from '@/hooks/usePageHeadings';
 
 // ─────────────────────────────────────────────

@@ -1,44 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query, queryOne } from '@/lib/db';
+import { DEFAULT_PAGE_HEADINGS, PageHeadings } from '@/lib/page-headings-config';
 
 const SETTING_KEY = 'page_headings';
-
-// Default headings (used when no custom setting saved yet)
-export const DEFAULT_PAGE_HEADINGS = {
-  // Footer nav columns
-  footer_col_commercial: 'Showroom & Office',
-  footer_col_residential: 'Residential & Land',
-  footer_col_specialized: 'Specialized & Advisory',
-  footer_col_portals: 'Portals & Access',
-
-  // Homepage section headings
-  home_hero_title: 'Premium Real Estate in Pune',
-  home_hero_subtitle: 'Find your perfect property with ANV Reealty',
-  home_featured_title: 'Featured Properties',
-  home_featured_subtitle: 'Handpicked premium listings',
-  home_active_buyers_title: 'Active Buyers',
-  home_why_us_title: 'Why Choose ANV Reealty',
-  home_explore_title: 'Explore by Category',
-
-  // Properties listing page
-  properties_page_title: 'All Properties',
-  properties_page_subtitle: 'Browse our complete portfolio',
-
-  // Category page
-  category_page_subtitle: 'Explore verified listings',
-
-  // Buyer section
-  buyers_section_title: 'Active Buyers',
-  buyers_section_subtitle: 'Connect with verified buyers looking for properties',
-
-  // Property detail page sections
-  detail_location_title: 'Location & Connectivity',
-  detail_amenities_title: 'Amenities & Features',
-  detail_schedule_title: 'Schedule Site Visit',
-  detail_similar_title: 'Similar Properties',
-};
-
-export type PageHeadings = typeof DEFAULT_PAGE_HEADINGS;
 
 export async function GET() {
   try {
@@ -71,10 +35,11 @@ export async function PUT(req: NextRequest) {
 
     // Merge with defaults, only allow known keys
     const allowedKeys = Object.keys(DEFAULT_PAGE_HEADINGS) as Array<keyof PageHeadings>;
-    const sanitized: Partial<PageHeadings> = {};
+    const sanitized: Record<string, string> = {};
     for (const key of allowedKeys) {
-      if (typeof headings[key] === 'string') {
-        sanitized[key] = headings[key] as string;
+      const val = (headings as Record<string, unknown>)[key];
+      if (typeof val === 'string') {
+        sanitized[key] = val;
       }
     }
 

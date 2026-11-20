@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { DEFAULT_PAGE_HEADINGS, PageHeadings } from '@/app/api/admin/page-headings/route';
+import { DEFAULT_PAGE_HEADINGS, PageHeadings } from '@/lib/page-headings-config';
 
 // Cache headings in memory for the session so we don't refetch on every component mount
 let _cache: PageHeadings | null = null;
