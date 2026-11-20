@@ -1150,32 +1150,15 @@ export function PropertyDetailPageClient({
                       </div>
                     )}
 
-                    {/* Engineering & Connectivity Highlights */}
-                    {((!hideHighlights && highlights.length > 0) || (!hideConnectivity && connectivity.length > 0)) && (
-                      <div className={`grid gap-3 sm:gap-4 ${(!hideHighlights && highlights.length > 0) && (!hideConnectivity && connectivity.length > 0)
-                        ? 'grid-cols-1 sm:grid-cols-2'
-                        : 'grid-cols-1'
-                        }`}>
-                        {!hideHighlights && highlights.length > 0 && (
-                          <div className="p-3.5 sm:p-4 bg-zinc-50 rounded-2xl border border-zinc-200">
-                            <span className="text-xs font-bold text-zinc-900 block mb-2">Engineering &amp; Architectural Highlights</span>
-                            <ul className="space-y-1.5 text-xs text-zinc-600 list-disc list-inside">
-                              {highlights.map((hl, idx) => (
-                                <li key={idx} className="break-words">{hl}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                        {!hideConnectivity && connectivity.length > 0 && (
-                          <div className="p-3.5 sm:p-4 bg-zinc-50 rounded-2xl border border-zinc-200">
-                            <span className="text-xs font-bold text-zinc-900 block mb-2">Location Connectivity Advantage</span>
-                            <ul className="space-y-1.5 text-xs text-zinc-600 list-disc list-inside">
-                              {connectivity.map((cn, idx) => (
-                                <li key={idx} className="break-words">{cn}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
+                    {/* Engineering Highlights */}
+                    {!hideHighlights && highlights.length > 0 && (
+                      <div className="p-3.5 sm:p-4 bg-zinc-50 rounded-2xl border border-zinc-200">
+                        <span className="text-xs font-bold text-zinc-900 block mb-2">Engineering &amp; Architectural Highlights</span>
+                        <ul className="space-y-1.5 text-xs text-zinc-600 list-disc list-inside">
+                          {highlights.map((hl, idx) => (
+                            <li key={idx} className="break-words">{hl}</li>
+                          ))}
+                        </ul>
                       </div>
                     )}
                   </div>

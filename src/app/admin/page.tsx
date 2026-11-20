@@ -59,6 +59,7 @@ import { PublishingPipeline } from '@/components/admin/PublishingPipeline';
 import { AssetDropzone } from '@/components/admin/AssetDropzone';
 import { ScraperImporter } from '@/components/admin/ScraperImporter';
 import { PremiumAdsManager } from '@/components/admin/PremiumAdsManager';
+import { PageHeadingsEditor } from '@/components/admin/PageHeadingsEditor';
 import { PropertyBuyerMatchingModal } from '@/components/admin/PropertyBuyerMatchingModal';
 import { BuyerDataUploadModal } from '@/components/admin/BuyerDataUploadModal';
 import {
@@ -1072,6 +1073,9 @@ export default function AdminPage() {
           ) : activeTab === 'premium-ads' ? (
             /* Premium Clients & Ads Strip Management */
             <PremiumAdsManager showToast={showToast} />
+          ) : activeTab === 'page-headings' ? (
+            /* Page Headings Editor */
+            <PageHeadingsEditor />
           ) : activeTab === 'properties' ? (
             /* Properties Sub-View */
             <div className="space-y-5">

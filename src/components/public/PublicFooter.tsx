@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -12,8 +14,10 @@ import {
   Clock
 } from 'lucide-react';
 import { CATEGORIES_DATA } from '@/lib/categories-data';
+import { usePageHeadings } from '@/hooks/usePageHeadings';
 
 export function PublicFooter() {
+  const { headings } = usePageHeadings();
   const currentYear = new Date().getFullYear();
 
   // Split categories for clean column layout
@@ -75,7 +79,7 @@ export function PublicFooter() {
           {/* Column 2: Showroom & IT Workspaces (SEO Category Links) */}
           <div className="space-y-3">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-amber-400 font-mono">
-              Showroom &amp; Office
+              {headings.footer_col_commercial}
             </h3>
             <ul className="space-y-2 text-xs">
               {commercialCats.map((cat) => (
@@ -95,7 +99,7 @@ export function PublicFooter() {
           {/* Column 3: Residential & Land Assets (SEO Category Links) */}
           <div className="space-y-3">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-amber-400 font-mono">
-              Residential &amp; Land
+              {headings.footer_col_residential}
             </h3>
             <ul className="space-y-2 text-xs">
               {residentialAndLandCats.map((cat) => (
@@ -115,7 +119,7 @@ export function PublicFooter() {
           {/* Column 4: Specialized Assets & Developer Services (SEO Category Links) */}
           <div className="space-y-3">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-amber-400 font-mono">
-              Specialized &amp; Advisory
+              {headings.footer_col_specialized}
             </h3>
             <ul className="space-y-2 text-xs">
               {specializedCats.map((cat) => (
@@ -145,7 +149,7 @@ export function PublicFooter() {
           <div className="space-y-4">
             <div className="space-y-3">
               <h3 className="text-xs font-semibold uppercase tracking-wider text-amber-400 font-mono">
-                Portals &amp; Access
+                {headings.footer_col_portals}
               </h3>
               <ul className="space-y-2.5 text-xs">
                 <li>

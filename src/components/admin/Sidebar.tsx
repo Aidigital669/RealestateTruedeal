@@ -81,6 +81,7 @@ export function Sidebar({
       items: [
         { id: 'homepage-editor', label: 'Homepage Editor', icon: LayoutTemplate, hasDot: true },
         { id: 'premium-ads', label: 'Premium & Client Ads', icon: Crown, hasDot: true, badge: 'Crown', badgeVariant: 'peach' },
+        { id: 'page-headings', label: 'Page Headings', icon: FileText, hasDot: true },
         { id: 'pages', label: 'Pages', icon: FileText },
         { id: 'navigation', label: 'Navigation', icon: Navigation },
         { id: 'banners', label: 'Banners', icon: ImageIcon },
