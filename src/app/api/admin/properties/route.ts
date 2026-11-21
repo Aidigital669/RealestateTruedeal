@@ -138,11 +138,13 @@ export async function POST(req: NextRequest) {
     }
 
     const trimmedTitle = title.trim();
-    const slug =
+    const baseSlug =
       trimmedTitle
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-|-$/g, "") + `-${Date.now().toString().slice(-4)}`;
+        .replace(/^-+|-+$/g, "")
+        .slice(0, 75) || "property";
+    const slug = `${baseSlug}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
 
     // 1. Resolve Location / Locality
     let locationId = 11; // default fallback (Koregaon Park / Baner)

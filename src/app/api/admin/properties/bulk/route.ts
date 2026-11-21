@@ -446,6 +446,7 @@ export async function POST(req: NextRequest) {
 
     // 3. Fast synchronous in-memory preparation of all rows (0 async DB queries!)
     const preparedProps: any[] = [];
+    const usedSlugsInBatch = new Set<string>();
 
     for (let index = 0; index < rawItems.length; index++) {
       const row = rawItems[index];
@@ -584,12 +585,18 @@ export async function POST(req: NextRequest) {
       const devKey = developer.toLowerCase();
       const projectId = developer ? (projMap.get(devKey) || null) : null;
 
-      const slug =
-        title
+      const baseSlug =
+        (title || "property")
           .toLowerCase()
           .replace(/[^a-z0-9]+/g, "-")
-          .replace(/^-|-$/g, "") +
-        `-${Date.now().toString().slice(-4)}-${Math.floor(Math.random() * 1000)}`;
+          .replace(/^-+|-+$/g, "")
+          .slice(0, 75) || "property";
+
+      let slug = `${baseSlug}-${Date.now().toString(36)}-${index + 1}-${Math.random().toString(36).slice(2, 7)}`;
+      while (usedSlugsInBatch.has(slug)) {
+        slug = `${baseSlug}-${Date.now().toString(36)}-${index + 1}-${Math.random().toString(36).slice(2, 8)}`;
+      }
+      usedSlugsInBatch.add(slug);
 
       preparedProps.push({
         title,
