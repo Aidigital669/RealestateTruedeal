@@ -135,6 +135,8 @@ function parseIndianPriceNumber(priceRaw: any): number {
 
 function calculatePriceData(row: any, area: number): number {
   const directPriceKeys = [
+    'ExpectedPrice', 'Expected Price', 'expected_price', 'expectedPrice',
+    'DepositePrice', 'DepositPrice', 'deposite_price', 'deposit_price',
     'Price', 'price', 'Total Price', 'total_price', 'Budget', 'budget',
     'Cost', 'cost', 'TotalCost', 'total_cost', 'Amount', 'amount', 'Total Amount'
   ];
@@ -198,7 +200,7 @@ function formatCleanTitleWithLocation(title: string, location: string): string {
 
 function constructPropertyTitle(row: any, category: string, location: string, area: number): string {
   const directTitleKeys = [
-    'Property Name', 'property_name', 'PropertyTitle', 'Title', 'title', 'Project Name'
+    'Title', 'title', 'PropertyName', 'Property Name', 'property_name', 'PropertyTitle', 'Project Name'
   ];
   for (const k of directTitleKeys) {
     const val = row[k] ? String(row[k]).trim() : '';
@@ -366,25 +368,32 @@ export async function POST(req: NextRequest) {
       const locClauses: string[] = [];
       const locParams: any[] = [];
       let pIdx = 1;
+      let lCount = 1;
+      const seenLocSlugs = new Set<string>();
       for (const locName of neededLocs) {
-        const slug = locName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + `-pune-${Date.now().toString().slice(-4)}`;
+        const baseSlug = locName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "location";
+        const slug = `${baseSlug}-pune-${Date.now().toString(36)}-${lCount++}`;
+        if (seenLocSlugs.has(slug)) continue;
+        seenLocSlugs.add(slug);
         locClauses.push(`($${pIdx++}, $${pIdx++}, 'Pune', 'Maharashtra', 'India', $${pIdx++}, NOW(), NOW())`);
         locParams.push(locName, slug, `Exclusive luxury & commercial corridor in ${locName}, Pune.`);
       }
-      try {
-        const insertedLocs = await query<{ id: number; name: string; slug: string }>(
-          `INSERT INTO "Location" (name, slug, city, state, country, description, "createdAt", "updatedAt")
-           VALUES ${locClauses.join(', ')}
-           ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name
-           RETURNING id, LOWER(name) as name, slug;`,
-          locParams
-        );
-        insertedLocs.forEach(l => {
-          locMap.set(l.name.toLowerCase().trim(), l.id);
-          locMap.set(l.slug.toLowerCase().trim(), l.id);
-        });
-      } catch (err) {
-        console.warn("Bulk location pre-insert warning:", err);
+      if (locClauses.length > 0) {
+        try {
+          const insertedLocs = await query<{ id: number; name: string; slug: string }>(
+            `INSERT INTO "Location" (name, slug, city, state, country, description, "createdAt", "updatedAt")
+             VALUES ${locClauses.join(', ')}
+             ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name, "updatedAt" = NOW()
+             RETURNING id, LOWER(name) as name, slug;`,
+            locParams
+          );
+          insertedLocs.forEach(l => {
+            locMap.set(l.name.toLowerCase().trim(), l.id);
+            locMap.set(l.slug.toLowerCase().trim(), l.id);
+          });
+        } catch (err) {
+          console.warn("Bulk location pre-insert warning:", err);
+        }
       }
     }
 
@@ -393,8 +402,11 @@ export async function POST(req: NextRequest) {
       const typeClauses: string[] = [];
       const typeParams: any[] = [];
       let pIdx = 1;
+      const seenTypeSlugs = new Set<string>();
       for (const catName of neededTypes) {
         const cleanSlug = catName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+        if (!cleanSlug || seenTypeSlugs.has(cleanSlug)) continue;
+        seenTypeSlugs.add(cleanSlug);
         typeClauses.push(`($${pIdx++}, $${pIdx++}, $${pIdx++}, NOW(), NOW())`);
         typeParams.push(
           catName.charAt(0).toUpperCase() + catName.slice(1),
@@ -402,20 +414,22 @@ export async function POST(req: NextRequest) {
           `Verified ${catName} properties in Pune & Mumbai.`
         );
       }
-      try {
-        const insertedTypes = await query<{ id: number; name: string; slug: string }>(
-          `INSERT INTO "PropertyType" (name, slug, description, "createdAt", "updatedAt")
-           VALUES ${typeClauses.join(', ')}
-           ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name
-           RETURNING id, LOWER(name) as name, slug;`,
-          typeParams
-        );
-        insertedTypes.forEach(t => {
-          ptMap.set(t.name.toLowerCase().trim(), t.id);
-          ptMap.set(t.slug.toLowerCase().trim(), t.id);
-        });
-      } catch (err) {
-        console.warn("Bulk property type pre-insert warning:", err);
+      if (typeClauses.length > 0) {
+        try {
+          const insertedTypes = await query<{ id: number; name: string; slug: string }>(
+            `INSERT INTO "PropertyType" (name, slug, description, "createdAt", "updatedAt")
+             VALUES ${typeClauses.join(', ')}
+             ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name, "updatedAt" = NOW()
+             RETURNING id, LOWER(name) as name, slug;`,
+            typeParams
+          );
+          insertedTypes.forEach(t => {
+            ptMap.set(t.name.toLowerCase().trim(), t.id);
+            ptMap.set(t.slug.toLowerCase().trim(), t.id);
+          });
+        } catch (err) {
+          console.warn("Bulk property type pre-insert warning:", err);
+        }
       }
     }
 
@@ -424,23 +438,31 @@ export async function POST(req: NextRequest) {
       const projClauses: string[] = [];
       const projParams: any[] = [];
       let pIdx = 1;
+      let dCount = 1;
+      const seenDevSlugs = new Set<string>();
       for (const devName of neededDevs) {
-        const projSlug = `proj-${devName.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 20)}-${Date.now().toString().slice(-4)}-${Math.floor(Math.random() * 1000)}`;
+        const baseProj = devName.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 25) || "project";
+        const projSlug = `proj-${baseProj}-${Date.now().toString(36)}-${dCount++}`;
+        if (seenDevSlugs.has(projSlug)) continue;
+        seenDevSlugs.add(projSlug);
         projClauses.push(`($${pIdx++}, $${pIdx++}, $${pIdx++}, 'Active', false, NOW(), NOW())`);
         projParams.push(`${devName} Project`, projSlug, devName);
       }
-      try {
-        const insertedProjs = await query<{ id: number; developer: string }>(
-          `INSERT INTO "Project" (name, slug, developer, status, "isFeatured", "createdAt", "updatedAt")
-           VALUES ${projClauses.join(', ')}
-           RETURNING id, LOWER(COALESCE(developer, '')) as developer;`,
-          projParams
-        );
-        insertedProjs.forEach(p => {
-          if (p.developer) projMap.set(p.developer.toLowerCase().trim(), p.id);
-        });
-      } catch (err) {
-        console.warn("Bulk project pre-insert warning:", err);
+      if (projClauses.length > 0) {
+        try {
+          const insertedProjs = await query<{ id: number; developer: string }>(
+            `INSERT INTO "Project" (name, slug, developer, status, "isFeatured", "createdAt", "updatedAt")
+             VALUES ${projClauses.join(', ')}
+             ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name, "updatedAt" = NOW()
+             RETURNING id, LOWER(COALESCE(developer, '')) as developer;`,
+            projParams
+          );
+          insertedProjs.forEach(p => {
+            if (p.developer) projMap.set(p.developer.toLowerCase().trim(), p.id);
+          });
+        } catch (err) {
+          console.warn("Bulk project pre-insert warning:", err);
+        }
       }
     }
 
@@ -460,15 +482,28 @@ export async function POST(req: NextRequest) {
         row.location ||
         row["LocationName"] ||
         row["Location"] ||
+        row["AddressName"] ||
         row.address ||
         row["Address"] ||
+        row["SocietyName"] ||
+        row["Landmark"] ||
+        row["CityName"] ||
         row.city ||
         row["City"] ||
         row["Locality"]
       );
 
       // 3. Resolve Area
-      const sqftRaw = row.sqft || row["SuperAreaName"] || row["Carpet Area (sqft)"] || row["Carpet Area"] || row["Sqft"] || row.sqft || 1200;
+      const sqftRaw =
+        row.sqft ||
+        row["CarpetAreaName"] ||
+        row["BuiltAreaName"] ||
+        row["SuperAreaName"] ||
+        row["PlotSizeName"] ||
+        row["Carpet Area (sqft)"] ||
+        row["Carpet Area"] ||
+        row["Sqft"] ||
+        1200;
       const numArea = parseAreaNumber(sqftRaw);
 
       // 4. Resolve Title
@@ -491,7 +526,7 @@ export async function POST(req: NextRequest) {
       }
 
       // 6. Resolve Status
-      const rawStatus = (row.status || row["TransactionName"] || row["Status"] || row["Construction Status"] || "Ready to Move").toString().trim();
+      const rawStatus = (row.status || row["PossessionName"] || row["TransactionName"] || row["Status"] || row["Construction Status"] || "Ready to Move").toString().trim();
       let status = 'Ready to Move';
       if (/under\s*construction/i.test(rawStatus)) status = 'Under Construction';
       else if (/pre\s*lease/i.test(rawStatus)) status = 'Pre-Leased';
@@ -511,7 +546,7 @@ export async function POST(req: NextRequest) {
       const rawDev = (row.developer || row["Developer"] || row.builder || row["Builder"] || "").toString();
       const developer = detectDeveloper(bldg, prop, rawDev);
 
-      // 8. Description & Specifications
+      // 8. Description & Specifications (Enriched with all 48 Excel columns)
       const furnishing = (row["FurnishingName"] || row["furnishing"] || "").toString().trim();
       const floor = (row["FloorNumber"] || row["floor"] || "").toString().trim();
       const parkingRaw = row["ParkingDetails"] || row["parking"];
@@ -519,22 +554,50 @@ export async function POST(req: NextRequest) {
       const roi = (row["ROI"] || row["roi"] || "").toString().trim();
       const rentRaw = row["RentPM"] || row["Rent PM"] || row["rent_pm"] || row["Rent"] || row["rent"];
       const rent = rentRaw ? parseFloat(String(rentRaw).replace(/[^0-9.]/g, '')) || null : null;
+      const refNumber = (row["RefNumber"] || row["Ref Number"] || "").toString().trim();
+      const facing = (row["FacingText"] || "").toString().trim();
+      const lockin = (row["LockinPeriod"] || "").toString().trim();
+      const leasePeriod = (row["LeasePeriod"] || "").toString().trim();
+      const maintenance = (row["MaintainCharges"] || "").toString().trim();
+      const propTax = (row["PropertyTax"] || "").toString().trim();
+      const deposit = (row["DepositePrice"] || row["DepositPrice"] || "").toString().trim();
+      const custName = (row["CustomerFullName"] || "").toString().trim();
+      const custPhone = (row["CustomerMobile"] || "").toString().trim();
+      const empName = (row["EmployeeName"] || "").toString().trim();
 
       const rentInfo = rent && rent > 0 ? `, generating ₹${(rent / 100000).toFixed(2)} Lakh monthly rental income` : '';
       const roiInfo = roi ? `, with ${roi}% verified ROI` : '';
+      const refInfo = refNumber ? ` [Ref: ${refNumber}]` : '';
+      const facingInfo = facing ? `, ${facing}` : '';
+      const leaseInfo = leasePeriod ? ` Lease Tenure: ${leasePeriod}.` : '';
+      const lockinInfo = lockin ? ` Lock-in Period: ${lockin}.` : '';
+      const maintInfo = maintenance ? ` Maintenance: ${maintenance}.` : '';
 
       const description = (
         row.description ||
         row["Description"] ||
         row.details ||
         row["Details"] ||
-        `Prime ${category} available in ${locationRaw}. Featuring ${numArea.toLocaleString('en-IN')} Sq.Ft.${furnishing ? ' with ' + furnishing + ' specifications' : ''}${floor ? ', located on ' + floor : ''}${parking ? ', including ' + parking + ' reserved parking spaces' : ''}${rentInfo}${roiInfo}. Verified commercial catalog listing with clear documentation.`
+        `Prime ${category} available in ${locationRaw}${facingInfo}. Featuring ${numArea.toLocaleString('en-IN')} Sq.Ft.${furnishing ? ' with ' + furnishing + ' specifications' : ''}${floor ? ', located on ' + floor : ''}${parking ? ', including ' + parking + ' reserved parking spaces' : ''}${rentInfo}${roiInfo}.${leaseInfo}${lockinInfo}${maintInfo} Verified catalog listing with complete compliance.${refInfo}`
       ).toString().trim();
 
-      let listingType = 'Sale';
+      const rawLeaseSale = (row["Lease_Sale"] || row["lease_sale"] || row["TransactionName"] || row.listingType || "").toString().trim();
+      let listingType = /lease|rent/i.test(rawLeaseSale) ? 'Rent' : 'Sale';
       if (status === 'Pre-Leased' || (rent && rent > 0 && numPrice === 0)) {
         listingType = 'Rent';
       }
+
+      // Address combining flat/building/street/landmark/location
+      const addressParts = [
+        row["FlatNo"] ? `Unit/Flat ${row["FlatNo"]}` : "",
+        bldg,
+        row["SocietyName"],
+        row["Street"],
+        row["Landmark"] ? `Near ${row["Landmark"]}` : "",
+        row["AddressName"] || row.address,
+        locationRaw
+      ].filter(Boolean);
+      const fullAddress = addressParts.length > 0 ? Array.from(new Set(addressParts)).join(", ") : locationRaw;
 
       const bedroomsRaw = row.bedrooms !== undefined ? row.bedrooms : row["Bedrooms"] || row["Beds"];
       const bedrooms = bedroomsRaw ? parseInt(String(bedroomsRaw).replace(/[^0-9]/g, ""), 10) || null : null;
@@ -608,7 +671,7 @@ export async function POST(req: NextRequest) {
         status,
         publishStatus,
         description,
-        locationRaw,
+        locationRaw: fullAddress,
         price: numPrice > 0 ? numPrice : null,
         rent: rent && rent > 0 ? rent : null,
         floor: floor || null,
@@ -683,6 +746,9 @@ export async function POST(req: NextRequest) {
           "videoUrl", "isFeatured", "createdAt", "updatedAt"
         )
         VALUES ${valueClauses.join(', ')}
+        ON CONFLICT (slug) DO UPDATE SET
+          title = EXCLUDED.title,
+          "updatedAt" = NOW()
         RETURNING id, title;`,
         params
       );
@@ -691,18 +757,24 @@ export async function POST(req: NextRequest) {
       const imgClauses: string[] = [];
       const imgParams: any[] = [];
       insertedRows.forEach((row, idx) => {
-        const imgUrl = chunk[idx].imageUrl;
-        const offset = idx * 3;
-        imgClauses.push(`($${offset + 1}, $${offset + 2}, $${offset + 3}, 1, true, NOW())`);
-        imgParams.push(row.id, imgUrl, `${chunk[idx].title} Primary Photo`);
+        const imgUrl = chunk[idx]?.imageUrl;
+        if (imgUrl) {
+          const offset = idx * 3;
+          imgClauses.push(`($${offset + 1}, $${offset + 2}, $${offset + 3}, 1, true, NOW())`);
+          imgParams.push(row.id, imgUrl, `${chunk[idx]?.title || 'Property'} Primary Photo`);
+        }
       });
 
       if (imgClauses.length > 0) {
-        await query(
-          `INSERT INTO "PropertyImage" ("propertyId", url, "altText", "sortOrder", "isPrimary", "createdAt")
-           VALUES ${imgClauses.join(', ')};`,
-          imgParams
-        );
+        try {
+          await query(
+            `INSERT INTO "PropertyImage" ("propertyId", url, "altText", "sortOrder", "isPrimary", "createdAt")
+             VALUES ${imgClauses.join(', ')};`,
+            imgParams
+          );
+        } catch (imgErr) {
+          console.warn("Property images bulk insert warning:", imgErr);
+        }
       }
 
       savedCount += insertedRows.length;
@@ -720,6 +792,8 @@ export async function POST(req: NextRequest) {
     clearPropertyCache();
 
     return NextResponse.json({
+      success: true,
+      count: savedCount,
       totalReceived: rawItems.length,
       properties: savedProperties,
       errors: errors.length > 0 ? errors : undefined,

@@ -42,6 +42,7 @@ export interface ParsedPropertyRow {
   videoUrl?: string;
   isValid: boolean;
   errors?: string[];
+  rawRow?: any;
 }
 
 interface PropertyExcelUploadModalProps {
@@ -286,6 +287,8 @@ function formatPriceForDisplay(rawPrice: any): string {
 function calculatePriceData(row: any, area: number): { price: number; formatted: string } {
   // 1. Direct total price columns
   const directPriceKeys = [
+    'ExpectedPrice', 'Expected Price', 'expected_price', 'expectedPrice',
+    'DepositePrice', 'DepositPrice', 'deposite_price', 'deposit_price',
     'Price', 'price', 'Total Price', 'total_price', 'Budget', 'budget',
     'Cost', 'cost', 'TotalCost', 'total_cost', 'Amount', 'amount', 'Total Amount'
   ];
@@ -350,7 +353,7 @@ function isCustomerOrAgent(val: string, custFull: string): boolean {
 
 function constructPropertyTitle(row: any, category: string, location: string, area: number): string {
   const directTitleKeys = [
-    'Property Name', 'property_name', 'PropertyTitle', 'Title', 'title', 'Project Name'
+    'Title', 'title', 'PropertyName', 'Property Name', 'property_name', 'PropertyTitle', 'Project Name'
   ];
   for (const k of directTitleKeys) {
     const val = row[k] ? String(row[k]).trim() : '';
@@ -521,10 +524,32 @@ export function PropertyExcelUploadModal({
             const category = normalizeCategory(rawCat);
 
             // 2. Resolve Location
-            const rawLoc = cleanLocality(row["LocationName"] || row["Location"] || row.location || row["Address"] || row.address || row["City"] || row.city || row["Locality"]);
+            const rawLoc = cleanLocality(
+              row["LocationName"] ||
+              row["Location"] ||
+              row.location ||
+              row["AddressName"] ||
+              row["Address"] ||
+              row.address ||
+              row["SocietyName"] ||
+              row["Landmark"] ||
+              row["CityName"] ||
+              row["City"] ||
+              row.city ||
+              row["Locality"]
+            );
 
             // 3. Resolve Area
-            const rawArea = row["SuperAreaName"] || row["Carpet Area (sqft)"] || row["Carpet Area"] || row["Sqft"] || row.sqft || 1200;
+            const rawArea =
+              row["CarpetAreaName"] ||
+              row["BuiltAreaName"] ||
+              row["SuperAreaName"] ||
+              row["PlotSizeName"] ||
+              row["Carpet Area (sqft)"] ||
+              row["Carpet Area"] ||
+              row["Sqft"] ||
+              row.sqft ||
+              1200;
             const numArea = parseAreaNumber(rawArea);
 
             // 4. Construct Clean, Realistic Title
@@ -534,7 +559,7 @@ export function PropertyExcelUploadModal({
             const { price, formatted: priceFormatted } = calculatePriceData(row, numArea);
 
             // 6. Resolve Status
-            const rawStatus = (row["TransactionName"] || row["Status"] || row.status || "Ready to Move").toString().trim();
+            const rawStatus = (row["PossessionName"] || row["TransactionName"] || row["Status"] || row.status || "Ready to Move").toString().trim();
             let status = 'Ready to Move';
             if (/under\s*construction/i.test(rawStatus)) status = 'Under Construction';
             else if (/pre\s*lease/i.test(rawStatus)) status = 'Pre-Leased';
@@ -556,14 +581,19 @@ export function PropertyExcelUploadModal({
             const parking = (row["ParkingDetails"] || "").toString().trim();
             const roi = (row["ROI"] || "").toString().trim();
             const rent = row["RentPM"] ? parseFloat(String(row["RentPM"]).replace(/[^0-9.]/g, '')) : 0;
+            const refNumber = (row["RefNumber"] || "").toString().trim();
+            const facing = (row["FacingText"] || "").toString().trim();
+            const leaseSale = (row["Lease_Sale"] || "").toString().trim();
 
             const rentInfo = rent > 0 ? `, generating ₹${(rent / 100000).toFixed(2)} Lakh monthly rental income` : '';
             const roiInfo = roi ? `, with ${roi}% verified ROI` : '';
+            const refInfo = refNumber ? ` [Ref: ${refNumber}]` : '';
+            const facingInfo = facing ? `, ${facing}` : '';
 
             const description = (
               row["Description"] ||
               row.description ||
-              `Prime ${category} available in ${rawLoc}. Featuring ${numArea.toLocaleString('en-IN')} Sq.Ft.${furnishing ? ' with ' + furnishing + ' specifications' : ''}${floor ? ', located on ' + floor : ''}${parking ? ', including ' + parking + ' reserved parking spaces' : ''}${rentInfo}${roiInfo}. Verified commercial listing with clean titles and complete compliance.`
+              `Prime ${category} available in ${rawLoc}${facingInfo}. Featuring ${numArea.toLocaleString('en-IN')} Sq.Ft.${furnishing ? ' with ' + furnishing + ' specifications' : ''}${floor ? ', located on ' + floor : ''}${parking ? ', including ' + parking + ' reserved parking spaces' : ''}${rentInfo}${roiInfo}. Verified commercial listing with clean titles and complete compliance.${refInfo}`
             ).toString().trim();
 
             const publishStatus = (row["Publish Status"] || row.publishStatus || "Published").toString().trim();
@@ -585,7 +615,8 @@ export function PropertyExcelUploadModal({
               bathrooms: row["Bathrooms"] || row.bathrooms || "",
               videoUrl: row["Video URL"] || row.videoUrl || "",
               isValid: true,
-              errors: []
+              errors: [],
+              rawRow: row
             };
           })
           .filter(r => r.title.length > 0);
@@ -665,6 +696,7 @@ export function PropertyExcelUploadModal({
         const chunk = parsedRows.slice(i, i + CHUNK_SIZE);
         const payload = {
           properties: chunk.map(r => ({
+            ...(r.rawRow || {}),
             title: r.title,
             category: r.category,
             location: r.location,
@@ -703,11 +735,11 @@ export function PropertyExcelUploadModal({
               );
             }
 
-            if (!res.ok || !data.success) {
-              throw new Error(data.error || `Failed to commit batch ${Math.floor(i / CHUNK_SIZE) + 1}`);
+            if (!res.ok || (data && data.success === false)) {
+              throw new Error(data?.error || `Server error during batch ${Math.floor(i / CHUNK_SIZE) + 1} (HTTP ${res.status})`);
             }
 
-            totalImported += (data.count || chunk.length);
+            totalImported += (typeof data?.count === 'number' ? data.count : chunk.length);
             chunkSuccess = true;
             break;
           } catch (retryErr: any) {
