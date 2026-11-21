@@ -185,13 +185,13 @@ export function PropertyDetailsModal({
                 </div>
                 {property.developer &&
                   !/anv\s*(signature\s*partner|verified\s*developer|partner\s*developer)/i.test(property.developer) && (
-                  <div className="absolute bottom-3 left-3 right-3 bg-gradient-to-t from-black/80 to-transparent p-2 rounded-xl text-white">
-                    <div className="text-[10px] text-zinc-300 uppercase tracking-wider font-semibold">
-                      Developer Partner
+                    <div className="absolute bottom-3 left-3 right-3 bg-gradient-to-t from-black/80 to-transparent p-2 rounded-xl text-white">
+                      <div className="text-[10px] text-zinc-300 uppercase tracking-wider font-semibold">
+                        Developer Partner
+                      </div>
+                      <div className="text-sm font-bold truncate">{property.developer}</div>
                     </div>
-                    <div className="text-sm font-bold truncate">{property.developer}</div>
-                  </div>
-                )}
+                  )}
               </div>
 
               {/* Title & Key Highlights */}
@@ -302,41 +302,37 @@ export function PropertyDetailsModal({
             <div className="flex items-center gap-2 border-b border-zinc-200 pb-2">
               <button
                 onClick={() => setActiveTab('overview')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
-                  activeTab === 'overview'
-                    ? 'bg-zinc-950 text-white'
-                    : 'text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100'
-                }`}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'overview'
+                  ? 'bg-zinc-950 text-white'
+                  : 'text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100'
+                  }`}
               >
                 Executive Summary
               </button>
               <button
                 onClick={() => setActiveTab('financials')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
-                  activeTab === 'financials'
-                    ? 'bg-zinc-950 text-white'
-                    : 'text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100'
-                }`}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'financials'
+                  ? 'bg-zinc-950 text-white'
+                  : 'text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100'
+                  }`}
               >
                 Financial Breakdown
               </button>
               <button
                 onClick={() => setActiveTab('amenities')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
-                  activeTab === 'amenities'
-                    ? 'bg-zinc-950 text-white'
-                    : 'text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100'
-                }`}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'amenities'
+                  ? 'bg-zinc-950 text-white'
+                  : 'text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100'
+                  }`}
               >
                 Lifestyle & Amenities
               </button>
               <button
                 onClick={() => setActiveTab('legal')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
-                  activeTab === 'legal'
-                    ? 'bg-zinc-950 text-white'
-                    : 'text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100'
-                }`}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${activeTab === 'legal'
+                  ? 'bg-zinc-950 text-white'
+                  : 'text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100'
+                  }`}
               >
                 RERA & Compliance
               </button>
@@ -496,11 +492,10 @@ export function PropertyDetailsModal({
               {/* Compare Button */}
               <button
                 onClick={handleToggleCompare}
-                className={`flex-1 sm:flex-initial px-3.5 py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer border ${
-                  isCompared
-                    ? 'bg-[#b9974f] text-zinc-950 border-[#b9974f] hover:bg-[#a4823d]'
-                    : 'bg-white border-zinc-300 text-zinc-800 hover:bg-zinc-100'
-                }`}
+                className={`flex-1 sm:flex-initial px-3.5 py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer border ${isCompared
+                  ? 'bg-[#b9974f] text-zinc-950 border-[#b9974f] hover:bg-[#a4823d]'
+                  : 'bg-white border-zinc-300 text-zinc-800 hover:bg-zinc-100'
+                  }`}
               >
                 <Scale className="w-3.5 h-3.5" />
                 <span>{isCompared ? '✓ Added to Compare' : 'Add to Compare'}</span>
@@ -509,11 +504,10 @@ export function PropertyDetailsModal({
               {/* Save Button */}
               <button
                 onClick={handleToggleSave}
-                className={`p-2.5 rounded-xl border transition cursor-pointer ${
-                  isSaved
-                    ? 'bg-rose-50 border-rose-200 text-rose-600'
-                    : 'bg-white border-zinc-300 text-zinc-700 hover:bg-zinc-100'
-                }`}
+                className={`p-2.5 rounded-xl border transition cursor-pointer ${isSaved
+                  ? 'bg-rose-50 border-rose-200 text-rose-600'
+                  : 'bg-white border-zinc-300 text-zinc-700 hover:bg-zinc-100'
+                  }`}
                 title="Save Residence"
               >
                 <Heart className={`w-4 h-4 ${isSaved ? 'fill-rose-500 text-rose-500' : ''}`} />
