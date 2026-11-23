@@ -174,25 +174,27 @@ export function CrmPropertiesTab() {
   };
 
   const handleDeleteProperty = async (prop: any) => {
+    const propTitle = prop.title || prop.name || 'Listing';
     if (prop.isSafe) {
-      alert(`Property "${prop.name || 'Listing'}" is marked as SAFE and protected from deletion. Please remove its Safe status first if you wish to delete it.`);
+      alert(`Property "${propTitle}" is marked as SAFE and protected from deletion. Please remove its Safe status first if you wish to delete it.`);
       return;
     }
-    if (!confirm('Are you sure you want to delete this property?')) return;
+    if (!confirm(`Are you sure you want to delete "${propTitle}"?`)) return;
     try {
       const res = await fetch(`/api/admin/properties/${prop.id}`, {
         method: 'DELETE'
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        fetchProperties();
-        setNotificationMsg(`✓ Deleted property "${prop.name || 'Listing'}".`);
+        setProperties((prev) => prev.filter((p) => String(p.id) !== String(prop.id)));
+        setNotificationMsg(`✓ Deleted property "${propTitle}".`);
         setTimeout(() => setNotificationMsg(null), 4000);
       } else {
         alert(data.error || 'Failed to delete property');
       }
     } catch (e) {
       console.error(e);
+      alert('Error deleting property');
     }
   };
 

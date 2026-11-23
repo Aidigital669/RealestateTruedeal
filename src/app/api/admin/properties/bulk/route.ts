@@ -603,8 +603,7 @@ export async function POST(req: NextRequest) {
           "Grade-A commercial architectural specifications",
           "Optimized usable carpet area with superior floor efficiency",
           "Dedicated utility infrastructure and power backup"
-        ],
-        isSafe: true
+        ]
       };
       const description = baseNarrative.includes("<!-- DOSSIER_DATA:")
         ? baseNarrative
