@@ -248,7 +248,8 @@ export function fastDeterministicStandardizeDescription(
   // Extract raw hashtag segments, bullet lines (*, •, -), or newlines
   const normalized = rawDescription
     .replace(/\r/g, '')
-    .replace(/(?:^|\s+)[*•\-]\s+/g, '\n# ')
+    .replace(/^[ \t]*[*•]\s+/gm, '\n# ')
+    .replace(/(?:^|\n)[ \t]*-\s+/g, '\n# ')
     .replace(/\s*#\s*/g, '\n# ');
 
   const rawSegments = normalized
@@ -341,7 +342,10 @@ export function fastDeterministicStandardizeDescription(
     } else if (/near\s+|opposite\s+|chowk|crossroad|metro|highway|expressway|corridor|towards\s+/i.test(s) && !/road\s*width|facing/i.test(s)) {
       addBucket(3, `Landmark, City: ${s}`);
     } else if (/carpet\s*area|saleable\s*area|super\s*area|built\s*up|total\s*(?:stated\s*)?area|basement|mezzanine/i.test(s)) {
-      addBucket(12, s.startsWith('Area') ? s : `Area: ${s}`);
+      if (/\d/.test(s)) {
+        const cleanArea = s.replace(/^#?\s*area\s*[:\-]\s*/i, '').trim();
+        addBucket(12, `Area: ${cleanArea}`);
+      }
     } else if (/car\s*parking|two\s*wheeler|parking\s*space|car\s*park/i.test(s)) {
       const cleanParking = s
         .replace(/^(?:#\s*)?(?:parking\s*spaces?\s*[:\-]\s*)+/gi, '')
@@ -376,6 +380,7 @@ export function fastDeterministicStandardizeDescription(
         if (
           cleanSuit &&
           cleanSuit.length <= 50 &&
+          !/^(?:showroom|shop|office|unit|flat)\s*(?:no\.?|number)?\s*\d+/i.test(cleanSuit) &&
           !/(?:available\s*in|for\s*rent|for\s*sale|total\s*retail|leasable|sq\.?\s*ft|approx|chiller|double\-glazed|parking|connectivity|fa[cç]ade|hvac)/i.test(cleanSuit)
         ) {
           addBucket(19, cleanSuit);

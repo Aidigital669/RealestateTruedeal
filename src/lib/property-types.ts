@@ -43,6 +43,7 @@ export interface PropertyItem {
   hideConnectivity?: boolean;
   hideDirectContact?: boolean;
   hideBreadcrumbs?: boolean;
+  dossier?: Record<string, any>;
   customCostSheet?: {
     baseAgreementValue?: string;
     stampDuty?: string;

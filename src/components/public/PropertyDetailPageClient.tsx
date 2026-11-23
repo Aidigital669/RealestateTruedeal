@@ -363,7 +363,8 @@ export function PropertyDetailPageClient({
   const splitBulletSegments = (text: string): string[] => {
     if (!text) return [];
     const normalized = text
-      .replace(/(?:^|\s+)[*•\-]\s+/g, '\n')
+      .replace(/^[ \t]*[*•]\s+/gm, '\n')
+      .replace(/(?:^|\n)[ \t]*-\s+/g, '\n')
       .replace(/\s*#\s*/g, '\n');
     return normalized
       .split('\n')
@@ -410,6 +411,8 @@ export function PropertyDetailPageClient({
       return !/^(?:listing status|property type|configuration|property tag|availability|status)\b/i.test(lower);
     });
 
+    const d = ((dossier || (property as any)?.dossier || {}) as Record<string, any>);
+
     // Always extract real architectural & engineering lines from cleanDescription or description
     const descText = cleanDescription || property?.description || '';
     const extracted: string[] = [];
@@ -431,6 +434,37 @@ export function PropertyDetailPageClient({
       }
     }
 
+    // Check if validRaw only has boilerplate placeholders
+    const isGenericOnly = validRaw.every(h =>
+      /grade-a commercial architectural|optimized usable carpet area with superior floor efficiency|dedicated utility infrastructure/i.test(h)
+    );
+
+    if (isGenericOnly || validRaw.length === 0) {
+      const dynamicSpecs: string[] = [];
+      if (d.CarpetAreaName || property?.sqft) {
+        dynamicSpecs.push(`Optimized ${d.CarpetAreaName || property?.sqft} usable carpet area${d.SuperAreaName ? ' with ' + d.SuperAreaName + ' super built-up layout' : ''}`);
+      }
+      if (d.BuildingName || property?.developer) {
+        dynamicSpecs.push(`Prime commercial landmark at ${d.BuildingName || property?.developer} with high-street visibility`);
+      }
+      if (d.FloorNumber) {
+        dynamicSpecs.push(`Level placement: ${d.FloorNumber} with direct commercial access`);
+      }
+      if (d.ParkingDetails) {
+        const pNum = String(d.ParkingDetails).replace(/[^0-9]/g, '');
+        if (pNum && Number(pNum) > 0) {
+          dynamicSpecs.push(`${pNum} Dedicated reserved parking spaces for occupants and visitors`);
+        }
+      }
+      const frontageMatch = descText.match(/(\d+\s*(?:feet|ft|m|meter)\s*(?:wide\s*road|frontage|ceiling\s*height)[^\n.,#|]*)/i);
+      if (frontageMatch) {
+        dynamicSpecs.push(`Superior infrastructure specifications: ${frontageMatch[1].trim()}`);
+      }
+      if (dynamicSpecs.length > 0) {
+        return dynamicSpecs;
+      }
+    }
+
     const combined = [...validRaw, ...extracted];
     const unique = Array.from(new Set(combined));
     if (unique.length > 0) return unique;
@@ -449,7 +483,7 @@ export function PropertyDetailPageClient({
         "Premium Italian marble flooring in living and dining zones",
         "100% DG power backup and 3-tier smart security infrastructure"
       ];
-  }, [filteredHighlights, cleanDescription, property?.description, property?.isCommercial]);
+  }, [filteredHighlights, cleanDescription, property, dossier]);
 
   const rawConnectivity: string[] = (property?.connectivity && property.connectivity.length > 0)
     ? property.connectivity
@@ -509,6 +543,7 @@ export function PropertyDetailPageClient({
           item.length > 40 ||
           item.includes(':') ||
           item.includes('*') ||
+          /^(?:showroom|shop|office|unit|flat)\s*(?:no\.?|number)?\s*\d+/i.test(item) ||
           /\b(?:available\s*in|for\s*rent|for\s*sale|sq\.?\s*ft|carpet\s*area|saleable|bhk|project\s*name|trade\s*park|undri|commercial\s*shop|hospital\s*premise|façade|facade|hvac|chiller|parking|connectivity|floor|leasable|total\s*retail|godrej)\b/i.test(item)
         ) {
           continue;
@@ -1029,18 +1064,7 @@ export function PropertyDetailPageClient({
               {activeTab === 'overview' && (() => {
                 // Parse # Field: Value, * Field: Value, - Field: Value lines from cleanDescription
                 const descRaw = cleanDescription || property.description || '';
-                const FIELD_ORDER = [
-                  'Posted Date', 'Property Title', 'Landmark, City', 'Location', 'Property Age', 'Possession',
-                  'Expected Price', 'JV Ratio', 'Transaction', 'Ownership', 'Building Name',
-                  'Property/Developer Name', 'Total Retail Leasable Area', 'Area : Carpet : Saleable', 'No of Bedroom', 'Parking Spaces', 'Parking',
-                  'Furnishing', 'H : W : D', 'Total Floors', 'Property on Floor', 'Floor', 'Suitable For',
-                  'Unique Feature', 'Retail Efficiency', 'Façade', 'HVAC', 'Lease Period (Month)', 'Lock-in Period (Year)', 'Rent Start Date',
-                  'Rent Per Month', 'Rent Escalation %', 'Maintenance Charges', 'Security Deposit',
-                  'Property Tax', 'ROI %', 'Facing', 'Lifts', 'Flooring', 'Power (kVA)',
-                  'Backup Power (kVA)', 'Pollution Color Zone', 'Racking Capacity (EOT) - tonnes',
-                  'Floor Strength - ton per meter cube', 'STP/ETP Capacity - litres',
-                  'No of loading bays', 'Canopy Details (Length - Width)', 'Fire NOC', 'Dock Levellers', 'Connectivity'
-                ];
+                const d = ((dossier || (property as any)?.dossier || {}) as Record<string, any>);
 
                 const lineMap: Record<string, string> = {};
                 let tagsBlock = '';
@@ -1088,18 +1112,128 @@ export function PropertyDetailPageClient({
                   }
                 });
 
+                // Drop broken area heading if it has no numbers (e.g. "TOATAl Carpet Area")
+                if (lineMap['area'] && !/\d/.test(lineMap['area'])) {
+                  delete lineMap['area'];
+                }
+
+                const FIELD_ORDER = [
+                  'Ref Number', 'Posted Date', 'Property Title', 'Landmark, City', 'Location', 'Property Age', 'Possession',
+                  'Expected Price', 'Price Per Sq.Ft.', 'JV Ratio', 'Transaction', 'Ownership', 'Building Name', 'Unit / Flat No',
+                  'Property/Developer Name', 'Total Retail Leasable Area', 'Area : Carpet : Saleable', 'Carpet Area', 'Super Built-up Area',
+                  'Built-up Area', 'Plot Size / Land Area', 'No of Bedroom', 'Parking Spaces', 'Parking',
+                  'Furnishing', 'H : W : D', 'Total Floors', 'Property on Floor', 'Floor', 'Suitable For',
+                  'Unique Feature', 'Retail Efficiency', 'Façade', 'HVAC', 'Lease Period (Month)', 'Lock-in Period (Year)', 'Rent Start Date',
+                  'Rent Per Month', 'Rent Escalation %', 'Maintenance Charges', 'Security Deposit',
+                  'Property Tax', 'ROI %', 'Facing', 'Branch', 'Lifts', 'Flooring', 'Power (kVA)',
+                  'Backup Power (kVA)', 'Pollution Color Zone', 'Racking Capacity (EOT) - tonnes',
+                  'Floor Strength - ton per meter cube', 'STP/ETP Capacity - litres',
+                  'No of loading bays', 'Canopy Details (Length - Width)', 'Fire NOC', 'Dock Levellers', 'Connectivity'
+                ];
+
+                const resolveField = (field: string): string | undefined => {
+                  const k = field.toLowerCase();
+                  const existing = lineMap[k];
+                  if (existing && existing.trim()) return existing.trim();
+
+                  switch (k) {
+                    case 'ref number':
+                      return d.RefNumber || undefined;
+                    case 'property title':
+                      return property?.name || d.Title || undefined;
+                    case 'posted date':
+                      return d.PostedDate || undefined;
+                    case 'landmark, city':
+                      if (d.Landmark) return `${d.Landmark}${d.CityName ? ', ' + d.CityName : ''}`;
+                      if (property?.locality) return `${property.locality}, ${d.CityName || 'Pune'}`;
+                      return undefined;
+                    case 'location':
+                      return property?.location || d.LocationName || d.AddressName || undefined;
+                    case 'property age':
+                      return d.PropertyAge || undefined;
+                    case 'possession':
+                      return d.PossessionName || property?.possession || property?.status || undefined;
+                    case 'expected price':
+                      if (d.ExpectedPrice) return String(d.ExpectedPrice).startsWith('₹') ? d.ExpectedPrice : `₹${d.ExpectedPrice}`;
+                      return property?.price || undefined;
+                    case 'price per sq.ft.':
+                      if (d.PricePerUnitArea) {
+                        const num = Number(d.PricePerUnitArea);
+                        return !isNaN(num) && num > 0 ? `₹${num.toLocaleString('en-IN')}/Sq.Ft.` : String(d.PricePerUnitArea);
+                      }
+                      return undefined;
+                    case 'transaction':
+                      return d.TransactionName || d.Lease_Sale || property?.listingType || undefined;
+                    case 'building name':
+                      return d.BuildingName || d.PropertyName || property?.developer || undefined;
+                    case 'unit / flat no':
+                      return d.FlatNo ? String(d.FlatNo) : undefined;
+                    case 'property/developer name':
+                      return d.PropertyName || d.BuildingName || property?.developer || undefined;
+                    case 'total retail leasable area':
+                      return d.SuperAreaName || undefined;
+                    case 'area : carpet : saleable':
+                      if (d.CarpetAreaName || d.SuperAreaName || d.BuiltAreaName) {
+                        const parts = [];
+                        if (d.CarpetAreaName || property?.sqft) parts.push(`Carpet: ${d.CarpetAreaName || property?.sqft}`);
+                        if (d.SuperAreaName) parts.push(`Super: ${d.SuperAreaName}`);
+                        if (d.BuiltAreaName) parts.push(`Built-up: ${d.BuiltAreaName}`);
+                        return parts.join(' | ');
+                      }
+                      return undefined;
+                    case 'carpet area':
+                      return d.CarpetAreaName || (property?.sqft ? `${property.sqft}` : undefined);
+                    case 'super built-up area':
+                      return d.SuperAreaName || undefined;
+                    case 'built-up area':
+                      return d.BuiltAreaName || undefined;
+                    case 'plot size / land area':
+                      return d.PlotSizeName || undefined;
+                    case 'no of bedroom':
+                      return property?.bhkNum && property.bhkNum > 0 ? `${property.bhkNum} BHK` : undefined;
+                    case 'parking spaces':
+                    case 'parking':
+                      if (d.ParkingDetails) {
+                        const pNum = String(d.ParkingDetails).replace(/[^0-9]/g, '');
+                        return pNum && Number(pNum) > 0 ? `${pNum} Dedicated Slot(s)` : undefined;
+                      }
+                      return undefined;
+                    case 'furnishing':
+                      return d.FurnishingName || undefined;
+                    case 'property on floor':
+                    case 'floor':
+                      return d.FloorNumber || undefined;
+                    case 'lease period (month)':
+                      return d.LeasePeriod || undefined;
+                    case 'lock-in period (year)':
+                      return d.LockinPeriod || undefined;
+                    case 'rent per month':
+                      return d.RentPM ? (String(d.RentPM).startsWith('₹') ? String(d.RentPM) : `₹${d.RentPM}`) : undefined;
+                    case 'maintenance charges':
+                      return d.MaintainCharges ? (String(d.MaintainCharges).startsWith('₹') ? String(d.MaintainCharges) : `₹${d.MaintainCharges}/month`) : undefined;
+                    case 'security deposit':
+                      return d.DepositePrice ? (String(d.DepositePrice).startsWith('₹') ? String(d.DepositePrice) : `₹${d.DepositePrice}`) : undefined;
+                    case 'property tax':
+                      return d.PropertyTax || undefined;
+                    case 'roi %':
+                      return d.ROI ? `${String(d.ROI).replace(/%/g, '')}%` : undefined;
+                    case 'facing':
+                      return d.FacingText || undefined;
+                    case 'branch':
+                      return d.BranchName || undefined;
+                    default:
+                      return undefined;
+                  }
+                };
+
                 // Build ordered rows — only fields with values
                 const rows: { label: string; value: string }[] = [];
                 const addedKeys = new Set<string>();
 
                 FIELD_ORDER.forEach(field => {
-                  let v = lineMap[field.toLowerCase()];
-                  if (field.toLowerCase() === 'property title') {
-                    // Always show authentic full property title (e.g. "900 Sq.Ft. Commercial Shop for Rent in Undri")
-                    v = property?.name || v;
-                  }
-                  if (v) {
-                    rows.push({ label: field, value: v });
+                  const v = resolveField(field);
+                  if (v && v.trim()) {
+                    rows.push({ label: field, value: v.trim() });
                     addedKeys.add(field.toLowerCase());
                   }
                 });

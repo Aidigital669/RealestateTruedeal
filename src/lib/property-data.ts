@@ -191,6 +191,7 @@ export async function fetchAllProperties(forceFresh = false): Promise<PropertyIt
           label,
           isCommercial,
           listingType: p.listing_type || 'Sale',
+          dossier,
           businessPurposes: purposesMap[String(p.id)] || []
         };
       });

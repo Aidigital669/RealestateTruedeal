@@ -596,14 +596,30 @@ export async function POST(req: NextRequest) {
         `Prime ${category} available in ${locationRaw}${facingInfo}. Featuring ${numArea.toLocaleString('en-IN')} Sq.Ft.${furnishing ? ' with ' + furnishing + ' specifications' : ''}${floor ? ', located on ' + floor : ''}${parking ? ', including ' + parking + ' reserved parking spaces' : ''}${rentInfo}${roiInfo}.${leaseInfo}${lockinInfo}${maintInfo} Verified catalog listing with complete compliance.${refInfo}`
       ).toString().trim();
 
+      // Build authentic dynamic highlights from actual property metrics
+      const dynamicHighlights: string[] = [];
+      if (fields48.CarpetAreaName || numArea > 0) {
+        dynamicHighlights.push(`Optimized ${fields48.CarpetAreaName || numArea + ' Sq.Ft.'} usable carpet area${fields48.SuperAreaName ? ' with ' + fields48.SuperAreaName + ' layout' : ''}`);
+      }
+      if (bldg) {
+        dynamicHighlights.push(`Prime commercial landmark at ${bldg} with high-street connectivity`);
+      }
+      if (floor) {
+        dynamicHighlights.push(`Commercial level placement: ${floor} with prominent visibility`);
+      }
+      if (parking && parking > 0) {
+        dynamicHighlights.push(`${parking} Dedicated reserved parking spaces for occupants and visitors`);
+      }
+      if (dynamicHighlights.length === 0) {
+        dynamicHighlights.push("Grade-A commercial architectural specifications");
+        dynamicHighlights.push("Optimized usable carpet area with superior floor efficiency");
+        dynamicHighlights.push("Dedicated utility infrastructure and power backup");
+      }
+
       // Persist all 48 custom fields into Dossier Data metadata
       const dossierPayload = {
         ...fields48,
-        highlights: [
-          "Grade-A commercial architectural specifications",
-          "Optimized usable carpet area with superior floor efficiency",
-          "Dedicated utility infrastructure and power backup"
-        ]
+        highlights: dynamicHighlights
       };
       const description = baseNarrative.includes("<!-- DOSSIER_DATA:")
         ? baseNarrative

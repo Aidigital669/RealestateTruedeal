@@ -19,6 +19,7 @@ export interface CustomCostSheet {
 }
 
 export interface DossierData {
+  [key: string]: any;
   highlights?: string[];
   connectivity?: string[];
   amenitiesList?: (string | { title: string; desc: string })[];
@@ -95,6 +96,7 @@ export function parseDossierData(rawDescription: string = '', propertyTitle?: st
     return {
       cleanDescription,
       dossier: {
+        ...parsed,
         highlights: Array.isArray(parsed.highlights) ? parsed.highlights.filter(Boolean) : undefined,
         connectivity: Array.isArray(parsed.connectivity) ? parsed.connectivity.filter(Boolean) : undefined,
         amenitiesList: Array.isArray(parsed.amenitiesList)
