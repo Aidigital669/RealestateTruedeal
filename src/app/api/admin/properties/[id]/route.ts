@@ -172,11 +172,18 @@ export async function PATCH(
       const baseNarrative = body.description !== undefined ? body.description : existingClean;
 
       const mergedDossier = {
+        ...existingDossier,
+        ...(body.dossier || {}),
         highlights: body.highlights !== undefined ? body.highlights : existingDossier.highlights,
         connectivity: body.connectivity !== undefined ? body.connectivity : existingDossier.connectivity,
         amenitiesList: body.amenitiesList !== undefined ? body.amenitiesList : existingDossier.amenitiesList,
         reraNumber: body.reraNumber !== undefined ? body.reraNumber : existingDossier.reraNumber,
-        possession: body.possession !== undefined ? body.possession : (body.status !== undefined ? body.status : existingDossier.possession),
+        possession: body.possession !== undefined ? body.possession : (body.status !== undefined && body.status !== 'Draft' && body.status !== 'Published' ? body.status : existingDossier.possession),
+        PossessionName: body.PossessionName !== undefined ? body.PossessionName : (body.possession !== undefined ? body.possession : existingDossier.PossessionName),
+        SuperAreaName: body.SuperAreaName !== undefined ? body.SuperAreaName : existingDossier.SuperAreaName,
+        FlatNo: body.FlatNo !== undefined ? body.FlatNo : (body.unitNo !== undefined ? body.unitNo : existingDossier.FlatNo),
+        BuildingName: body.BuildingName !== undefined ? body.BuildingName : existingDossier.BuildingName,
+        CarpetAreaName: body.CarpetAreaName !== undefined ? body.CarpetAreaName : existingDossier.CarpetAreaName,
         rpsStatus: body.rpsStatus !== undefined ? body.rpsStatus : existingDossier.rpsStatus,
         legalVettingText: body.legalVettingText !== undefined ? body.legalVettingText : existingDossier.legalVettingText,
         suitableFor: body.suitableFor !== undefined ? body.suitableFor : existingDossier.suitableFor,
@@ -202,12 +209,10 @@ export async function PATCH(
       const s = String(body.status).trim();
       if (s === "Draft") {
         colUpdates.set('"publishStatus"', "Draft");
-        colUpdates.set("status", "Ready to Move");
       } else if (s === "Published") {
         colUpdates.set('"publishStatus"', "Published");
-        colUpdates.set("status", "Ready to Move");
       } else {
-        colUpdates.set("status", s || "Ready to Move");
+        colUpdates.set("status", s || "Possession on Request");
         colUpdates.set('"publishStatus"', "Published");
       }
     } else if (body.publishStatus !== undefined) {

@@ -123,12 +123,12 @@ export function PropertyDetailsModal({
 
     add('Ref Number', d.RefNumber);
     add('Property Title', property?.name || d.Title);
+    add('Unit No.', d.FlatNo);
     add('Building Name', d.BuildingName || d.PropertyName);
-    add('Unit / Flat No', d.FlatNo);
     add('Transaction', d.TransactionName || d.Lease_Sale || property?.listingType);
     add('Property Type', d.PropertyTypeName || property?.bhk);
-    add('Carpet Area', d.CarpetAreaName || property?.sqft);
     add('Super Built-up Area', d.SuperAreaName);
+    add('Carpet Area', d.CarpetAreaName || property?.sqft);
     add('Built-up Area', d.BuiltAreaName);
     add('Plot Size / Land Area', d.PlotSizeName);
     add('Expected Price', d.ExpectedPrice ? (String(d.ExpectedPrice).startsWith('₹') ? d.ExpectedPrice : `₹${d.ExpectedPrice}`) : property?.price);
@@ -147,7 +147,11 @@ export function PropertyDetailsModal({
     }
     add('Furnishing', d.FurnishingName);
     add('Facing', d.FacingText);
-    add('Possession', d.PossessionName || property?.status);
+    const rawP = (d.PossessionName || (property as any)?.possession || (property?.status && property.status !== 'Ready to Move' ? property.status : '')).toString().trim();
+    const displayPossession = rawP
+      ? (/immediately|immediate/i.test(rawP) ? 'Immediate Possession' : rawP)
+      : 'Possession on Request';
+    add('Possession', displayPossession);
     add('Property Age', d.PropertyAge);
     add('Lease Period', d.LeasePeriod);
     add('Lock-in Period', d.LockinPeriod);
@@ -340,27 +344,48 @@ export function PropertyDetailsModal({
                   )}
                 </div>
 
-                {/* 4 Quick Stat Pills */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
-                  <div className="bg-zinc-50 p-2.5 rounded-xl border border-zinc-200">
-                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">Typology</span>
-                    <span className="font-extrabold text-zinc-900 truncate block mt-0.5">{d.PropertyTypeName || property.bhk}</span>
-                  </div>
-                  <div className="bg-zinc-50 p-2.5 rounded-xl border border-zinc-200">
-                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">Carpet Area</span>
-                    <span className="font-extrabold text-zinc-900 block mt-0.5">{d.CarpetAreaName || (property.sqft ? property.sqft.replace(/\s*carpet\s*/gi, '').trim() : '1,200 Sq.Ft.')}</span>
-                  </div>
-                  <div className="bg-zinc-50 p-2.5 rounded-xl border border-zinc-200">
-                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">Possession</span>
-                    <span className="font-extrabold text-zinc-900 block mt-0.5 truncate">{d.PossessionName || property.status}</span>
-                  </div>
-                  <div className="bg-zinc-50 p-2.5 rounded-xl border border-zinc-200">
-                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">Rate / Sq.Ft.</span>
-                    <span className="font-extrabold text-emerald-700 block mt-0.5 truncate">
-                      {d.PricePerUnitArea ? `₹${Number(d.PricePerUnitArea).toLocaleString('en-IN')}/sqft` : (property.priceSuffix || 'Verified ✓')}
-                    </span>
-                  </div>
-                </div>
+                {/* Quick Stat Pills */}
+                {(() => {
+                  const rawP = (d.PossessionName || (property as any)?.possession || (property?.status && property.status !== 'Ready to Move' ? property.status : '')).toString().trim();
+                  const displayPossession = rawP
+                    ? (/immediately|immediate/i.test(rawP) ? 'Immediate Possession' : rawP)
+                    : 'Possession on Request';
+
+                  return (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+                      <div className="bg-zinc-50 p-2.5 rounded-xl border border-zinc-200">
+                        <span className="text-[10px] text-zinc-400 font-bold uppercase block">Typology</span>
+                        <span className="font-extrabold text-zinc-900 truncate block mt-0.5">{d.PropertyTypeName || property.bhk}</span>
+                      </div>
+                      {d.FlatNo ? (
+                        <div className="bg-zinc-50 p-2.5 rounded-xl border border-zinc-200">
+                          <span className="text-[10px] text-amber-700 font-bold uppercase block">Unit No.</span>
+                          <span className="font-extrabold text-zinc-900 truncate block mt-0.5">{d.FlatNo}</span>
+                        </div>
+                      ) : d.SuperAreaName ? (
+                        <div className="bg-zinc-50 p-2.5 rounded-xl border border-zinc-200">
+                          <span className="text-[10px] text-amber-600 font-bold uppercase block">Super Area</span>
+                          <span className="font-extrabold text-zinc-900 truncate block mt-0.5">{d.SuperAreaName}</span>
+                        </div>
+                      ) : (
+                        <div className="bg-zinc-50 p-2.5 rounded-xl border border-zinc-200">
+                          <span className="text-[10px] text-zinc-400 font-bold uppercase block">Rate / Sq.Ft.</span>
+                          <span className="font-extrabold text-emerald-700 block mt-0.5 truncate">
+                            {d.PricePerUnitArea ? `₹${Number(d.PricePerUnitArea).toLocaleString('en-IN')}/sqft` : (property.priceSuffix || 'Verified ✓')}
+                          </span>
+                        </div>
+                      )}
+                      <div className="bg-zinc-50 p-2.5 rounded-xl border border-zinc-200">
+                        <span className="text-[10px] text-zinc-400 font-bold uppercase block">Carpet Area</span>
+                        <span className="font-extrabold text-zinc-900 block mt-0.5">{d.CarpetAreaName || (property.sqft ? property.sqft.replace(/\s*carpet\s*/gi, '').trim() : '1,200 Sq.Ft.')}</span>
+                      </div>
+                      <div className="bg-zinc-50 p-2.5 rounded-xl border border-zinc-200">
+                        <span className="text-[10px] text-zinc-400 font-bold uppercase block">Possession</span>
+                        <span className="font-extrabold text-zinc-900 block mt-0.5 truncate">{displayPossession}</span>
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Suitable For Business Purposes */}
                 {property.businessPurposes && property.businessPurposes.length > 0 && (

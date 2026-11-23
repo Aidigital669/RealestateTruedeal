@@ -1097,7 +1097,7 @@ export function EditPropertyModal({
       const sStr = String(property.sqft || property.carpetArea || '');
       setSqft(sStr.toLowerCase().includes('sq') ? sStr : (sStr ? `${sStr} Sq.Ft.` : ''));
       
-      setStatus(property.status || property.publishStatus || 'Ready to Move');
+      setStatus(property.status || property.publishStatus || 'Possession on Request');
       
       // Parse dossier metadata
       const { cleanDescription, dossier } = parseDossierData(property.description || '');
@@ -1163,7 +1163,7 @@ export function EditPropertyModal({
       // Title & Possession & Legal Vetting
       setRpsStatus(property.rpsStatus || dossier.rpsStatus || '100% Clear Title • Zero Encumbrances');
       setLegalVettingText(property.legalVettingText || dossier.legalVettingText || 'This property has completed 100% title deed investigation, environmental clearance, and commencement certification as registered under Government of Maharashtra MahaRERA.');
-      setPossession(property.possession || dossier.possession || property.status || 'Ready to Move');
+      setPossession(property.possession || dossier.PossessionName || dossier.possession || (property.status && property.status !== 'Ready to Move' ? property.status : 'Possession on Request'));
 
       // Custom Cost Sheet Override
       const sheet = property.customCostSheet || dossier.customCostSheet || {};
@@ -1338,12 +1338,15 @@ export function EditPropertyModal({
       const cleanVideo = pVid.isValid ? (pVid.type === 'youtube' || pVid.type === 'vimeo' ? pVid.normalizedUrl : pVid.embedUrl || videoUrl.trim()) : videoUrl.trim();
       const finalConfig = (bhk || customConfig).trim() || 'Commercial';
 
+      const { dossier: existingDossier } = parseDossierData(property?.description || '');
       const finalDescription = embedDossierData(formatPropertyDescription(description.trim()), {
+        ...existingDossier,
         highlights: highlights.filter(Boolean),
         connectivity: connectivity.filter(Boolean),
         amenitiesList: amenitiesList.filter(Boolean),
         reraNumber: reraNumber.trim(),
         possession: possession.trim(),
+        PossessionName: possession.trim(),
         rpsStatus: rpsStatus.trim(),
         legalVettingText: legalVettingText.trim(),
         suitableFor: selectedPurposes.map(String),

@@ -654,12 +654,29 @@ export function PropertyExcelUploadModal({
             // 5. Calculate and Format Price
             const { price, formatted: priceFormatted } = calculatePriceData(row, numArea, fields48);
 
-            // 6. Resolve Status
-            const rawStatus = (fields48.PossessionName || row["PossessionName"] || fields48.TransactionName || row["TransactionName"] || fields48.Status || row["Status"] || row.status || "Ready to Move").toString().trim();
-            let status = 'Ready to Move';
-            if (/under\s*construction/i.test(rawStatus)) status = 'Under Construction';
-            else if (/pre\s*lease/i.test(rawStatus)) status = 'Pre-Leased';
-            else if (/new\s*launch/i.test(rawStatus)) status = 'New Launch';
+            // 6. Resolve Status & Possession (Preserve authentic possession dates like "3/2030" or "Immediately")
+            const rawPossession = (fields48.PossessionName || row["PossessionName"] || '').toString().trim();
+            const rawStatus = (row.status || fields48.Status || row["Status"] || fields48.TransactionName || row["TransactionName"] || fields48.PossessionName || row["PossessionName"] || row["Construction Status"] || '').toString().trim();
+
+            let status = 'Possession on Request';
+            if (rawPossession) {
+              if (/immediately|immediate/i.test(rawPossession)) {
+                status = 'Immediate Possession';
+              } else if (/ready\s*to\s*move/i.test(rawPossession)) {
+                status = 'Ready to Move';
+              } else if (/under\s*construction/i.test(rawPossession)) {
+                status = 'Under Construction';
+              } else {
+                status = rawPossession;
+              }
+            } else if (rawStatus) {
+              if (/under\s*construction/i.test(rawStatus)) status = 'Under Construction';
+              else if (/pre\s*lease/i.test(rawStatus)) status = 'Pre-Leased';
+              else if (/new\s*launch/i.test(rawStatus)) status = 'New Launch';
+              else if (/ready\s*to\s*move/i.test(rawStatus)) status = 'Ready to Move';
+              else if (/immediately|immediate/i.test(rawStatus)) status = 'Immediate Possession';
+              else status = rawStatus;
+            }
 
             // 7. Developer
             const bldg = (fields48.BuildingName || row['BuildingName'] || row['Building Name'] || '').toString();
@@ -1355,11 +1372,13 @@ export function PropertyExcelUploadModal({
                             <tr>
                               <th className="py-2.5 px-3">#</th>
                               <th className="py-2.5 px-3">Property Name</th>
+                              <th className="py-2.5 px-3">Unit No.</th>
                               <th className="py-2.5 px-3">Category</th>
                               <th className="py-2.5 px-3">Location</th>
                               <th className="py-2.5 px-3">Price</th>
-                              <th className="py-2.5 px-3">Status</th>
+                              <th className="py-2.5 px-3">Possession</th>
                               <th className="py-2.5 px-3">Carpet Area</th>
+                              <th className="py-2.5 px-3">Super Area</th>
                               <th className="py-2.5 px-3 text-center">Action</th>
                             </tr>
                           </thead>
@@ -1367,22 +1386,42 @@ export function PropertyExcelUploadModal({
                             {filteredPreview.map((row, idx) => (
                               <tr key={row.id} className="hover:bg-zinc-50/80 transition">
                                 <td className="py-2.5 px-3 font-mono text-[10px] text-zinc-400">{idx + 1}</td>
-                                <td className="py-2.5 px-3 font-semibold text-zinc-900 max-w-[220px] truncate">
+                                <td className="py-2.5 px-3 font-semibold text-zinc-900 max-w-[200px] truncate" title={row.title}>
                                   {row.title}
+                                </td>
+                                <td className="py-2.5 px-3">
+                                  {row.extracted48?.FlatNo ? (
+                                    <span className="px-2 py-0.5 bg-zinc-100 rounded text-[11px] font-bold text-zinc-800">
+                                      {row.extracted48.FlatNo}
+                                    </span>
+                                  ) : (
+                                    <span className="text-zinc-400 text-[11px]">—</span>
+                                  )}
                                 </td>
                                 <td className="py-2.5 px-3">
                                   <span className="px-2 py-0.5 bg-zinc-100 rounded text-[11px] font-medium text-zinc-700">
                                     {row.category}
                                   </span>
                                 </td>
-                                <td className="py-2.5 px-3 text-zinc-600 truncate max-w-[150px]">{row.location}</td>
+                                <td className="py-2.5 px-3 text-zinc-600 truncate max-w-[130px]" title={row.location}>{row.location}</td>
                                 <td className="py-2.5 px-3 font-bold text-zinc-900">{row.priceFormatted}</td>
                                 <td className="py-2.5 px-3">
-                                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
+                                    /immediate|ready/i.test(row.status)
+                                      ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                      : /request/i.test(row.status)
+                                      ? 'bg-zinc-50 text-zinc-600 border-zinc-200'
+                                      : 'bg-blue-50 text-blue-800 border-blue-200'
+                                  }`}>
                                     {row.status}
                                   </span>
                                 </td>
-                                <td className="py-2.5 px-3 text-zinc-600">{row.sqft} sqft</td>
+                                <td className="py-2.5 px-3 text-zinc-600">
+                                  {row.extracted48?.CarpetAreaName || `${row.sqft} sqft`}
+                                </td>
+                                <td className="py-2.5 px-3 text-zinc-600">
+                                  {row.extracted48?.SuperAreaName || '—'}
+                                </td>
                                 <td className="py-2.5 px-3 text-center">
                                   <div className="flex items-center justify-center gap-1.5">
                                     <button

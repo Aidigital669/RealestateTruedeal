@@ -23,7 +23,13 @@ import {
   ChevronRight,
   Play,
   Briefcase,
-  Calendar
+  Calendar,
+  Pencil,
+  X,
+  Save,
+  Loader2,
+  Building,
+  Sparkles
 } from 'lucide-react';
 import { usePropertyComparison } from '@/context/PropertyComparisonContext';
 import { useSavedProperties } from '@/context/SavedPropertiesContext';
@@ -34,7 +40,7 @@ import { PublicHeader } from '@/components/public/PublicHeader';
 import { SharePropertyModal } from '@/components/public/SharePropertyModal';
 import { getClientSession } from '@/lib/user-auth';
 import { AuthInquiryModal } from '@/components/auth/AuthInquiryModal';
-import { formatPropertyDescription, parseDossierData } from '@/lib/dossier-parser';
+import { formatPropertyDescription, parseDossierData, embedDossierData } from '@/lib/dossier-parser';
 import { parseAndNormalizeVideoUrl } from '@/lib/video-utils';
 
 interface PropertyDetailPageClientProps {
@@ -77,6 +83,103 @@ export function PropertyDetailPageClient({
   const [clientEmail, setClientEmail] = useState('');
   const [preferredSlot, setPreferredSlot] = useState('This Saturday (04:00 PM)');
   const [formSubmitted, setFormSubmitted] = useState(false);
+
+  // In-Page Property Edit & Specification States
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editPrice, setEditPrice] = useState('');
+  const [editUnitNo, setEditUnitNo] = useState('');
+  const [editSuperArea, setEditSuperArea] = useState('');
+  const [editCarpetArea, setEditCarpetArea] = useState('');
+  const [editPossession, setEditPossession] = useState('');
+  const [editBuildingName, setEditBuildingName] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [editSuccessMsg, setEditSuccessMsg] = useState('');
+
+  useEffect(() => {
+    if (isEditModalOpen && property) {
+      const { cleanDescription, dossier: d } = parseDossierData(property.description || '');
+      const mergedD = { ...((property as any)?.dossier || {}), ...d };
+      setEditTitle(property.name || '');
+      setEditPrice((property as any).priceFormatted || property.price || '');
+      setEditUnitNo(mergedD.FlatNo ? String(mergedD.FlatNo) : '');
+      setEditSuperArea(mergedD.SuperAreaName || '');
+      setEditCarpetArea(mergedD.CarpetAreaName || property.sqft || '');
+      setEditPossession(mergedD.PossessionName || (property as any).possession || (property.status && property.status !== 'Ready to Move' ? property.status : ''));
+      setEditBuildingName(mergedD.BuildingName || '');
+      setEditDescription(cleanDescription || property.description || '');
+      setEditSuccessMsg('');
+    }
+  }, [isEditModalOpen, property]);
+
+  const handleSavePropertyDetails = async () => {
+    setIsSavingEdit(true);
+    setEditSuccessMsg('');
+    try {
+      const { dossier: d } = parseDossierData(property.description || '');
+      const mergedD = { ...((property as any)?.dossier || {}), ...d };
+      const updatedDossier = {
+        ...mergedD,
+        Title: editTitle.trim(),
+        FlatNo: editUnitNo.trim(),
+        SuperAreaName: editSuperArea.trim(),
+        CarpetAreaName: editCarpetArea.trim(),
+        PossessionName: editPossession.trim(),
+        possession: editPossession.trim(),
+        BuildingName: editBuildingName.trim(),
+      };
+
+      const finalDescription = embedDossierData(editDescription.trim(), updatedDossier);
+
+      const payload = {
+        name: editTitle.trim(),
+        title: editTitle.trim(),
+        price: editPrice.trim(),
+        sqft: editCarpetArea.trim(),
+        carpetArea: editCarpetArea.trim(),
+        status: editPossession.trim() || 'Possession on Request',
+        possession: editPossession.trim() || 'Possession on Request',
+        description: finalDescription,
+        dossier: updatedDossier,
+        FlatNo: editUnitNo.trim(),
+        SuperAreaName: editSuperArea.trim(),
+        BuildingName: editBuildingName.trim(),
+        CarpetAreaName: editCarpetArea.trim(),
+        PossessionName: editPossession.trim(),
+      };
+
+      const res = await fetch(`/api/admin/properties/${property.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Failed to save changes (${res.status})`);
+      }
+
+      setProperty(prev => ({
+        ...prev,
+        name: editTitle.trim(),
+        price: editPrice.trim(),
+        sqft: editCarpetArea.trim(),
+        status: editPossession.trim() || 'Possession on Request',
+        possession: editPossession.trim() || 'Possession on Request',
+        description: finalDescription,
+        dossier: updatedDossier,
+      }));
+
+      setEditSuccessMsg('Details updated successfully!');
+      setTimeout(() => {
+        setIsEditModalOpen(false);
+      }, 700);
+    } catch (err: any) {
+      alert(err.message || 'Failed to save changes');
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
   const [submitting, setSubmitting] = useState(false);
 
   // Client-side fetch & slug canonical URL replacement
@@ -858,6 +961,16 @@ export function PropertyDetailPageClient({
                     <Maximize2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsEditModalOpen(true)}
+                  className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold bg-zinc-900 text-white hover:bg-black transition cursor-pointer flex items-center gap-1.5 shrink-0 shadow-xs"
+                  title="Edit Listing & Specifications"
+                >
+                  <Pencil className="w-3 h-3 text-amber-400" />
+                  <span>Edit Details</span>
+                </button>
               </div>
             </div>
           </div>
@@ -1023,20 +1136,51 @@ export function PropertyDetailPageClient({
               </div>
 
               {/* CORE STATS BAR */}
-              <div className="grid grid-cols-3 gap-2 sm:gap-3 bg-white p-3 sm:p-4 rounded-2xl border border-zinc-200 shadow-xs">
-                <div className="p-2 sm:p-3 bg-zinc-50 rounded-xl border border-zinc-100 min-w-0">
-                  <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Typology</span>
-                  <span className="text-xs sm:text-sm font-black text-zinc-900 block mt-0.5 truncate">{property.bhk}</span>
-                </div>
-                <div className="p-2 sm:p-3 bg-zinc-50 rounded-xl border border-zinc-100 min-w-0">
-                  <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Carpet Area</span>
-                  <span className="text-xs sm:text-sm font-black text-zinc-900 block mt-0.5 truncate">{property.sqft ? property.sqft.replace(/\s*carpet\s*/gi, '').trim() : '1,200 Sq.Ft.'}</span>
-                </div>
-                <div className="p-2 sm:p-3 bg-zinc-50 rounded-xl border border-zinc-100 min-w-0">
-                  <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Possession</span>
-                  <span className="text-xs sm:text-sm font-black text-zinc-900 block mt-0.5 truncate">{property.possession || property.status}</span>
-                </div>
-              </div>
+              {(() => {
+                const d = ((dossier || (property as any)?.dossier || {}) as Record<string, any>);
+                const rawPos = (d.PossessionName || property.possession || (property.status && property.status !== 'Ready to Move' ? property.status : '')).toString().trim();
+                const displayPossession = rawPos
+                  ? (/immediately|immediate/i.test(rawPos) ? 'Immediate Possession' : rawPos)
+                  : 'Possession on Request';
+
+                const unitVal = d.FlatNo ? String(d.FlatNo) : '';
+                const superAreaVal = d.SuperAreaName || '';
+
+                return (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3 bg-white p-3 sm:p-4 rounded-2xl border border-zinc-200 shadow-xs">
+                    <div className="p-2 sm:p-3 bg-zinc-50 rounded-xl border border-zinc-100 min-w-0">
+                      <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Typology</span>
+                      <span className="text-xs sm:text-sm font-black text-zinc-900 block mt-0.5 truncate">{property.bhk}</span>
+                    </div>
+
+                    {unitVal && (
+                      <div className="p-2 sm:p-3 bg-zinc-50 rounded-xl border border-zinc-100 min-w-0">
+                        <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wider block">Unit No.</span>
+                        <span className="text-xs sm:text-sm font-black text-zinc-900 block mt-0.5 truncate">{unitVal}</span>
+                      </div>
+                    )}
+
+                    <div className="p-2 sm:p-3 bg-zinc-50 rounded-xl border border-zinc-100 min-w-0">
+                      <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Carpet Area</span>
+                      <span className="text-xs sm:text-sm font-black text-zinc-900 block mt-0.5 truncate">
+                        {d.CarpetAreaName || (property.sqft ? property.sqft.replace(/\s*carpet\s*/gi, '').trim() : '1,200 Sq.Ft.')}
+                      </span>
+                    </div>
+
+                    {superAreaVal && (
+                      <div className="p-2 sm:p-3 bg-zinc-50 rounded-xl border border-zinc-100 min-w-0">
+                        <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider block">Super Area</span>
+                        <span className="text-xs sm:text-sm font-black text-zinc-900 block mt-0.5 truncate">{superAreaVal}</span>
+                      </div>
+                    )}
+
+                    <div className="p-2 sm:p-3 bg-zinc-50 rounded-xl border border-zinc-100 min-w-0">
+                      <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Possession</span>
+                      <span className="text-xs sm:text-sm font-black text-zinc-900 block mt-0.5 truncate">{displayPossession}</span>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* MOBILE & TABLET PRICING CARD (Directly after Core Stats on < lg screens) */}
               <div className="block lg:hidden">
@@ -1068,15 +1212,25 @@ export function PropertyDetailPageClient({
                 const d = ((dossier || (property as any)?.dossier || {}) as Record<string, any>);
 
                 const lineMap: Record<string, string> = {};
+                const extraHighlights: string[] = [];
                 let tagsBlock = '';
 
                 // Break by newline or inline bullet separators (*, •, -, #)
-                const rawLines = splitBulletSegments(descRaw);
+                const rawLines = descRaw
+                  .split('\n')
+                  .map(l => l.trim())
+                  .filter(Boolean);
 
                 rawLines.forEach(line => {
-                  const trimmed = line.trim();
-                  // Strip leading #, *, -, •
-                  const cleanLine = trimmed.replace(/^[#*\-•\s]+/, '').trim();
+                  let cleanLine = line.replace(/^[#*\-•\s]+/, '').trim();
+                  if (!cleanLine) return;
+
+                  // Strip markdown bold / italic markers around key
+                  cleanLine = cleanLine
+                    .replace(/^\*\*([^*]+)\*\*:\s*/, '$1: ')
+                    .replace(/^\*([^*]+)\*:\s*/, '$1: ')
+                    .replace(/^\*\*([^*]+):\*\*\s*/, '$1: ')
+                    .replace(/^\*([^*]+):\*\s*/, '$1: ');
 
                   // 1. Compound key: H : W : D
                   const hwdMatch = cleanLine.match(/^(?:h\s*:\s*w\s*:\s*d)\s*[:\-]\s*(.+)$/i);
@@ -1093,23 +1247,30 @@ export function PropertyDetailPageClient({
                     return;
                   }
 
-                  const colonIdx = cleanLine.indexOf(':');
+                  // 3. Find separator: colon (:) or dash/hyphen (- / – / —) or equals (=)
+                  let sepIdx = cleanLine.indexOf(':');
+                  let sepLen = 1;
 
-                  if (colonIdx > 0 && colonIdx < 50) {
-                    const key = cleanLine.slice(0, colonIdx).trim();
-                    let val = cleanLine.slice(colonIdx + 1).trim();
-                    if (/h\s*:\s*w\s*:\s*d/i.test(val)) {
-                      val = val.replace(/(?:h\s*:\s*w\s*:\s*d\s*[:\-]\s*)+/gi, '').trim();
+                  if (sepIdx === -1) {
+                    const dashMatch = cleanLine.match(/\s+([–—\-=])\s+/);
+                    if (dashMatch && dashMatch.index !== undefined) {
+                      sepIdx = dashMatch.index;
+                      sepLen = dashMatch[0].length;
                     }
+                  }
+
+                  if (sepIdx > 0 && sepIdx < 50) {
+                    const key = cleanLine.slice(0, sepIdx).trim().replace(/^[*_\s"']+|[*_\s"':]+$/g, '');
+                    const val = cleanLine.slice(sepIdx + sepLen).trim().replace(/^[*_\s"']+|[*_\s"']+$/g, '');
                     if (key && val) {
                       lineMap[key.toLowerCase()] = val;
                       return;
                     }
                   }
 
-                  // Only clean short keywords become tag blocks (never run-on descriptions or asterisk bullets)
-                  if (!trimmed.includes(':') && !trimmed.includes('*') && cleanLine.length < 40 && !cleanLine.toLowerCase().includes('leasable')) {
-                    tagsBlock += ' ' + cleanLine;
+                  // 4. Capture any unstructured pasted bullets, notes, or highlights
+                  if (!cleanLine.startsWith('#') && cleanLine.length > 2 && cleanLine.length < 160) {
+                    extraHighlights.push(cleanLine.replace(/^[*_\s"']+|[*_\s"']+$/g, ''));
                   }
                 });
 
@@ -1119,9 +1280,9 @@ export function PropertyDetailPageClient({
                 }
 
                 const FIELD_ORDER = [
-                  'Ref Number', 'Posted Date', 'Property Title', 'Landmark, City', 'Location', 'Property Age', 'Possession',
-                  'Expected Price', 'Price Per Sq.Ft.', 'JV Ratio', 'Transaction', 'Ownership', 'Building Name', 'Unit / Flat No',
-                  'Property/Developer Name', 'Total Retail Leasable Area', 'Area : Carpet : Saleable', 'Carpet Area', 'Super Built-up Area',
+                  'Ref Number', 'Posted Date', 'Property Title', 'Unit No.', 'Building Name', 'Landmark, City', 'Location', 'Property Age', 'Possession',
+                  'Expected Price', 'Price Per Sq.Ft.', 'JV Ratio', 'Transaction', 'Ownership',
+                  'Property/Developer Name', 'Super Area', 'Super Built-up Area', 'Carpet Area', 'Total Retail Leasable Area', 'Area : Carpet : Saleable',
                   'Built-up Area', 'Plot Size / Land Area', 'No of Bedroom', 'Parking Spaces', 'Parking',
                   'Furnishing', 'H : W : D', 'Total Floors', 'Property on Floor', 'Floor', 'Suitable For',
                   'Unique Feature', 'Retail Efficiency', 'Façade', 'HVAC', 'Lease Period (Month)', 'Lock-in Period (Year)', 'Rent Start Date',
@@ -1144,6 +1305,10 @@ export function PropertyDetailPageClient({
                       return property?.name || d.Title || undefined;
                     case 'posted date':
                       return d.PostedDate || undefined;
+                    case 'unit no.':
+                    case 'unit no':
+                    case 'unit / flat no':
+                      return d.FlatNo ? String(d.FlatNo) : (lineMap['unit no.'] || lineMap['unit no'] || lineMap['shop no'] || lineMap['flat no'] || undefined);
                     case 'landmark, city':
                       if (d.Landmark) return `${d.Landmark}${d.CityName ? ', ' + d.CityName : ''}`;
                       if (property?.locality) return `${property.locality}, ${d.CityName || 'Pune'}`;
@@ -1152,8 +1317,12 @@ export function PropertyDetailPageClient({
                       return property?.location || d.LocationName || d.AddressName || undefined;
                     case 'property age':
                       return d.PropertyAge || undefined;
-                    case 'possession':
-                      return d.PossessionName || property?.possession || property?.status || undefined;
+                    case 'possession': {
+                      const rawP = (d.PossessionName || lineMap['possession'] || lineMap['possession at'] || property?.possession || (property?.status && property.status !== 'Ready to Move' ? property.status : '')).toString().trim();
+                      if (!rawP) return 'Possession on Request';
+                      if (/immediately|immediate/i.test(rawP)) return 'Immediate Possession';
+                      return rawP;
+                    }
                     case 'expected price':
                       if (d.ExpectedPrice) return String(d.ExpectedPrice).startsWith('₹') ? d.ExpectedPrice : `₹${d.ExpectedPrice}`;
                       return property?.price || undefined;
@@ -1167,12 +1336,12 @@ export function PropertyDetailPageClient({
                       return d.TransactionName || d.Lease_Sale || property?.listingType || undefined;
                     case 'building name':
                       return d.BuildingName || d.PropertyName || undefined;
-                    case 'unit / flat no':
-                      return d.FlatNo ? String(d.FlatNo) : undefined;
                     case 'property/developer name':
                       return d.PropertyName || ((property?.developer && !/anv\b/i.test(property.developer)) ? property.developer : undefined) || d.BuildingName || undefined;
+                    case 'super area':
+                    case 'super built-up area':
                     case 'total retail leasable area':
-                      return d.SuperAreaName || undefined;
+                      return d.SuperAreaName || lineMap['super area'] || lineMap['super built-up area'] || lineMap['saleable area'] || undefined;
                     case 'area : carpet : saleable':
                       if (d.CarpetAreaName || d.SuperAreaName || d.BuiltAreaName) {
                         const parts = [];
@@ -1184,8 +1353,6 @@ export function PropertyDetailPageClient({
                       return undefined;
                     case 'carpet area':
                       return d.CarpetAreaName || (property?.sqft ? `${property.sqft}` : undefined);
-                    case 'super built-up area':
-                      return d.SuperAreaName || undefined;
                     case 'built-up area':
                       return d.BuiltAreaName || undefined;
                     case 'plot size / land area':
@@ -1239,7 +1406,7 @@ export function PropertyDetailPageClient({
                   }
                 });
 
-                // Any remaining keys not in FIELD_ORDER
+                // Any remaining keys not in FIELD_ORDER (All pasted keys dynamically added!)
                 Object.keys(lineMap).forEach(k => {
                   if (!addedKeys.has(k) && !k.startsWith('_extra_')) {
                     const formattedLabel = k
@@ -1250,7 +1417,7 @@ export function PropertyDetailPageClient({
                   }
                 });
 
-                // Tags line (pipe-separated short keyword tags only, never unformatted specification paragraphs)
+                // Tags line (pipe-separated short keyword tags only)
                 const tagLine = tagsBlock.replace(/\s+/g, ' ').trim();
                 const tags = tagLine
                   ? tagLine
@@ -1264,7 +1431,17 @@ export function PropertyDetailPageClient({
                     {/* Property Details — structured field rows */}
                     {rows.length > 0 && (
                       <div>
-                        <h3 className="text-sm font-black text-zinc-950 mb-3 uppercase tracking-wider">Property Details</h3>
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="text-sm font-black text-zinc-950 uppercase tracking-wider">Property Details</h3>
+                          <button
+                            type="button"
+                            onClick={() => setIsEditModalOpen(true)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg transition-colors cursor-pointer"
+                          >
+                            <Pencil className="w-3.5 h-3.5 text-amber-600" />
+                            <span>Edit / Paste Details</span>
+                          </button>
+                        </div>
                         <div className="divide-y divide-zinc-100 rounded-xl border border-zinc-200 overflow-hidden text-xs">
                           {rows.map(({ label, value }, idx) => (
                             <div key={idx} className="flex items-start gap-3 px-3 sm:px-4 py-2.5 sm:py-3 hover:bg-zinc-50/60 transition-colors">
@@ -1273,6 +1450,21 @@ export function PropertyDetailPageClient({
                             </div>
                           ))}
                         </div>
+                      </div>
+                    )}
+
+                    {/* Pasted Highlights & Overview Notes */}
+                    {extraHighlights.length > 0 && (
+                      <div className="p-3.5 sm:p-4 bg-amber-50/40 rounded-2xl border border-amber-200/60">
+                        <span className="text-xs font-bold text-amber-950 block mb-2 flex items-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                          <span>Key Highlights &amp; Overview Notes</span>
+                        </span>
+                        <ul className="space-y-1.5 text-xs text-zinc-700 list-disc list-inside">
+                          {extraHighlights.map((note, idx) => (
+                            <li key={idx} className="break-words">{note}</li>
+                          ))}
+                        </ul>
                       </div>
                     )}
 
@@ -1830,6 +2022,161 @@ export function PropertyDetailPageClient({
         onClose={() => setShareModalOpen(false)}
         property={property}
       />
+
+      {/* Interactive In-Page Property Edit Modal */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-4 sm:p-6 border border-zinc-200 shadow-2xl space-y-4 max-h-[92vh] flex flex-col">
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-100 shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center font-bold">
+                  <Pencil className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-zinc-950 text-base">Edit Details &amp; Specifications</h3>
+                  <p className="text-xs text-zinc-500">Edit fields or paste new text to dynamically add details</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsEditModalOpen(false)}
+                className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3.5 overflow-y-auto pr-1 flex-1 text-xs">
+              <div>
+                <label className="block text-zinc-700 font-semibold mb-1">Property Title</label>
+                <input
+                  type="text"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-xs text-zinc-900"
+                  placeholder="e.g. Commercial Shop for Sale in Undri, Pune"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-zinc-700 font-semibold mb-1">Unit No. / Shop No.</label>
+                  <input
+                    type="text"
+                    value={editUnitNo}
+                    onChange={(e) => setEditUnitNo(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-xs text-zinc-900"
+                    placeholder="e.g. 102, Ground Floor"
+                  />
+                </div>
+                <div>
+                  <label className="block text-zinc-700 font-semibold mb-1">Building Name</label>
+                  <input
+                    type="text"
+                    value={editBuildingName}
+                    onChange={(e) => setEditBuildingName(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-xs text-zinc-900"
+                    placeholder="e.g. TRADE PARK, NEW SUJATA"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-zinc-700 font-semibold mb-1">Carpet Area</label>
+                  <input
+                    type="text"
+                    value={editCarpetArea}
+                    onChange={(e) => setEditCarpetArea(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-xs text-zinc-900"
+                    placeholder="e.g. 600 Sq.Ft."
+                  />
+                </div>
+                <div>
+                  <label className="block text-zinc-700 font-semibold mb-1">Super Area</label>
+                  <input
+                    type="text"
+                    value={editSuperArea}
+                    onChange={(e) => setEditSuperArea(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-xs text-zinc-900"
+                    placeholder="e.g. 900 Sq.Ft."
+                  />
+                </div>
+                <div>
+                  <label className="block text-zinc-700 font-semibold mb-1">Possession</label>
+                  <input
+                    type="text"
+                    value={editPossession}
+                    onChange={(e) => setEditPossession(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-xs text-zinc-900"
+                    placeholder="e.g. 3/2030, Immediately"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-zinc-700 font-semibold mb-1">Price</label>
+                <input
+                  type="text"
+                  value={editPrice}
+                  onChange={(e) => setEditPrice(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-xs text-zinc-900"
+                  placeholder="e.g. ₹1.26 Cr or ₹5.4 Lakh"
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-zinc-700 font-semibold">Description &amp; Pasted Details</label>
+                  <span className="text-[10px] text-zinc-400 font-normal">Paste any text, bullet points or Key: Value pairs</span>
+                </div>
+                <textarea
+                  rows={6}
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-xs text-zinc-900 font-mono leading-relaxed"
+                  placeholder="Paste details here, e.g.:&#10;*Property Title:* 900 Sq.Ft. Shop&#10;Frontage: 200 Feet&#10;Power Backup: 100%&#10;Highway property"
+                />
+              </div>
+
+              {editSuccessMsg && (
+                <div className="p-2.5 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-semibold flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  <span>{editSuccessMsg}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-zinc-100 shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsEditModalOpen(false)}
+                className="px-4 py-2 rounded-xl border border-zinc-200 text-xs font-bold text-zinc-600 hover:bg-zinc-50 transition cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSavePropertyDetails}
+                disabled={isSavingEdit}
+                className="px-5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-black font-black text-xs transition flex items-center gap-1.5 shadow-sm cursor-pointer disabled:opacity-50"
+              >
+                {isSavingEdit ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Saving...</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-3.5 h-3.5" />
+                    <span>Save Changes</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Auth Modal */}
       <AuthInquiryModal

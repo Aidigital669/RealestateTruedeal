@@ -542,12 +542,30 @@ export async function POST(req: NextRequest) {
         numPrice = calculatePriceData(row, numArea);
       }
 
-      // 6. Resolve Status
-      const rawStatus = (fields48.PossessionName || row.status || row["PossessionName"] || fields48.TransactionName || row["TransactionName"] || fields48.Status || row["Status"] || row["Construction Status"] || "Ready to Move").toString().trim();
-      let status = 'Ready to Move';
-      if (/under\s*construction/i.test(rawStatus)) status = 'Under Construction';
-      else if (/pre\s*lease/i.test(rawStatus)) status = 'Pre-Leased';
-      else if (/new\s*launch/i.test(rawStatus)) status = 'New Launch';
+      // 6. Resolve Status & Possession (Preserve actual possession dates like "3/2030" or "Immediately")
+      const rawPossession = (fields48.PossessionName || row["PossessionName"] || '').toString().trim();
+      const rawStatus = (row.status || fields48.Status || row["Status"] || fields48.TransactionName || row["TransactionName"] || fields48.PossessionName || row["PossessionName"] || row["Construction Status"] || '').toString().trim();
+
+      let status = 'Possession on Request';
+      if (rawPossession) {
+        if (/immediately|immediate/i.test(rawPossession)) {
+          status = 'Immediate Possession';
+        } else if (/ready\s*to\s*move/i.test(rawPossession)) {
+          status = 'Ready to Move';
+        } else if (/under\s*construction/i.test(rawPossession)) {
+          status = 'Under Construction';
+        } else {
+          // Keep authentic possession dates/text (e.g. "3/2030", "Dec 2028")
+          status = rawPossession;
+        }
+      } else if (rawStatus) {
+        if (/under\s*construction/i.test(rawStatus)) status = 'Under Construction';
+        else if (/pre\s*lease/i.test(rawStatus)) status = 'Pre-Leased';
+        else if (/new\s*launch/i.test(rawStatus)) status = 'New Launch';
+        else if (/ready\s*to\s*move/i.test(rawStatus)) status = 'Ready to Move';
+        else if (/immediately|immediate/i.test(rawStatus)) status = 'Immediate Possession';
+        else status = rawStatus;
+      }
 
       const publishStatusRaw = (
         row.publishStatus ||

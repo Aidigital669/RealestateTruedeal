@@ -98,7 +98,10 @@ export async function fetchAllProperties(forceFresh = false): Promise<PropertyIt
 
         const rawRera = dossier.reraNumber || p.rera_number || "";
         const reraNumber = (rawRera === "PRM/PUN/RERA/2026/0491" || rawRera === "PRM/PUN/COM/2026/0882") ? "" : rawRera;
-        const possession = dossier.possession || p.status || "Ready to Move";
+        const rawPos = (dossier.PossessionName || dossier.possession || "").toString().trim();
+        const possession = rawPos
+          ? (/immediately|immediate/i.test(rawPos) ? "Immediate Possession" : rawPos)
+          : (p.status && p.status !== "Ready to Move" ? p.status : "Possession on Request");
         const rpsStatus = dossier.rpsStatus || (isCommercial ? "Verified Commercial Title" : "100% Clear Title • Zero Encumbrances");
         const legalVettingText = dossier.legalVettingText || "This property has completed 100% title deed investigation, environmental clearance, and commencement certification as registered under Government of Maharashtra MahaRERA.";
 
@@ -174,7 +177,7 @@ export async function fetchAllProperties(forceFresh = false): Promise<PropertyIt
           bhkNum: p.bhk_num || 0,
           sqft: sqftStr,
           sqftNum: Number(p.sqft_num) || 1200,
-          status: p.status || "Ready to Move",
+          status: possession,
           possession,
           reraNumber,
           rpsStatus,

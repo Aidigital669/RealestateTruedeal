@@ -541,7 +541,12 @@ Return ONLY valid JSON (no markdown formatting).`;
         bhkNum: p.bhk_num || 0,
         sqft: sqftStr,
         sqftNum: Number(p.sqft_num) || 1200,
-        status: d.PossessionName || p.status || "Ready to Move",
+        status: (d.PossessionName || d.possession)
+          ? (/immediately|immediate/i.test(String(d.PossessionName || d.possession)) ? 'Immediate Possession' : String(d.PossessionName || d.possession))
+          : (p.status && p.status !== 'Ready to Move' ? p.status : 'Possession on Request'),
+        possession: (d.PossessionName || d.possession)
+          ? (/immediately|immediate/i.test(String(d.PossessionName || d.possession)) ? 'Immediate Possession' : String(d.PossessionName || d.possession))
+          : (p.status && p.status !== 'Ready to Move' ? p.status : 'Possession on Request'),
         reraNumber: d.reraNumber || p.rera_number || "PRM/PUN/COM/2026/0882",
         rpsStatus: isCommercial ? "Verified Commercial" : "Verified Project",
         description: cleanDescription || p.description || defaultDesc,
