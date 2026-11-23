@@ -444,8 +444,9 @@ export function PropertyDetailPageClient({
       if (d.CarpetAreaName || property?.sqft) {
         dynamicSpecs.push(`Optimized ${d.CarpetAreaName || property?.sqft} usable carpet area${d.SuperAreaName ? ' with ' + d.SuperAreaName + ' super built-up layout' : ''}`);
       }
-      if (d.BuildingName || property?.developer) {
-        dynamicSpecs.push(`Prime commercial landmark at ${d.BuildingName || property?.developer} with high-street visibility`);
+      const validBldg = d.BuildingName || d.PropertyName || ((property?.developer && !/anv\b/i.test(property.developer)) ? property.developer : '');
+      if (validBldg) {
+        dynamicSpecs.push(`Prime commercial landmark at ${validBldg} with high-street visibility`);
       }
       if (d.FloorNumber) {
         dynamicSpecs.push(`Level placement: ${d.FloorNumber} with direct commercial access`);
@@ -792,7 +793,7 @@ export function PropertyDetailPageClient({
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
               <div>
                 {property.developer &&
-                  !/anv\s*(signature\s*partner|verified\s*developer|partner\s*developer)/i.test(property.developer) && (
+                  !/anv\b/i.test(property.developer) && (
                     <div className="text-[10px] sm:text-xs text-amber-600 font-extrabold uppercase tracking-wider mb-1">
                       {property.developer}
                     </div>
@@ -1165,11 +1166,11 @@ export function PropertyDetailPageClient({
                     case 'transaction':
                       return d.TransactionName || d.Lease_Sale || property?.listingType || undefined;
                     case 'building name':
-                      return d.BuildingName || d.PropertyName || property?.developer || undefined;
+                      return d.BuildingName || d.PropertyName || undefined;
                     case 'unit / flat no':
                       return d.FlatNo ? String(d.FlatNo) : undefined;
                     case 'property/developer name':
-                      return d.PropertyName || d.BuildingName || property?.developer || undefined;
+                      return d.PropertyName || ((property?.developer && !/anv\b/i.test(property.developer)) ? property.developer : undefined) || d.BuildingName || undefined;
                     case 'total retail leasable area':
                       return d.SuperAreaName || undefined;
                     case 'area : carpet : saleable':
@@ -1669,7 +1670,7 @@ export function PropertyDetailPageClient({
             <div className="flex items-start justify-between gap-3 min-w-0 flex-1">
               <div className="min-w-0 flex-1">
                 {property.developer &&
-                  !/anv\s*(signature\s*partner|verified\s*developer|partner\s*developer)/i.test(property.developer) && (
+                  !/anv\b/i.test(property.developer) && (
                     <span className="text-[10px] sm:text-xs text-amber-400 font-bold uppercase tracking-wider block mb-0.5">
                       {property.developer}
                     </span>

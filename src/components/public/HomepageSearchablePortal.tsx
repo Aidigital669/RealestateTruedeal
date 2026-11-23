@@ -362,7 +362,7 @@ const PropertyCard = React.memo(function PropertyCard({
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5 sm:gap-2 mb-1 sm:mb-1.5 flex-wrap">
                 {property.developer &&
-                  !/anv\s*(signature\s*partner|verified\s*developer|partner\s*developer)/i.test(property.developer) && (
+                  !/anv\b/i.test(property.developer) && (
                     <span
                       className={`text-[9px] sm:text-[10px] font-bold uppercase tracking-wider px-1.5 sm:px-2 py-0.5 rounded-md border ${property.isCommercial || property.bhk.includes('Commercial')
                         ? 'text-blue-950 bg-blue-50 border-blue-200/60'
@@ -1044,12 +1044,12 @@ export function HomepageSearchablePortal({
   const availableDevelopers = useMemo(() => {
     const set = new Set<string>();
     (initialProperties || []).forEach((p) => {
-      if (p.developer?.trim() && !/anv\s*(signature\s*partner|verified\s*developer|partner\s*developer)/i.test(p.developer)) {
+      if (p.developer?.trim() && !/anv\b/i.test(p.developer)) {
         set.add(p.developer.trim());
       }
     });
     (properties || []).forEach((p) => {
-      if (p.developer?.trim() && !/anv\s*(signature\s*partner|verified\s*developer|partner\s*developer)/i.test(p.developer)) {
+      if (p.developer?.trim() && !/anv\b/i.test(p.developer)) {
         set.add(p.developer.trim());
       }
     });
@@ -3187,7 +3187,7 @@ export function HomepageSearchablePortal({
                                   </span>
                                 </Link>
                                 {row.developer &&
-                                  !/anv\s*(signature\s*partner|verified\s*developer|partner\s*developer)/i.test(row.developer) && (
+                                  !/anv\b/i.test(row.developer) && (
                                     <div className="text-[10px] text-zinc-400 truncate mt-0.5">
                                       {row.developer}
                                     </div>
@@ -3343,7 +3343,7 @@ export function HomepageSearchablePortal({
                               </span>
                             </Link>
                             {row.developer &&
-                              !/anv\s*(signature\s*partner|verified\s*developer|partner\s*developer)/i.test(row.developer) && (
+                              !/anv\b/i.test(row.developer) && (
                                 <div className="text-[11px] text-zinc-500 font-medium truncate mt-0.5 flex items-center gap-1">
                                   <Building2 className="w-3 h-3 text-zinc-400 shrink-0" />
                                   <span>{row.developer}</span>
@@ -3520,7 +3520,7 @@ export function HomepageSearchablePortal({
                           </span>
                         </div>
                         {hoveredTableProperty.property.developer &&
-                          !/anv\s*(signature\s*partner|verified\s*developer|partner\s*developer)/i.test(hoveredTableProperty.property.developer) && (
+                          !/anv\b/i.test(hoveredTableProperty.property.developer) && (
                             <div>
                               <span className="text-[9px] uppercase tracking-wider text-zinc-400 font-bold block">Developer</span>
                               <span className="font-semibold text-zinc-800 truncate block text-[11px]">

@@ -54,7 +54,7 @@ async function getCachedSearchCorpus() {
       const addr = r.address?.trim() || '';
       const locality = addr.split(/[,–-]/)[0]?.trim();
 
-      if (dev && !/anv\s*(signature\s*partner|verified\s*developer|partner\s*developer)/i.test(dev)) {
+      if (dev && !/anv\b/i.test(dev)) {
         developersSet.add(dev);
       }
       if (locality && locality.length >= 3 && !locality.toLowerCase().includes('pune')) {

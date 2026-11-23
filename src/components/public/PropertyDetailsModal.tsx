@@ -87,8 +87,9 @@ export function PropertyDetailsModal({
     if (d.CarpetAreaName || property?.sqft) {
       list.push(`Optimized ${d.CarpetAreaName || property?.sqft} usable carpet area${d.SuperAreaName ? ' with ' + d.SuperAreaName + ' super built-up layout' : ''}`);
     }
-    if (d.BuildingName || property?.developer) {
-      list.push(`Prime commercial landmark at ${d.BuildingName || property?.developer} with high-street footfall`);
+    const validBldg = d.BuildingName || d.PropertyName || ((property?.developer && !/anv\b/i.test(property.developer)) ? property.developer : '');
+    if (validBldg) {
+      list.push(`Prime commercial landmark at ${validBldg} with high-street footfall`);
     }
     if (d.FloorNumber) {
       list.push(`Strategic placement: ${d.FloorNumber} with prominent visibility`);
@@ -122,7 +123,7 @@ export function PropertyDetailsModal({
 
     add('Ref Number', d.RefNumber);
     add('Property Title', property?.name || d.Title);
-    add('Building Name', d.BuildingName || d.PropertyName || property?.developer);
+    add('Building Name', d.BuildingName || d.PropertyName);
     add('Unit / Flat No', d.FlatNo);
     add('Transaction', d.TransactionName || d.Lease_Sale || property?.listingType);
     add('Property Type', d.PropertyTypeName || property?.bhk);
@@ -270,7 +271,7 @@ export function PropertyDetailsModal({
                   {property.label || 'Verified Asset'}
                 </div>
                 {property.developer &&
-                  !/anv\s*(signature\s*partner|verified\s*developer|partner\s*developer)/i.test(property.developer) && (
+                  !/anv\b/i.test(property.developer) && (
                     <div className="absolute bottom-3 left-3 right-3 bg-gradient-to-t from-black/80 to-transparent p-2 rounded-xl text-white">
                       <div className="text-[10px] text-zinc-300 uppercase tracking-wider font-semibold">
                         Developer Partner

@@ -164,7 +164,7 @@ export async function fetchAllProperties(forceFresh = false): Promise<PropertyIt
           hideBreadcrumbs: dossier.hideBreadcrumbs === undefined ? true : Boolean(dossier.hideBreadcrumbs),
           customCostSheet: dossier.customCostSheet,
           legalVettingText,
-          developer: p.developer,
+          developer: (p.developer && !/anv\b/i.test(p.developer)) ? p.developer : '',
           locality: p.locality,
           location: p.location || `${p.locality}, Pune, Maharashtra`,
           price: displayPrice,

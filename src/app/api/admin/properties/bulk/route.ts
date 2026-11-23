@@ -266,12 +266,15 @@ function constructPropertyTitle(row: any, category: string, location: string, ar
 }
 
 function detectDeveloper(bldg: string, prop: string, rowDev: string): string {
-  if (rowDev && rowDev.trim()) return rowDev.trim();
+  if (rowDev && rowDev.trim()) {
+    const trimmed = rowDev.trim();
+    if (!/anv\b/i.test(trimmed)) return trimmed;
+  }
   const combined = `${bldg} ${prop}`.toLowerCase();
   for (const dev of DEVELOPER_PATTERNS) {
     if (dev.match.test(combined)) return dev.name;
   }
-  return 'ANV Realty Partner';
+  return '';
 }
 
 export async function POST(req: NextRequest) {
@@ -359,7 +362,7 @@ export async function POST(req: NextRequest) {
       const prop = (row['PropertyName'] || row['Property'] || '').toString();
       const rawDev = (row.developer || row["Developer"] || row.builder || row["Builder"] || "").toString();
       const developer = detectDeveloper(bldg, prop, rawDev);
-      if (developer && !projMap.has(developer.toLowerCase())) {
+      if (developer && !/anv\b/i.test(developer) && !projMap.has(developer.toLowerCase())) {
         neededDevs.add(developer);
       }
     }

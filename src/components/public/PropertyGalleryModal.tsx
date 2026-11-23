@@ -133,7 +133,7 @@ export function PropertyGalleryModal({
       >
         <div className="min-w-0 flex-1 pr-2">
           {property.developer &&
-            !/anv\s*(signature\s*partner|verified\s*developer|partner\s*developer)/i.test(property.developer) && (
+            !/anv\b/i.test(property.developer) && (
               <span className="text-[10px] sm:text-xs text-amber-400 font-bold uppercase tracking-wider block mb-0.5 truncate">
                 {property.developer}
               </span>

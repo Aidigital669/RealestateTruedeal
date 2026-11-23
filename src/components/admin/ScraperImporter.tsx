@@ -106,7 +106,7 @@ export function ScraperImporter({ onImportComplete, showToast }: ScraperImporter
         const mapped: ScrapedProperty[] = data.properties.map((p: any) => ({
           id: String(p.id),
           name: p.name,
-          developer: p.developer || 'ANV Partner Developer',
+          developer: p.developer || '',
           location: p.location || p.loc_name || 'Pune, Maharashtra',
           price: p.priceFormatted || (p.price ? `₹${p.price}` : 'Price on Request'),
           priceRaw: Number(p.price) || 0,

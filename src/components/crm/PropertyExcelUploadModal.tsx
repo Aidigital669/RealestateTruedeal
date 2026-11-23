@@ -485,12 +485,15 @@ function formatCleanTitleWithLocation(title: string, location: string): string {
 }
 
 function detectDeveloper(bldg: string, prop: string, rowDev: string): string {
-  if (rowDev && rowDev.trim()) return rowDev.trim();
+  if (rowDev && rowDev.trim()) {
+    const trimmed = rowDev.trim();
+    if (!/anv\b/i.test(trimmed)) return trimmed;
+  }
   const combined = `${bldg} ${prop}`.toLowerCase();
   for (const dev of DEVELOPER_PATTERNS) {
     if (dev.match.test(combined)) return dev.name;
   }
-  return 'ANV Realty Partner';
+  return '';
 }
 
 export function PropertyExcelUploadModal({

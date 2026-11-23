@@ -730,7 +730,7 @@ export default function SavedPropertiesPage() {
                       </div>
 
                       {/* Bottom Image Overlay */}
-                      {prop.developer && !/anv\s*(signature\s*partner|verified\s*developer|partner\s*developer)/i.test(prop.developer) && (
+                      {prop.developer && !/anv\b/i.test(prop.developer) && (
                         <div className="absolute bottom-3 left-3 right-3 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-2.5 rounded-xl text-white flex items-center justify-between">
                           <div className="text-[11px] font-bold text-amber-300 uppercase tracking-wider">
                             {prop.developer}

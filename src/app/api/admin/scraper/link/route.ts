@@ -94,7 +94,7 @@ export async function POST(req: NextRequest) {
         const { formatted, suffix } = formatIndianPrice(p.price);
         const classified = classifyScrapedProperty(p.title, p.description || "", p.specs || [], p.category || "");
         const location = p.location || extractLocation(p.title, p.specs || [], p.description || "");
-        const devName = p.developer || p.brand || crawlRes.company?.name || "ANV Partner Developer";
+        const devName = p.developer || p.brand || crawlRes.company?.name || "";
         const carpet = p.carpetArea || p.specs?.find((s: any) => s.key.toLowerCase().includes("area"))?.value || "1,250 Sq.Ft.";
         const status = p.possession || p.status || classified.status;
         const rera = p.reraNumber || "PRM/PUN/RERA/2026/0491";
