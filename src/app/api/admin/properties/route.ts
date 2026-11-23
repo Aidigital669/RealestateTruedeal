@@ -101,6 +101,7 @@ export async function GET(req: NextRequest) {
           businessPurposes: assignedPurposes,
           businessPurposeIds: assignedPurposes.map((bp: any) => bp.id),
           suitableFor: dossier.suitableFor || [],
+          dossier,
           priceFormatted: p.price
             ? p.price >= 10000000
               ? `₹${(p.price / 10000000).toFixed(2)} Cr`

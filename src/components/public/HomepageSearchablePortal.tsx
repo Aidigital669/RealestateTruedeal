@@ -141,6 +141,7 @@ export interface PropertyItem {
   hidePrice?: boolean;
   hideDirectContact?: boolean;
   realName?: string;
+  dossier?: Record<string, any>;
 }
 
 export interface BlogItem {

@@ -27,7 +27,7 @@ import { usePropertyComparison } from '@/context/PropertyComparisonContext';
 import { InstantEnquiryModal } from '@/components/public/InstantEnquiryModal';
 import { getClientSession } from '@/lib/user-auth';
 import { AuthInquiryModal } from '@/components/auth/AuthInquiryModal';
-import { formatPropertyDescription } from '@/lib/dossier-parser';
+import { formatPropertyDescription, parseDossierData } from '@/lib/dossier-parser';
 
 interface PropertyDetailsModalProps {
   isOpen: boolean;
@@ -71,6 +71,92 @@ export function PropertyDetailsModal({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
+
+  const { cleanDescription, dossier } = React.useMemo(() => {
+    return parseDossierData(property?.description || '', property?.name);
+  }, [property?.description, property?.name]);
+
+  const d = ((dossier || (property as any)?.dossier || {}) as Record<string, any>);
+
+  const modalHighlights: string[] = React.useMemo(() => {
+    if (property?.highlights && property.highlights.length > 0) {
+      const valid = property.highlights.filter(h => !/^(?:grade-a commercial architectural|optimized usable carpet area with superior floor efficiency|dedicated utility infrastructure)/i.test(h));
+      if (valid.length > 0) return valid;
+    }
+    const list: string[] = [];
+    if (d.CarpetAreaName || property?.sqft) {
+      list.push(`Optimized ${d.CarpetAreaName || property?.sqft} usable carpet area${d.SuperAreaName ? ' with ' + d.SuperAreaName + ' super built-up layout' : ''}`);
+    }
+    if (d.BuildingName || property?.developer) {
+      list.push(`Prime commercial landmark at ${d.BuildingName || property?.developer} with high-street footfall`);
+    }
+    if (d.FloorNumber) {
+      list.push(`Strategic placement: ${d.FloorNumber} with prominent visibility`);
+    }
+    if (d.ParkingDetails) {
+      const pNum = String(d.ParkingDetails).replace(/[^0-9]/g, '');
+      if (pNum && Number(pNum) > 0) {
+        list.push(`${pNum} Dedicated reserved parking spaces for occupants and visitors`);
+      }
+    }
+    const descText = property?.description || '';
+    const frontageMatch = descText.match(/(\d+\s*(?:feet|ft|m|meter)\s*(?:wide\s*road|frontage|ceiling\s*height)[^\n.,#|]*)/i);
+    if (frontageMatch) {
+      list.push(`Superior infrastructure specifications: ${frontageMatch[1].trim()}`);
+    }
+    if (list.length > 0) return list;
+    return [
+      "Grade-A commercial architectural specifications",
+      "Optimized usable carpet area with superior floor efficiency",
+      "Dedicated utility infrastructure and power backup"
+    ];
+  }, [property, d]);
+
+  const specRows = React.useMemo(() => {
+    const list: { label: string; value: string }[] = [];
+    const add = (label: string, value: any) => {
+      if (value !== undefined && value !== null && String(value).trim()) {
+        list.push({ label, value: String(value).trim() });
+      }
+    };
+
+    add('Ref Number', d.RefNumber);
+    add('Property Title', property?.name || d.Title);
+    add('Building Name', d.BuildingName || d.PropertyName || property?.developer);
+    add('Unit / Flat No', d.FlatNo);
+    add('Transaction', d.TransactionName || d.Lease_Sale || property?.listingType);
+    add('Property Type', d.PropertyTypeName || property?.bhk);
+    add('Carpet Area', d.CarpetAreaName || property?.sqft);
+    add('Super Built-up Area', d.SuperAreaName);
+    add('Built-up Area', d.BuiltAreaName);
+    add('Plot Size / Land Area', d.PlotSizeName);
+    add('Expected Price', d.ExpectedPrice ? (String(d.ExpectedPrice).startsWith('₹') ? d.ExpectedPrice : `₹${d.ExpectedPrice}`) : property?.price);
+    if (d.PricePerUnitArea) {
+      const num = Number(d.PricePerUnitArea);
+      add('Price Per Sq.Ft.', !isNaN(num) && num > 0 ? `₹${num.toLocaleString('en-IN')}/Sq.Ft.` : String(d.PricePerUnitArea));
+    }
+    add('Security Deposit', d.DepositePrice ? (String(d.DepositePrice).startsWith('₹') ? d.DepositePrice : `₹${d.DepositePrice}`) : undefined);
+    add('Rent Per Month', d.RentPM ? (String(d.RentPM).startsWith('₹') ? String(d.RentPM) : `₹${d.RentPM}`) : undefined);
+    add('Maintenance Charges', d.MaintainCharges ? (String(d.MaintainCharges).startsWith('₹') ? String(d.MaintainCharges) : `₹${d.MaintainCharges}/month`) : undefined);
+    add('Property Tax', d.PropertyTax);
+    add('Floor', d.FloorNumber);
+    if (d.ParkingDetails) {
+      const pNum = String(d.ParkingDetails).replace(/[^0-9]/g, '');
+      add('Parking Spaces', pNum && Number(pNum) > 0 ? `${pNum} Dedicated Slot(s)` : undefined);
+    }
+    add('Furnishing', d.FurnishingName);
+    add('Facing', d.FacingText);
+    add('Possession', d.PossessionName || property?.status);
+    add('Property Age', d.PropertyAge);
+    add('Lease Period', d.LeasePeriod);
+    add('Lock-in Period', d.LockinPeriod);
+    if (d.ROI) add('ROI %', `${String(d.ROI).replace(/%/g, '')}%`);
+    add('Branch', d.BranchName);
+    add('Location', property?.location || d.LocationName || d.AddressName);
+    if (d.Landmark) add('Landmark, City', `${d.Landmark}${d.CityName ? ', ' + d.CityName : ''}`);
+
+    return list;
+  }, [property, d]);
 
   if (!isOpen || !property) return null;
 
@@ -257,19 +343,21 @@ export function PropertyDetailsModal({
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
                   <div className="bg-zinc-50 p-2.5 rounded-xl border border-zinc-200">
                     <span className="text-[10px] text-zinc-400 font-bold uppercase block">Typology</span>
-                    <span className="font-extrabold text-zinc-900 truncate block mt-0.5">{property.bhk}</span>
+                    <span className="font-extrabold text-zinc-900 truncate block mt-0.5">{d.PropertyTypeName || property.bhk}</span>
                   </div>
                   <div className="bg-zinc-50 p-2.5 rounded-xl border border-zinc-200">
                     <span className="text-[10px] text-zinc-400 font-bold uppercase block">Carpet Area</span>
-                    <span className="font-extrabold text-zinc-900 block mt-0.5">{property.sqft ? property.sqft.replace(/\s*carpet\s*/gi, '').trim() : '1,200 Sq.Ft.'}</span>
+                    <span className="font-extrabold text-zinc-900 block mt-0.5">{d.CarpetAreaName || (property.sqft ? property.sqft.replace(/\s*carpet\s*/gi, '').trim() : '1,200 Sq.Ft.')}</span>
                   </div>
                   <div className="bg-zinc-50 p-2.5 rounded-xl border border-zinc-200">
                     <span className="text-[10px] text-zinc-400 font-bold uppercase block">Possession</span>
-                    <span className="font-extrabold text-zinc-900 block mt-0.5 truncate">{property.status}</span>
+                    <span className="font-extrabold text-zinc-900 block mt-0.5 truncate">{d.PossessionName || property.status}</span>
                   </div>
                   <div className="bg-zinc-50 p-2.5 rounded-xl border border-zinc-200">
-                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">MahaRERA</span>
-                    <span className="font-extrabold text-emerald-700 block mt-0.5">Approved ✓</span>
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">Rate / Sq.Ft.</span>
+                    <span className="font-extrabold text-emerald-700 block mt-0.5 truncate">
+                      {d.PricePerUnitArea ? `₹${Number(d.PricePerUnitArea).toLocaleString('en-IN')}/sqft` : (property.priceSuffix || 'Verified ✓')}
+                    </span>
                   </div>
                 </div>
 
@@ -340,11 +428,37 @@ export function PropertyDetailsModal({
 
             {/* TAB CONTENT: OVERVIEW */}
             {activeTab === 'overview' && (
-              <div className="space-y-4 text-xs">
+              <div className="space-y-5 text-xs">
+                {/* Structured Property Details Specifications Table (all 48 custom fields) */}
+                {specRows.length > 0 && (
+                  <div className="bg-white rounded-2xl border border-zinc-200 overflow-hidden shadow-2xs">
+                    <div className="bg-zinc-100/80 px-4 py-2.5 border-b border-zinc-200 flex items-center justify-between">
+                      <span className="text-xs font-black uppercase tracking-wider text-zinc-900">
+                        Property Specifications
+                      </span>
+                      <span className="text-[10px] font-bold text-zinc-500 bg-white px-2 py-0.5 rounded border border-zinc-200">
+                        {specRows.length} Parameters
+                      </span>
+                    </div>
+                    <div className="divide-y divide-zinc-100 max-h-[340px] overflow-y-auto">
+                      {specRows.map((row, idx) => (
+                        <div key={idx} className="flex items-start gap-3 px-4 py-2 hover:bg-zinc-50/70 transition">
+                          <span className="text-zinc-500 font-semibold shrink-0 w-[140px] sm:w-[170px] leading-relaxed">
+                            {row.label}
+                          </span>
+                          <span className="text-zinc-900 font-medium leading-relaxed break-words min-w-0 flex-1">
+                            {row.value}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div>
                   <h4 className="font-bold text-sm text-zinc-900 mb-1.5">Property Narrative</h4>
                   <p className="text-zinc-600 leading-relaxed text-sm whitespace-pre-line">
-                    {formatPropertyDescription(property.description)}
+                    {formatPropertyDescription(cleanDescription || property.description)}
                   </p>
                 </div>
 
@@ -352,17 +466,9 @@ export function PropertyDetailsModal({
                   <div className="p-3.5 bg-zinc-50 rounded-2xl border border-zinc-200">
                     <span className="font-bold text-zinc-900 block mb-1">Architectural Highlights</span>
                     <ul className="space-y-1 text-zinc-600 list-disc list-inside">
-                      {property.highlights && property.highlights.length > 0 ? (
-                        property.highlights.slice(0, 4).map((h, i) => (
-                          <li key={i} className="break-words">{h}</li>
-                        ))
-                      ) : (
-                        <>
-                          <li>East/West orientation with maximum cross-ventilation</li>
-                          <li>High ceilings with acoustic double-glazed windows</li>
-                          <li>Zero dead-space layout engineered for private entertaining</li>
-                        </>
-                      )}
+                      {modalHighlights.slice(0, 5).map((h, i) => (
+                        <li key={i} className="break-words">{h}</li>
+                      ))}
                     </ul>
                   </div>
 

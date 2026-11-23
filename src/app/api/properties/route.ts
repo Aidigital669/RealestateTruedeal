@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { generateWithGemini } from "@/lib/gemini";
 import { getPropertySlug } from "@/lib/slug";
+import { parseDossierData } from "@/lib/dossier-parser";
 import {
   detectPropertyTypology,
   parseQueryCriteria,
@@ -477,11 +478,18 @@ Return ONLY valid JSON (no markdown formatting).`;
     const purposesMap = await getPurposesForProperties(propIds);
 
     const properties = rows.map((p: any) => {
-      const numPrice = Number(p.price) || 15000000;
-      const formattedPrice =
-        numPrice >= 10000000
+      const { cleanDescription, dossier } = parseDossierData(p.description || '', p.name);
+      const d = (dossier || {}) as Record<string, any>;
+
+      const numPrice = Number(p.price) || 0;
+      let formattedPrice = "Price on Request";
+      if (d.ExpectedPrice) {
+        formattedPrice = String(d.ExpectedPrice).startsWith('₹') ? d.ExpectedPrice : `₹${d.ExpectedPrice}`;
+      } else if (numPrice > 0) {
+        formattedPrice = numPrice >= 10000000
           ? `₹${(numPrice / 10000000).toFixed(2)} Cr`
           : `₹${(numPrice / 100000).toFixed(1)} Lakh`;
+      }
 
       const detectedTypology = detectPropertyTypology({
         name: p.name,
@@ -492,15 +500,8 @@ Return ONLY valid JSON (no markdown formatting).`;
       });
       const isCommercial = detectedTypology !== 'residential' && detectedTypology !== 'land_plot';
 
-      const bhkStr = p.configuration
-        ? p.configuration
-        : (isCommercial
-          ? (p.type_name || "Commercial Space")
-          : (p.bhk_num ? `${p.bhk_num} BHK` : "3 BHK"));
-
-      const sqftStr = p.sqft_num
-        ? `${Number(p.sqft_num).toLocaleString()} Sq.Ft.`
-        : "1,200 Sq.Ft.";
+      const bhkStr = d.PropertyTypeName || p.configuration || (isCommercial ? (p.type_name || "Commercial Space") : (p.bhk_num ? `${p.bhk_num} BHK` : "3 BHK"));
+      const sqftStr = d.CarpetAreaName || (p.sqft_num ? `${Number(p.sqft_num).toLocaleString()} Sq.Ft.` : "1,200 Sq.Ft.");
 
       const defaultDesc = isCommercial
         ? `Grade-A corporate office space in ${p.locality}, Pune. Landmark business address with optimized workspace efficiency and airport corridor connectivity.`
@@ -530,20 +531,23 @@ Return ONLY valid JSON (no markdown formatting).`;
         id: String(p.id),
         slug: p.slug || getPropertySlug({ id: p.id, name: p.name, locality: p.locality }),
         name: p.name,
-        developer: p.developer,
+        developer: d.BuildingName || d.PropertyName || p.developer,
         locality: p.locality,
         location: p.location || `${p.locality}, Pune, Maharashtra`,
         price: formattedPrice,
         priceRaw: numPrice,
-        priceSuffix: "All Inclusive",
+        priceSuffix: d.ExpectedPrice ? "" : "All Inclusive",
         bhk: bhkStr,
         bhkNum: p.bhk_num || 0,
         sqft: sqftStr,
         sqftNum: Number(p.sqft_num) || 1200,
-        status: p.status || "Ready to Move",
-        reraNumber: p.rera_number || "PRM/PUN/COM/2026/0882",
+        status: d.PossessionName || p.status || "Ready to Move",
+        reraNumber: d.reraNumber || p.rera_number || "PRM/PUN/COM/2026/0882",
         rpsStatus: isCommercial ? "Verified Commercial" : "Verified Project",
-        description: p.description || defaultDesc,
+        description: cleanDescription || p.description || defaultDesc,
+        dossier: d,
+        highlights: d.highlights || [],
+        connectivity: d.connectivity || [],
         image: p.image,
         images: resolvedImages,
         videoUrl,
@@ -552,7 +556,7 @@ Return ONLY valid JSON (no markdown formatting).`;
         featured: !!p.featured,
         label,
         isCommercial,
-        listingType: p.listing_type || 'Sale',
+        listingType: d.TransactionName || d.Lease_Sale || p.listing_type || 'Sale',
         businessPurposes: purposesMap[String(p.id)] || []
       };
     });
