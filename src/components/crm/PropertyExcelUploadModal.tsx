@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import {
   X,
   FileSpreadsheet,
@@ -19,10 +19,25 @@ import {
   Check,
   RefreshCw,
   Sparkles,
-  ExternalLink
+  ExternalLink,
+  Layers,
+  Info,
+  Phone,
+  Mail,
+  FileText,
+  SlidersHorizontal,
+  ChevronRight,
+  Maximize2
 } from 'lucide-react';
 import Image from 'next/image';
 import * as XLSX from 'xlsx';
+import {
+  EXCEL_48_COLUMNS,
+  extract48Fields,
+  detectActive48Columns,
+  format48ValueForTable,
+  type Excel48ColumnDef
+} from '@/lib/excel-48-extractor';
 
 export interface ParsedPropertyRow {
   id: string;
@@ -43,6 +58,7 @@ export interface ParsedPropertyRow {
   isValid: boolean;
   errors?: string[];
   rawRow?: any;
+  extracted48?: Record<string, any>;
 }
 
 interface PropertyExcelUploadModalProps {
@@ -284,11 +300,41 @@ function formatPriceForDisplay(rawPrice: any): string {
   return `₹${num.toLocaleString('en-IN')}`;
 }
 
-function calculatePriceData(row: any, area: number): { price: number; formatted: string } {
-  // 1. Direct total price columns
+function calculatePriceData(row: any, area: number, fields48?: Record<string, any>): { price: number; formatted: string } {
+  const isRent = fields48?.Lease_Sale && /lease|rent/i.test(String(fields48.Lease_Sale));
+
+  // If Rent / Lease property, prioritize RentPM
+  if (isRent) {
+    const rentVal = fields48?.RentPM || row.RentPM || row['Rent PM'] || row.rent_pm || row.Rent || row['Monthly Rent'];
+    if (rentVal !== undefined && rentVal !== null && String(rentVal).trim() !== '') {
+      const r = parseFloat(String(rentVal).replace(/[^0-9.]/g, ''));
+      if (!isNaN(r) && r > 0) {
+        const depRaw = fields48?.DepositePrice || row.DepositePrice || row.DepositPrice;
+        let depSuffix = '';
+        if (depRaw) {
+          const d = parseFloat(String(depRaw).replace(/[^0-9.]/g, ''));
+          if (!isNaN(d) && d > 0) {
+            depSuffix = ` (Deposit: ₹${d >= 100000 ? (d / 100000).toFixed(1) + ' Lakh' : d.toLocaleString('en-IN')})`;
+          }
+        }
+        return {
+          price: r * 100,
+          formatted: `₹${r >= 100000 ? (r / 100000).toFixed(2) + ' Lakh' : r.toLocaleString('en-IN')}/mo${depSuffix}`
+        };
+      }
+    }
+  }
+
+  // 1. Direct total price columns (ExpectedPrice first)
+  const expectedVal = fields48?.ExpectedPrice || row.ExpectedPrice || row['Expected Price'] || row.expected_price;
+  if (expectedVal !== undefined && expectedVal !== null && String(expectedVal).trim() !== '') {
+    const p = parseIndianPriceNumber(expectedVal);
+    if (p > 10000) {
+      return { price: p, formatted: formatPriceForDisplay(p) };
+    }
+  }
+
   const directPriceKeys = [
-    'ExpectedPrice', 'Expected Price', 'expected_price', 'expectedPrice',
-    'DepositePrice', 'DepositPrice', 'deposite_price', 'deposit_price',
     'Price', 'price', 'Total Price', 'total_price', 'Budget', 'budget',
     'Cost', 'cost', 'TotalCost', 'total_cost', 'Amount', 'amount', 'Total Amount'
   ];
@@ -301,39 +347,43 @@ function calculatePriceData(row: any, area: number): { price: number; formatted:
     }
   }
 
-  // 2. Price Per Unit Area & Rent PM
-  const puaKeys = [
-    'PricePerUnitArea', 'Price Per Unit Area', 'price_per_unit_area',
-    'Price/Sqft', 'Price/Sq.Ft.', 'Rate', 'Rate/Sqft', 'Rate/Sq.Ft.', 'RatePerSqft'
-  ];
-  const rentRaw = row.RentPM || row['Rent PM'] || row.rent_pm || row.Rent || row['Monthly Rent'];
-
-  for (const k of puaKeys) {
-    if (row[k] !== undefined && row[k] !== null && String(row[k]).trim() !== '') {
-      const pua = parseFloat(String(row[k]).replace(/[^0-9.]/g, ''));
-      if (!isNaN(pua) && pua >= 500 && area > 0) {
-        const total = Math.round(area * pua);
-        let rentSuffix = '';
-        if (rentRaw) {
-          const r = parseFloat(String(rentRaw).replace(/[^0-9.]/g, ''));
-          if (!isNaN(r) && r > 0) {
-            rentSuffix = ` (Rent: ₹${(r / 100000).toFixed(1)} L/mo)`;
-          }
+  // 2. Price Per Unit Area (Rate / SqFt)
+  const puaVal = fields48?.PricePerUnitArea || row.PricePerUnitArea || row['Price Per Unit Area'] || row['Price/Sqft'] || row.Rate || row['Rate/Sqft'];
+  if (puaVal !== undefined && puaVal !== null && String(puaVal).trim() !== '') {
+    const pua = parseFloat(String(puaVal).replace(/[^0-9.]/g, ''));
+    if (!isNaN(pua) && pua >= 500 && area > 0) {
+      const total = Math.round(area * pua);
+      let rentSuffix = '';
+      const rentRaw = fields48?.RentPM || row.RentPM || row['Rent PM'];
+      if (rentRaw) {
+        const r = parseFloat(String(rentRaw).replace(/[^0-9.]/g, ''));
+        if (!isNaN(r) && r > 0) {
+          rentSuffix = ` (Rent: ₹${(r / 100000).toFixed(1)} L/mo)`;
         }
-        return { price: total, formatted: `${formatPriceForDisplay(total)}${rentSuffix}` };
       }
-      if (!isNaN(pua) && pua > 0 && pua < 500 && area > 0) {
-        const monthlyRent = Math.round(area * pua);
-        return { price: monthlyRent * 100, formatted: `₹${(monthlyRent / 100000).toFixed(1)} Lakh/mo (Rent)` };
-      }
+      return { price: total, formatted: `${formatPriceForDisplay(total)}${rentSuffix}` };
+    }
+    if (!isNaN(pua) && pua > 0 && pua < 500 && area > 0) {
+      const monthlyRent = Math.round(area * pua);
+      return { price: monthlyRent * 100, formatted: `₹${(monthlyRent / 100000).toFixed(1)} Lakh/mo (Rent)` };
     }
   }
 
   // 3. Rent PM fallback
+  const rentRaw = fields48?.RentPM || row.RentPM || row['Rent PM'] || row.rent_pm || row.Rent || row['Monthly Rent'];
   if (rentRaw) {
     const r = parseFloat(String(rentRaw).replace(/[^0-9.]/g, ''));
     if (!isNaN(r) && r > 0) {
       return { price: r * 100, formatted: `₹${(r / 100000).toFixed(1)} Lakh/mo (Rent)` };
+    }
+  }
+
+  // 4. Deposit Price fallback
+  const depVal = fields48?.DepositePrice || row.DepositePrice || row.DepositPrice;
+  if (depVal) {
+    const d = parseFloat(String(depVal).replace(/[^0-9.]/g, ''));
+    if (!isNaN(d) && d > 10000) {
+      return { price: 0, formatted: `Deposit: ₹${(d / 100000).toFixed(1)} Lakh` };
     }
   }
 
@@ -351,13 +401,19 @@ function isCustomerOrAgent(val: string, custFull: string): boolean {
   return /^(nikkhil|santosh|jadhav|jain|sharma|patil|gupta|verma|deshmukh|drparmar)$/i.test(v);
 }
 
-function constructPropertyTitle(row: any, category: string, location: string, area: number): string {
+function constructPropertyTitle(row: any, category: string, location: string, area: number, fields48?: Record<string, any>): string {
+  // If Title is explicitly provided in fields48 or row, use it directly!
+  const directTitle = fields48?.Title || row.Title || row.title || row.PropertyTitle || row['Property Title'];
+  if (directTitle && String(directTitle).trim() && !isCustomerOrAgent(String(directTitle).trim(), fields48?.CustomerFullName || row.CustomerFullName)) {
+    return formatCleanTitleWithLocation(String(directTitle).trim(), location);
+  }
+
   const directTitleKeys = [
-    'Title', 'title', 'PropertyName', 'Property Name', 'property_name', 'PropertyTitle', 'Project Name'
+    'PropertyName', 'Property Name', 'property_name', 'Project Name'
   ];
   for (const k of directTitleKeys) {
     const val = row[k] ? String(row[k]).trim() : '';
-    if (val && !isCustomerOrAgent(val, row.CustomerFullName)) {
+    if (val && !isCustomerOrAgent(val, fields48?.CustomerFullName || row.CustomerFullName)) {
       return formatCleanTitleWithLocation(val, location);
     }
   }
@@ -451,9 +507,36 @@ export function PropertyExcelUploadModal({
   const [clearExistingBeforeImport, setClearExistingBeforeImport] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [previewMode, setPreviewMode] = useState<'cards' | 'table'>('cards');
+  const [previewMode, setPreviewMode] = useState<'cards' | 'table'>('table');
+  const [tableViewMode, setTableViewMode] = useState<'all-48' | 'standard'>('all-48');
+  const [selectedRowDetail, setSelectedRowDetail] = useState<ParsedPropertyRow | null>(null);
   const [searchPreview, setSearchPreview] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const active48Columns = useMemo(() => {
+    return detectActive48Columns(parsedRows);
+  }, [parsedRows]);
+
+  const filteredPreview = useMemo(() => {
+    if (!searchPreview.trim()) return parsedRows;
+    const q = searchPreview.toLowerCase();
+    return parsedRows.filter(p => {
+      const basicMatch = (
+        p.title.toLowerCase().includes(q) ||
+        p.category.toLowerCase().includes(q) ||
+        p.location.toLowerCase().includes(q) ||
+        p.status.toLowerCase().includes(q) ||
+        (p.developer && p.developer.toLowerCase().includes(q))
+      );
+      if (basicMatch) return true;
+      if (p.extracted48) {
+        return Object.values(p.extracted48).some(v =>
+          v !== undefined && v !== null && String(v).toLowerCase().includes(q)
+        );
+      }
+      return false;
+    });
+  }, [parsedRows, searchPreview]);
 
   if (!isOpen) return null;
 
@@ -519,20 +602,26 @@ export function PropertyExcelUploadModal({
 
         const normalized: ParsedPropertyRow[] = rawJson
           .map((row, idx) => {
+            // Extract all 48 custom Excel columns cleanly
+            const fields48 = extract48Fields(row);
+
             // 1. Resolve Category
-            const rawCat = row["PropertyTypeName"] || row["Category"] || row.category || row["Configuration"] || row.configuration || row["Property Type"] || row.type || row["BHK"] || row.bhk;
+            const rawCat = fields48.PropertyTypeName || row["PropertyTypeName"] || row["Category"] || row.category || row["Configuration"] || row.configuration || row["Property Type"] || row.type || row["BHK"] || row.bhk;
             const category = normalizeCategory(rawCat);
 
             // 2. Resolve Location
             const rawLoc = cleanLocality(
+              fields48.LocationName ||
               row["LocationName"] ||
               row["Location"] ||
               row.location ||
+              fields48.AddressName ||
               row["AddressName"] ||
               row["Address"] ||
               row.address ||
-              row["SocietyName"] ||
-              row["Landmark"] ||
+              fields48.SocietyName ||
+              fields48.Landmark ||
+              fields48.CityName ||
               row["CityName"] ||
               row["City"] ||
               row.city ||
@@ -541,9 +630,13 @@ export function PropertyExcelUploadModal({
 
             // 3. Resolve Area
             const rawArea =
+              fields48.CarpetAreaName ||
               row["CarpetAreaName"] ||
+              fields48.BuiltAreaName ||
               row["BuiltAreaName"] ||
+              fields48.SuperAreaName ||
               row["SuperAreaName"] ||
+              fields48.PlotSizeName ||
               row["PlotSizeName"] ||
               row["Carpet Area (sqft)"] ||
               row["Carpet Area"] ||
@@ -553,21 +646,21 @@ export function PropertyExcelUploadModal({
             const numArea = parseAreaNumber(rawArea);
 
             // 4. Construct Clean, Realistic Title
-            const title = constructPropertyTitle(row, category, rawLoc, numArea);
+            const title = constructPropertyTitle(row, category, rawLoc, numArea, fields48);
 
             // 5. Calculate and Format Price
-            const { price, formatted: priceFormatted } = calculatePriceData(row, numArea);
+            const { price, formatted: priceFormatted } = calculatePriceData(row, numArea, fields48);
 
             // 6. Resolve Status
-            const rawStatus = (row["PossessionName"] || row["TransactionName"] || row["Status"] || row.status || "Ready to Move").toString().trim();
+            const rawStatus = (fields48.PossessionName || row["PossessionName"] || fields48.TransactionName || row["TransactionName"] || fields48.Status || row["Status"] || row.status || "Ready to Move").toString().trim();
             let status = 'Ready to Move';
             if (/under\s*construction/i.test(rawStatus)) status = 'Under Construction';
             else if (/pre\s*lease/i.test(rawStatus)) status = 'Pre-Leased';
             else if (/new\s*launch/i.test(rawStatus)) status = 'New Launch';
 
             // 7. Developer
-            const bldg = (row['BuildingName'] || row['Building Name'] || '').toString();
-            const prop = (row['PropertyName'] || row['Property'] || '').toString();
+            const bldg = (fields48.BuildingName || row['BuildingName'] || row['Building Name'] || '').toString();
+            const prop = (fields48.PropertyName || row['PropertyName'] || row['Property'] || '').toString();
             const rawDev = (row["Developer"] || row.developer || row["Builder"] || row.builder || "").toString();
             const developer = detectDeveloper(bldg, prop, rawDev);
 
@@ -576,24 +669,31 @@ export function PropertyExcelUploadModal({
             const imageUrl = imageRaw.startsWith('http') ? imageRaw : getCategoryPhoto(category, idx);
 
             // 9. Detailed Description
-            const furnishing = (row["FurnishingName"] || "").toString().trim();
-            const floor = (row["FloorNumber"] || "").toString().trim();
-            const parking = (row["ParkingDetails"] || "").toString().trim();
-            const roi = (row["ROI"] || "").toString().trim();
-            const rent = row["RentPM"] ? parseFloat(String(row["RentPM"]).replace(/[^0-9.]/g, '')) : 0;
-            const refNumber = (row["RefNumber"] || "").toString().trim();
-            const facing = (row["FacingText"] || "").toString().trim();
-            const leaseSale = (row["Lease_Sale"] || "").toString().trim();
+            const furnishing = (fields48.FurnishingName || row["FurnishingName"] || "").toString().trim();
+            const floor = (fields48.FloorNumber || row["FloorNumber"] || "").toString().trim();
+            const parking = (fields48.ParkingDetails || row["ParkingDetails"] || "").toString().trim();
+            const roi = (fields48.ROI || row["ROI"] || "").toString().trim();
+            const rentVal = fields48.RentPM || row["RentPM"];
+            const rent = rentVal ? parseFloat(String(rentVal).replace(/[^0-9.]/g, '')) : 0;
+            const refNumber = (fields48.RefNumber || row["RefNumber"] || "").toString().trim();
+            const facing = (fields48.FacingText || row["FacingText"] || "").toString().trim();
+            const lockin = (fields48.LockinPeriod || "").toString().trim();
+            const leasePeriod = (fields48.LeasePeriod || "").toString().trim();
+            const maintenance = (fields48.MaintainCharges || "").toString().trim();
 
             const rentInfo = rent > 0 ? `, generating ₹${(rent / 100000).toFixed(2)} Lakh monthly rental income` : '';
             const roiInfo = roi ? `, with ${roi}% verified ROI` : '';
             const refInfo = refNumber ? ` [Ref: ${refNumber}]` : '';
             const facingInfo = facing ? `, ${facing}` : '';
+            const leaseInfo = leasePeriod ? ` Lease Tenure: ${leasePeriod}.` : '';
+            const lockinInfo = lockin ? ` Lock-in Period: ${lockin}.` : '';
+            const maintInfo = maintenance ? ` Maintenance: ${maintenance}.` : '';
 
             const description = (
+              fields48.Description ||
               row["Description"] ||
               row.description ||
-              `Prime ${category} available in ${rawLoc}${facingInfo}. Featuring ${numArea.toLocaleString('en-IN')} Sq.Ft.${furnishing ? ' with ' + furnishing + ' specifications' : ''}${floor ? ', located on ' + floor : ''}${parking ? ', including ' + parking + ' reserved parking spaces' : ''}${rentInfo}${roiInfo}. Verified commercial listing with clean titles and complete compliance.${refInfo}`
+              `Prime ${category} available in ${rawLoc}${facingInfo}. Featuring ${numArea.toLocaleString('en-IN')} Sq.Ft.${furnishing ? ' with ' + furnishing + ' specifications' : ''}${floor ? ', located on ' + floor : ''}${parking ? ', including ' + parking + ' reserved parking spaces' : ''}${rentInfo}${roiInfo}.${leaseInfo}${lockinInfo}${maintInfo} Verified commercial listing with clean titles and complete compliance.${refInfo}`
             ).toString().trim();
 
             const publishStatus = (row["Publish Status"] || row.publishStatus || "Published").toString().trim();
@@ -616,7 +716,8 @@ export function PropertyExcelUploadModal({
               videoUrl: row["Video URL"] || row.videoUrl || "",
               isValid: true,
               errors: [],
-              rawRow: row
+              rawRow: row,
+              extracted48: fields48
             };
           })
           .filter(r => r.title.length > 0);
@@ -697,6 +798,7 @@ export function PropertyExcelUploadModal({
         const payload = {
           properties: chunk.map(r => ({
             ...(r.rawRow || {}),
+            ...(r.extracted48 || {}),
             title: r.title,
             category: r.category,
             location: r.location,
@@ -778,13 +880,6 @@ export function PropertyExcelUploadModal({
       setImportProgress(null);
     }
   };
-
-  const filteredPreview = parsedRows.filter(r =>
-    !searchPreview ||
-    r.title.toLowerCase().includes(searchPreview.toLowerCase()) ||
-    r.location.toLowerCase().includes(searchPreview.toLowerCase()) ||
-    r.category.toLowerCase().includes(searchPreview.toLowerCase())
-  );
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
@@ -1102,53 +1197,216 @@ export function PropertyExcelUploadModal({
 
               {/* TABLE PREVIEW */}
               {previewMode === 'table' && (
-                <div className="border border-zinc-200 rounded-2xl overflow-hidden max-h-[50vh] overflow-y-auto">
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-zinc-50 border-b border-zinc-200 sticky top-0 z-10 text-[11px] font-bold text-zinc-600">
-                      <tr>
-                        <th className="py-2.5 px-3">#</th>
-                        <th className="py-2.5 px-3">Property Name</th>
-                        <th className="py-2.5 px-3">Category</th>
-                        <th className="py-2.5 px-3">Location</th>
-                        <th className="py-2.5 px-3">Price</th>
-                        <th className="py-2.5 px-3">Status</th>
-                        <th className="py-2.5 px-3">Carpet Area</th>
-                        <th className="py-2.5 px-3">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-zinc-200">
-                      {filteredPreview.map((row, idx) => (
-                        <tr key={row.id} className="hover:bg-zinc-50/80 transition">
-                          <td className="py-2.5 px-3 font-mono text-[10px] text-zinc-400">{idx + 1}</td>
-                          <td className="py-2.5 px-3 font-semibold text-zinc-900 max-w-[220px] truncate">
-                            {row.title}
-                          </td>
-                          <td className="py-2.5 px-3">
-                            <span className="px-2 py-0.5 bg-zinc-100 rounded text-[11px] font-medium text-zinc-700">
-                              {row.category}
-                            </span>
-                          </td>
-                          <td className="py-2.5 px-3 text-zinc-600 truncate max-w-[150px]">{row.location}</td>
-                          <td className="py-2.5 px-3 font-bold text-zinc-900">{row.priceFormatted}</td>
-                          <td className="py-2.5 px-3">
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                              {row.status}
-                            </span>
-                          </td>
-                          <td className="py-2.5 px-3 text-zinc-600">{row.sqft} sqft</td>
-                          <td className="py-2.5 px-3">
-                            <button
-                              onClick={() => handleRemoveRow(row.id)}
-                              className="p-1 hover:bg-rose-50 text-zinc-400 hover:text-rose-600 rounded transition cursor-pointer"
-                              title="Delete row"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div className="space-y-3">
+                  {/* Table Sub-Mode Bar */}
+                  <div className="flex flex-wrap items-center justify-between gap-2 p-2 bg-zinc-50 border border-zinc-200 rounded-xl text-xs">
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setTableViewMode('all-48')}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition cursor-pointer text-xs ${
+                          tableViewMode === 'all-48'
+                            ? 'bg-emerald-600 text-white shadow-xs'
+                            : 'bg-white text-zinc-700 hover:bg-zinc-100 border border-zinc-200'
+                        }`}
+                      >
+                        <Layers className="w-3.5 h-3.5" />
+                        <span>All 48 Fields Table ({active48Columns.length} Active Columns)</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setTableViewMode('standard')}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition cursor-pointer text-xs ${
+                          tableViewMode === 'standard'
+                            ? 'bg-zinc-900 text-white shadow-xs'
+                            : 'bg-white text-zinc-700 hover:bg-zinc-100 border border-zinc-200'
+                        }`}
+                      >
+                        <TableIcon className="w-3.5 h-3.5" />
+                        <span>Standard 7 Columns</span>
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-[11px] text-zinc-500 font-medium">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">
+                        <Check className="w-3 h-3" />
+                        <span>{active48Columns.length} / 48 Fields Extracted</span>
+                      </span>
+                      {tableViewMode === 'all-48' && (
+                        <span className="hidden sm:inline text-zinc-400">
+                          (Scroll horizontally to inspect all 48 columns)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Horizontal Scroll Table Wrapper */}
+                  <div className="border border-zinc-200 rounded-2xl overflow-hidden max-h-[50vh] flex flex-col bg-white shadow-2xs">
+                    <div className="overflow-x-auto overflow-y-auto flex-1 scrollbar-thin">
+                      {tableViewMode === 'all-48' ? (
+                        <table className="w-full text-left text-xs border-collapse min-w-max">
+                          <thead className="bg-zinc-100/90 border-b border-zinc-200 sticky top-0 z-30 text-[11px] font-bold text-zinc-700 backdrop-blur-xs">
+                            <tr>
+                              <th className="py-2.5 px-3 sticky left-0 z-30 bg-zinc-100 border-r border-zinc-200 w-12 text-center">
+                                #
+                              </th>
+                              <th className="py-2.5 px-3.5 sticky left-12 z-30 bg-zinc-100 border-r border-zinc-300 min-w-[240px] max-w-[280px] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.08)]">
+                                Property Title
+                              </th>
+                              {active48Columns
+                                .filter(col => col.key !== 'Title')
+                                .map(col => (
+                                  <th
+                                    key={col.key}
+                                    className="py-2.5 px-3 whitespace-nowrap border-r border-zinc-200/80 bg-zinc-50/90"
+                                  >
+                                    <div className="flex items-center gap-1.5">
+                                      <span className={`w-1.5 h-1.5 rounded-full ${
+                                        col.group === 'Pricing' ? 'bg-amber-500' :
+                                        col.group === 'Area' ? 'bg-emerald-500' :
+                                        col.group === 'Contacts' ? 'bg-purple-500' :
+                                        col.group === 'Location' ? 'bg-blue-500' :
+                                        col.group === 'Specs' ? 'bg-indigo-500' : 'bg-zinc-400'
+                                      }`} />
+                                      <span>{col.label}</span>
+                                    </div>
+                                  </th>
+                                ))}
+                              <th className="py-2.5 px-3 sticky right-0 z-30 bg-zinc-100 border-l border-zinc-300 text-center shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.08)] min-w-[100px]">
+                                Actions
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-zinc-200">
+                            {filteredPreview.map((row, idx) => (
+                              <tr key={row.id} className="hover:bg-amber-50/30 transition group">
+                                <td className="py-2.5 px-3 sticky left-0 z-10 bg-white group-hover:bg-amber-50/50 font-mono text-[10px] text-zinc-400 border-r border-zinc-200 text-center">
+                                  {idx + 1}
+                                </td>
+                                <td className="py-2.5 px-3.5 sticky left-12 z-10 bg-white group-hover:bg-amber-50/50 font-semibold text-zinc-900 border-r border-zinc-300 min-w-[240px] max-w-[280px] truncate shadow-[2px_0_5px_-2px_rgba(0,0,0,0.08)]" title={row.title}>
+                                  {row.title}
+                                </td>
+                                {active48Columns
+                                  .filter(col => col.key !== 'Title')
+                                  .map(col => {
+                                    const rawVal = row.extracted48?.[col.key];
+                                    const displayVal = format48ValueForTable(col.key, rawVal);
+                                    return (
+                                      <td
+                                        key={col.key}
+                                        className="py-2.5 px-3 whitespace-nowrap border-r border-zinc-100 max-w-[220px] truncate text-zinc-700"
+                                        title={rawVal ? String(rawVal) : ''}
+                                      >
+                                        {col.key === 'Lease_Sale' && rawVal ? (
+                                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                            /rent|lease/i.test(String(rawVal))
+                                              ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                              : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                          }`}>
+                                            {rawVal}
+                                          </span>
+                                        ) : col.key === 'PropertyTypeName' && rawVal ? (
+                                          <span className="px-2 py-0.5 bg-zinc-100 rounded text-[11px] font-medium text-zinc-700 border border-zinc-200">
+                                            {rawVal}
+                                          </span>
+                                        ) : (col.key === 'Status' || col.key === 'PossessionName') && rawVal ? (
+                                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                            {rawVal}
+                                          </span>
+                                        ) : col.key === 'ExpectedPrice' || col.key === 'RentPM' ? (
+                                          <span className="font-bold text-zinc-900">{displayVal}</span>
+                                        ) : (
+                                          <span>{displayVal}</span>
+                                        )}
+                                      </td>
+                                    );
+                                  })}
+                                <td className="py-2.5 px-3 sticky right-0 z-10 bg-white group-hover:bg-amber-50/50 border-l border-zinc-300 text-center shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.08)]">
+                                  <div className="flex items-center justify-center gap-1.5">
+                                    <button
+                                      type="button"
+                                      onClick={() => setSelectedRowDetail(row)}
+                                      className="p-1 hover:bg-zinc-100 text-zinc-500 hover:text-zinc-900 rounded transition cursor-pointer"
+                                      title="Inspect All 48 Fields"
+                                    >
+                                      <Eye className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveRow(row.id)}
+                                      className="p-1 hover:bg-rose-50 text-zinc-400 hover:text-rose-600 rounded transition cursor-pointer"
+                                      title="Delete row"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      ) : (
+                        <table className="w-full text-left text-xs">
+                          <thead className="bg-zinc-50 border-b border-zinc-200 sticky top-0 z-10 text-[11px] font-bold text-zinc-600">
+                            <tr>
+                              <th className="py-2.5 px-3">#</th>
+                              <th className="py-2.5 px-3">Property Name</th>
+                              <th className="py-2.5 px-3">Category</th>
+                              <th className="py-2.5 px-3">Location</th>
+                              <th className="py-2.5 px-3">Price</th>
+                              <th className="py-2.5 px-3">Status</th>
+                              <th className="py-2.5 px-3">Carpet Area</th>
+                              <th className="py-2.5 px-3 text-center">Action</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-zinc-200">
+                            {filteredPreview.map((row, idx) => (
+                              <tr key={row.id} className="hover:bg-zinc-50/80 transition">
+                                <td className="py-2.5 px-3 font-mono text-[10px] text-zinc-400">{idx + 1}</td>
+                                <td className="py-2.5 px-3 font-semibold text-zinc-900 max-w-[220px] truncate">
+                                  {row.title}
+                                </td>
+                                <td className="py-2.5 px-3">
+                                  <span className="px-2 py-0.5 bg-zinc-100 rounded text-[11px] font-medium text-zinc-700">
+                                    {row.category}
+                                  </span>
+                                </td>
+                                <td className="py-2.5 px-3 text-zinc-600 truncate max-w-[150px]">{row.location}</td>
+                                <td className="py-2.5 px-3 font-bold text-zinc-900">{row.priceFormatted}</td>
+                                <td className="py-2.5 px-3">
+                                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                    {row.status}
+                                  </span>
+                                </td>
+                                <td className="py-2.5 px-3 text-zinc-600">{row.sqft} sqft</td>
+                                <td className="py-2.5 px-3 text-center">
+                                  <div className="flex items-center justify-center gap-1.5">
+                                    <button
+                                      type="button"
+                                      onClick={() => setSelectedRowDetail(row)}
+                                      className="p-1 hover:bg-zinc-100 text-zinc-500 hover:text-zinc-900 rounded transition cursor-pointer"
+                                      title="Inspect All 48 Fields"
+                                    >
+                                      <Eye className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveRow(row.id)}
+                                      className="p-1 hover:bg-rose-50 text-zinc-400 hover:text-rose-600 rounded transition cursor-pointer"
+                                      title="Delete row"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -1225,6 +1483,288 @@ export function PropertyExcelUploadModal({
           </div>
         </div>
       </div>
+
+      {/* Full 48-Fields Row Inspector Modal */}
+      {selectedRowDetail && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-3 sm:p-5 bg-black/70 backdrop-blur-xs animate-in fade-in">
+          <div
+            className="bg-white rounded-3xl max-w-4xl w-full p-4 sm:p-6 border border-zinc-200 shadow-2xl flex flex-col max-h-[90vh] space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-100 shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold">
+                  <FileSpreadsheet className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-zinc-950 text-base line-clamp-1">{selectedRowDetail.title}</h3>
+                  <p className="text-[11px] text-zinc-500 flex items-center gap-1.5">
+                    <span>48-Column End-to-End Extraction Audit</span>
+                    <span>&bull;</span>
+                    <span className="font-mono">{selectedRowDetail.location}</span>
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedRowDetail(null)}
+                className="p-1.5 text-zinc-400 hover:text-zinc-700 rounded-lg cursor-pointer transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Scrollable 48-Field Audit Grid */}
+            <div className="overflow-y-auto flex-1 space-y-4 pr-1 text-xs">
+              {/* 1. Core Identification */}
+              <div className="p-3.5 bg-zinc-50 rounded-2xl border border-zinc-200 space-y-2">
+                <div className="flex items-center gap-1.5 font-bold text-zinc-900 text-xs">
+                  <Building2 className="w-4 h-4 text-emerald-600" />
+                  <span>Core Listing &amp; Typology</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1 text-[11px]">
+                  <div className="bg-white p-2.5 rounded-xl border border-zinc-200/80">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">Title</span>
+                    <span className="font-bold text-zinc-900 block mt-0.5 truncate">{selectedRowDetail.extracted48?.Title || selectedRowDetail.title}</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-zinc-200/80">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">Ref Number</span>
+                    <span className="font-mono font-bold text-zinc-900 block mt-0.5">{selectedRowDetail.extracted48?.RefNumber || '—'}</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-zinc-200/80">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">Lease / Sale</span>
+                    <span className="font-bold text-zinc-900 block mt-0.5">{selectedRowDetail.extracted48?.Lease_Sale || 'Sale'}</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-zinc-200/80">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">Property Type</span>
+                    <span className="font-bold text-zinc-900 block mt-0.5 truncate">{selectedRowDetail.extracted48?.PropertyTypeName || selectedRowDetail.category}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 2. Location & Address */}
+              <div className="p-3.5 bg-blue-50/50 rounded-2xl border border-blue-200/80 space-y-2">
+                <div className="flex items-center gap-1.5 font-bold text-blue-950 text-xs">
+                  <MapPin className="w-4 h-4 text-blue-600" />
+                  <span>Location &amp; Address Hierarchy</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1 text-[11px]">
+                  <div className="bg-white p-2.5 rounded-xl border border-blue-100 col-span-2">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">Full Address</span>
+                    <span className="font-medium text-zinc-900 block mt-0.5">{selectedRowDetail.extracted48?.AddressName || selectedRowDetail.location}</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-blue-100">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">Flat / Unit No</span>
+                    <span className="font-semibold text-zinc-900 block mt-0.5">{selectedRowDetail.extracted48?.FlatNo || '—'}</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-blue-100">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">Building Name</span>
+                    <span className="font-semibold text-zinc-900 block mt-0.5">{selectedRowDetail.extracted48?.BuildingName || '—'}</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-blue-100">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">Society</span>
+                    <span className="font-semibold text-zinc-900 block mt-0.5">{selectedRowDetail.extracted48?.SocietyName || '—'}</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-blue-100">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">Landmark</span>
+                    <span className="font-semibold text-zinc-900 block mt-0.5">{selectedRowDetail.extracted48?.Landmark || '—'}</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-blue-100">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">Street</span>
+                    <span className="font-semibold text-zinc-900 block mt-0.5">{selectedRowDetail.extracted48?.Street || '—'}</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-blue-100">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">Location / City</span>
+                    <span className="font-semibold text-zinc-900 block mt-0.5">{selectedRowDetail.extracted48?.LocationName || selectedRowDetail.location}, {selectedRowDetail.extracted48?.CityName || 'Pune'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. Pricing, Financials & Lease */}
+              <div className="p-3.5 bg-amber-50/50 rounded-2xl border border-amber-200/80 space-y-2">
+                <div className="flex items-center gap-1.5 font-bold text-amber-950 text-xs">
+                  <Sparkles className="w-4 h-4 text-amber-600" />
+                  <span>Commercial Pricing, Rent &amp; Lease Terms</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1 text-[11px]">
+                  <div className="bg-white p-2.5 rounded-xl border border-amber-100">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">Expected Price</span>
+                    <span className="font-black text-zinc-900 block mt-0.5">{format48ValueForTable('ExpectedPrice', selectedRowDetail.extracted48?.ExpectedPrice || selectedRowDetail.price)}</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-amber-100">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">Rate / PSF</span>
+                    <span className="font-bold text-zinc-900 block mt-0.5">{format48ValueForTable('PricePerUnitArea', selectedRowDetail.extracted48?.PricePerUnitArea)}</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-amber-100">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">Deposit Price</span>
+                    <span className="font-bold text-zinc-900 block mt-0.5">{format48ValueForTable('DepositePrice', selectedRowDetail.extracted48?.DepositePrice)}</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-amber-100">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">Monthly Rent</span>
+                    <span className="font-bold text-zinc-900 block mt-0.5">{format48ValueForTable('RentPM', selectedRowDetail.extracted48?.RentPM)}</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-amber-100">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">ROI %</span>
+                    <span className="font-bold text-zinc-900 block mt-0.5">{selectedRowDetail.extracted48?.ROI ? `${selectedRowDetail.extracted48.ROI}%` : '—'}</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-amber-100">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">Lock-in Period</span>
+                    <span className="font-semibold text-zinc-900 block mt-0.5">{selectedRowDetail.extracted48?.LockinPeriod || '—'}</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-amber-100">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">Lease Tenure</span>
+                    <span className="font-semibold text-zinc-900 block mt-0.5">{selectedRowDetail.extracted48?.LeasePeriod || '—'}</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-amber-100">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">CAM / Maintenance</span>
+                    <span className="font-semibold text-zinc-900 block mt-0.5">{selectedRowDetail.extracted48?.MaintainCharges || '—'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 4. Areas & Dimensions */}
+              <div className="p-3.5 bg-emerald-50/50 rounded-2xl border border-emerald-200/80 space-y-2">
+                <div className="flex items-center gap-1.5 font-bold text-emerald-950 text-xs">
+                  <Maximize2 className="w-4 h-4 text-emerald-600" />
+                  <span>Areas &amp; Dimensions</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1 text-[11px]">
+                  <div className="bg-white p-2.5 rounded-xl border border-emerald-100">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">Carpet Area</span>
+                    <span className="font-bold text-zinc-900 block mt-0.5">{format48ValueForTable('CarpetAreaName', selectedRowDetail.extracted48?.CarpetAreaName || selectedRowDetail.sqft)}</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-emerald-100">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">Built Area</span>
+                    <span className="font-semibold text-zinc-900 block mt-0.5">{format48ValueForTable('BuiltAreaName', selectedRowDetail.extracted48?.BuiltAreaName)}</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-emerald-100">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">Super Area</span>
+                    <span className="font-semibold text-zinc-900 block mt-0.5">{format48ValueForTable('SuperAreaName', selectedRowDetail.extracted48?.SuperAreaName)}</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-emerald-100">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">Plot Size / Range</span>
+                    <span className="font-semibold text-zinc-900 block mt-0.5">{selectedRowDetail.extracted48?.PlotSizeName || `${selectedRowDetail.extracted48?.MinAreaName || '—'} to ${selectedRowDetail.extracted48?.MaxAreaName || '—'}`}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 5. Specifications & Parking */}
+              <div className="p-3.5 bg-indigo-50/50 rounded-2xl border border-indigo-200/80 space-y-2">
+                <div className="flex items-center gap-1.5 font-bold text-indigo-950 text-xs">
+                  <SlidersHorizontal className="w-4 h-4 text-indigo-600" />
+                  <span>Specifications, Fit-out &amp; Status</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1 text-[11px]">
+                  <div className="bg-white p-2.5 rounded-xl border border-indigo-100">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">Furnishing</span>
+                    <span className="font-semibold text-zinc-900 block mt-0.5">{selectedRowDetail.extracted48?.FurnishingName || 'Bare Shell'}</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-indigo-100">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">Floor Number</span>
+                    <span className="font-semibold text-zinc-900 block mt-0.5">{selectedRowDetail.extracted48?.FloorNumber || '—'}</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-indigo-100">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">Parking Details</span>
+                    <span className="font-semibold text-zinc-900 block mt-0.5">{selectedRowDetail.extracted48?.ParkingDetails || '—'}</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-indigo-100">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">Facing</span>
+                    <span className="font-semibold text-zinc-900 block mt-0.5">{selectedRowDetail.extracted48?.FacingText || '—'}</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-indigo-100">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">Property Age</span>
+                    <span className="font-semibold text-zinc-900 block mt-0.5">{selectedRowDetail.extracted48?.PropertyAge || '—'}</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-indigo-100">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">Possession</span>
+                    <span className="font-semibold text-zinc-900 block mt-0.5">{selectedRowDetail.extracted48?.PossessionName || selectedRowDetail.status}</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-indigo-100">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">Status</span>
+                    <span className="font-semibold text-zinc-900 block mt-0.5">{selectedRowDetail.status}</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-indigo-100">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">Property Tax</span>
+                    <span className="font-semibold text-zinc-900 block mt-0.5">{selectedRowDetail.extracted48?.PropertyTax || '—'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 6. Contacts & CRM Assignment */}
+              <div className="p-3.5 bg-purple-50/50 rounded-2xl border border-purple-200/80 space-y-2">
+                <div className="flex items-center gap-1.5 font-bold text-purple-950 text-xs">
+                  <Phone className="w-4 h-4 text-purple-600" />
+                  <span>CRM Contacts &amp; Desk Assignment</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-1 text-[11px]">
+                  <div className="bg-white p-2.5 rounded-xl border border-purple-100">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">Owner / Client Name</span>
+                    <span className="font-bold text-zinc-900 block mt-0.5">{selectedRowDetail.extracted48?.CustomerFullName || '—'}</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-purple-100">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">Owner Mobile</span>
+                    <span className="font-mono font-semibold text-zinc-900 block mt-0.5">{selectedRowDetail.extracted48?.CustomerMobile || '—'}</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-purple-100">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">Owner Email</span>
+                    <span className="font-mono text-zinc-900 block mt-0.5 truncate">{selectedRowDetail.extracted48?.CustomerEmail || '—'}</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-purple-100">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">Assigned Agent / RM</span>
+                    <span className="font-bold text-zinc-900 block mt-0.5">{selectedRowDetail.extracted48?.EmployeeName || '—'}</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-purple-100">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">Agent Mobile</span>
+                    <span className="font-mono font-semibold text-zinc-900 block mt-0.5">{selectedRowDetail.extracted48?.EmployeeMobile || '—'}</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-purple-100">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">Agent Email</span>
+                    <span className="font-mono text-zinc-900 block mt-0.5 truncate">{selectedRowDetail.extracted48?.EmployeeEmail || '—'}</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-purple-100">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">Lead Source</span>
+                    <span className="font-semibold text-zinc-900 block mt-0.5">{selectedRowDetail.extracted48?.SourceName || 'Excel Import'}</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-purple-100">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">Branch Name</span>
+                    <span className="font-semibold text-zinc-900 block mt-0.5">{selectedRowDetail.extracted48?.BranchName || 'Pune Main'}</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-purple-100">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">Keywords</span>
+                    <span className="text-zinc-700 block mt-0.5 truncate">{selectedRowDetail.extracted48?.SearchKeyword || '—'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 7. Full Description */}
+              <div className="p-3.5 bg-zinc-50 rounded-2xl border border-zinc-200 space-y-1.5">
+                <div className="flex items-center gap-1.5 font-bold text-zinc-900 text-xs">
+                  <FileText className="w-4 h-4 text-zinc-600" />
+                  <span>Formatted Description &amp; Specifications</span>
+                </div>
+                <p className="text-[11px] text-zinc-700 leading-relaxed whitespace-pre-line bg-white p-3 rounded-xl border border-zinc-200">
+                  {selectedRowDetail.description}
+                </p>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="pt-3 border-t border-zinc-100 flex items-center justify-between shrink-0">
+              <span className="text-[11px] text-zinc-500">
+                All 48 attributes mapped &amp; ready to persist to database.
+              </span>
+              <button
+                type="button"
+                onClick={() => setSelectedRowDetail(null)}
+                className="px-4 py-2 bg-zinc-900 text-white font-bold rounded-xl text-xs hover:bg-zinc-800 transition cursor-pointer"
+              >
+                Done Inspecting
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

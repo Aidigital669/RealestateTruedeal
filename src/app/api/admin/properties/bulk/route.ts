@@ -4,6 +4,7 @@ import * as XLSX from "xlsx";
 import { parseDossierData } from "@/lib/dossier-parser";
 import { parseAndNormalizeVideoUrl } from "@/lib/video-utils";
 import { clearPropertyCache } from "@/lib/property-data";
+import { extract48Fields } from "@/lib/excel-48-extractor";
 
 const CATEGORY_IMAGE_POOLS: Record<string, string[]> = {
   'Hospital': [
@@ -472,21 +473,27 @@ export async function POST(req: NextRequest) {
 
     for (let index = 0; index < rawItems.length; index++) {
       const row = rawItems[index];
+      const fields48 = extract48Fields(row);
 
       // 1. Resolve Category
-      const rawCat = row.category || row["PropertyTypeName"] || row["Category"] || row.configuration || row["Configuration"] || row["Property Type"] || row.type || row["BHK"] || row.bhk;
+      const rawCat = fields48.PropertyTypeName || row.category || row["PropertyTypeName"] || row["Category"] || row.configuration || row["Configuration"] || row["Property Type"] || row.type || row["BHK"] || row.bhk;
       const category = normalizeCategory(rawCat);
 
       // 2. Resolve Location
       const locationRaw = cleanLocality(
+        fields48.LocationName ||
         row.location ||
         row["LocationName"] ||
         row["Location"] ||
+        fields48.AddressName ||
         row["AddressName"] ||
         row.address ||
         row["Address"] ||
+        fields48.SocietyName ||
         row["SocietyName"] ||
+        fields48.Landmark ||
         row["Landmark"] ||
+        fields48.CityName ||
         row["CityName"] ||
         row.city ||
         row["City"] ||
@@ -495,10 +502,14 @@ export async function POST(req: NextRequest) {
 
       // 3. Resolve Area
       const sqftRaw =
+        fields48.CarpetAreaName ||
         row.sqft ||
         row["CarpetAreaName"] ||
+        fields48.BuiltAreaName ||
         row["BuiltAreaName"] ||
+        fields48.SuperAreaName ||
         row["SuperAreaName"] ||
+        fields48.PlotSizeName ||
         row["PlotSizeName"] ||
         row["Carpet Area (sqft)"] ||
         row["Carpet Area"] ||
@@ -507,7 +518,7 @@ export async function POST(req: NextRequest) {
       const numArea = parseAreaNumber(sqftRaw);
 
       // 4. Resolve Title
-      let title = row.title ? String(row.title).trim() : "";
+      let title = (fields48.Title || row.title ? String(fields48.Title || row.title).trim() : "");
       if (!title || title.startsWith("Untitled Property")) {
         title = constructPropertyTitle(row, category, locationRaw, numArea);
       }
@@ -518,15 +529,18 @@ export async function POST(req: NextRequest) {
 
       // 5. Resolve Price
       let numPrice = 0;
-      if (row.price !== undefined && row.price !== null && row.price !== '') {
-        numPrice = parseIndianPriceNumber(row.price);
+      const isRent = fields48.Lease_Sale && /lease|rent/i.test(String(fields48.Lease_Sale));
+      if (!isRent) {
+        if (fields48.ExpectedPrice || row.price !== undefined && row.price !== null && row.price !== '') {
+          numPrice = parseIndianPriceNumber(fields48.ExpectedPrice || row.price);
+        }
       }
       if (numPrice === 0) {
         numPrice = calculatePriceData(row, numArea);
       }
 
       // 6. Resolve Status
-      const rawStatus = (row.status || row["PossessionName"] || row["TransactionName"] || row["Status"] || row["Construction Status"] || "Ready to Move").toString().trim();
+      const rawStatus = (fields48.PossessionName || row.status || row["PossessionName"] || fields48.TransactionName || row["TransactionName"] || fields48.Status || row["Status"] || row["Construction Status"] || "Ready to Move").toString().trim();
       let status = 'Ready to Move';
       if (/under\s*construction/i.test(rawStatus)) status = 'Under Construction';
       else if (/pre\s*lease/i.test(rawStatus)) status = 'Pre-Leased';
@@ -541,29 +555,29 @@ export async function POST(req: NextRequest) {
       const publishStatus = /draft/i.test(publishStatusRaw) ? "Draft" : "Published";
 
       // 7. Developer
-      const bldg = (row['BuildingName'] || row['Building Name'] || '').toString();
-      const prop = (row['PropertyName'] || row['Property'] || '').toString();
+      const bldg = (fields48.BuildingName || row['BuildingName'] || row['Building Name'] || '').toString();
+      const prop = (fields48.PropertyName || row['PropertyName'] || row['Property'] || '').toString();
       const rawDev = (row.developer || row["Developer"] || row.builder || row["Builder"] || "").toString();
       const developer = detectDeveloper(bldg, prop, rawDev);
 
       // 8. Description & Specifications (Enriched with all 48 Excel columns)
-      const furnishing = (row["FurnishingName"] || row["furnishing"] || "").toString().trim();
-      const floor = (row["FloorNumber"] || row["floor"] || "").toString().trim();
-      const parkingRaw = row["ParkingDetails"] || row["parking"];
+      const furnishing = (fields48.FurnishingName || row["FurnishingName"] || row["furnishing"] || "").toString().trim();
+      const floor = (fields48.FloorNumber || row["FloorNumber"] || row["floor"] || "").toString().trim();
+      const parkingRaw = fields48.ParkingDetails || row["ParkingDetails"] || row["parking"];
       const parking = parkingRaw ? parseInt(String(parkingRaw).replace(/[^0-9]/g, ""), 10) || null : null;
-      const roi = (row["ROI"] || row["roi"] || "").toString().trim();
-      const rentRaw = row["RentPM"] || row["Rent PM"] || row["rent_pm"] || row["Rent"] || row["rent"];
+      const roi = (fields48.ROI || row["ROI"] || row["roi"] || "").toString().trim();
+      const rentRaw = fields48.RentPM || row["RentPM"] || row["Rent PM"] || row["rent_pm"] || row["Rent"] || row["rent"];
       const rent = rentRaw ? parseFloat(String(rentRaw).replace(/[^0-9.]/g, '')) || null : null;
-      const refNumber = (row["RefNumber"] || row["Ref Number"] || "").toString().trim();
-      const facing = (row["FacingText"] || "").toString().trim();
-      const lockin = (row["LockinPeriod"] || "").toString().trim();
-      const leasePeriod = (row["LeasePeriod"] || "").toString().trim();
-      const maintenance = (row["MaintainCharges"] || "").toString().trim();
-      const propTax = (row["PropertyTax"] || "").toString().trim();
-      const deposit = (row["DepositePrice"] || row["DepositPrice"] || "").toString().trim();
-      const custName = (row["CustomerFullName"] || "").toString().trim();
-      const custPhone = (row["CustomerMobile"] || "").toString().trim();
-      const empName = (row["EmployeeName"] || "").toString().trim();
+      const refNumber = (fields48.RefNumber || row["RefNumber"] || row["Ref Number"] || "").toString().trim();
+      const facing = (fields48.FacingText || row["FacingText"] || "").toString().trim();
+      const lockin = (fields48.LockinPeriod || row["LockinPeriod"] || "").toString().trim();
+      const leasePeriod = (fields48.LeasePeriod || row["LeasePeriod"] || "").toString().trim();
+      const maintenance = (fields48.MaintainCharges || row["MaintainCharges"] || "").toString().trim();
+      const propTax = (fields48.PropertyTax || row["PropertyTax"] || "").toString().trim();
+      const deposit = (fields48.DepositePrice || row["DepositePrice"] || row["DepositPrice"] || "").toString().trim();
+      const custName = (fields48.CustomerFullName || row["CustomerFullName"] || "").toString().trim();
+      const custPhone = (fields48.CustomerMobile || row["CustomerMobile"] || "").toString().trim();
+      const empName = (fields48.EmployeeName || row["EmployeeName"] || "").toString().trim();
 
       const rentInfo = rent && rent > 0 ? `, generating ₹${(rent / 100000).toFixed(2)} Lakh monthly rental income` : '';
       const roiInfo = roi ? `, with ${roi}% verified ROI` : '';
@@ -573,7 +587,8 @@ export async function POST(req: NextRequest) {
       const lockinInfo = lockin ? ` Lock-in Period: ${lockin}.` : '';
       const maintInfo = maintenance ? ` Maintenance: ${maintenance}.` : '';
 
-      const description = (
+      const baseNarrative = (
+        fields48.Description ||
         row.description ||
         row["Description"] ||
         row.details ||
@@ -581,7 +596,21 @@ export async function POST(req: NextRequest) {
         `Prime ${category} available in ${locationRaw}${facingInfo}. Featuring ${numArea.toLocaleString('en-IN')} Sq.Ft.${furnishing ? ' with ' + furnishing + ' specifications' : ''}${floor ? ', located on ' + floor : ''}${parking ? ', including ' + parking + ' reserved parking spaces' : ''}${rentInfo}${roiInfo}.${leaseInfo}${lockinInfo}${maintInfo} Verified catalog listing with complete compliance.${refInfo}`
       ).toString().trim();
 
-      const rawLeaseSale = (row["Lease_Sale"] || row["lease_sale"] || row["TransactionName"] || row.listingType || "").toString().trim();
+      // Persist all 48 custom fields into Dossier Data metadata
+      const dossierPayload = {
+        ...fields48,
+        highlights: [
+          "Grade-A commercial architectural specifications",
+          "Optimized usable carpet area with superior floor efficiency",
+          "Dedicated utility infrastructure and power backup"
+        ],
+        isSafe: true
+      };
+      const description = baseNarrative.includes("<!-- DOSSIER_DATA:")
+        ? baseNarrative
+        : `${baseNarrative}\n\n<!-- DOSSIER_DATA: ${JSON.stringify(dossierPayload)} -->`;
+
+      const rawLeaseSale = (fields48.Lease_Sale || row["Lease_Sale"] || row["lease_sale"] || row["TransactionName"] || row.listingType || "").toString().trim();
       let listingType = /lease|rent/i.test(rawLeaseSale) ? 'Rent' : 'Sale';
       if (status === 'Pre-Leased' || (rent && rent > 0 && numPrice === 0)) {
         listingType = 'Rent';
