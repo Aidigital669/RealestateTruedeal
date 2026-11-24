@@ -30,7 +30,16 @@ export async function fetchAllProperties(forceFresh = false): Promise<PropertyIt
     const dbProps = await query(`
       SELECT 
         p.id, p.slug, p.title as name, p.description, p.address as location,
-        p.price, p."carpetArea" as sqft_num, p.bedrooms as bhk_num, p.configuration, p."videoUrl", p.status, p."isFeatured" as featured,
+        p.price, p.rent, p."carpetArea" as sqft_num, p."builtupArea", p."saleableArea",
+        p."plotArea", p."minArea", p."maxArea", p."ratePsf", p."securityDeposit",
+        p."maintenanceCharges", p."propertyTax", p.facing, p."propertyAge",
+        p."transactionClassification", p."possessionName", p.status, p.roi,
+        p."monthlyRent", p."rentStartDate", p."lockinPeriod", p."leasePeriod",
+        p."searchKeywords", p."branchName", p."sourceName",
+        p."customerName", p."customerMobile", p."customerEmail",
+        p."employeeName", p."employeeMobile", p."employeeEmail",
+        p."refNumber", p."propertyName", p."buildingName", p."dossierData",
+        p.bedrooms as bhk_num, p.configuration, p."videoUrl", p."isFeatured" as featured,
         p."listingType" as listing_type,
         COALESCE(proj.developer, '') as developer,
         COALESCE(proj."reraNumber", 'PRM/PUN/RERA/2026/0491') as rera_number,
@@ -80,9 +89,14 @@ export async function fetchAllProperties(forceFresh = false): Promise<PropertyIt
           ? `Grade-A corporate office space in ${p.locality}, Pune. Landmark business address with optimized workspace efficiency and airport corridor connectivity.`
           : `Spacious and luxurious ${bhkStr} residence in ${p.locality}. High floor inventory with scenic skyline views.`;
 
-        // Parse structured dossier metadata if present in description
-        const { cleanDescription, dossier } = parseDossierData(p.description || '', p.name);
-        const sqftStr = dossier.CarpetAreaName || dossier.SuperAreaName || (p.sqft_num ? `${Number(p.sqft_num).toLocaleString()} Sq.Ft.` : "1,200 Sq.Ft.");
+        // Parse structured dossier metadata if present in description or dedicated column
+        const { cleanDescription, dossier: parsedDossier } = parseDossierData(p.description || '', p.name);
+        const mergedDossier = {
+          ...(typeof p.dossierData === 'object' && p.dossierData !== null ? p.dossierData : {}),
+          ...parsedDossier
+        };
+        const dossier = mergedDossier;
+        const sqftStr = dossier.CarpetAreaName || dossier.SuperAreaName || (p.sqft_num ? `${Number(p.sqft_num).toLocaleString()} Sq.Ft.` : "");
 
         const highlights = dossier.highlights && dossier.highlights.length > 0
           ? dossier.highlights
@@ -168,7 +182,6 @@ export async function fetchAllProperties(forceFresh = false): Promise<PropertyIt
           customCostSheet: dossier.customCostSheet,
           legalVettingText,
           developer: (p.developer && !/anv\b/i.test(p.developer)) ? p.developer : '',
-          buildingName: dossier.BuildingName || '',
           locality: p.locality,
           location: p.location || `${p.locality}, Pune, Maharashtra`,
           price: displayPrice,
@@ -177,7 +190,7 @@ export async function fetchAllProperties(forceFresh = false): Promise<PropertyIt
           bhk: bhkStr,
           bhkNum: p.bhk_num || 0,
           sqft: sqftStr,
-          sqftNum: Number(p.sqft_num) || 1200,
+          sqftNum: Number(p.sqft_num) || 0,
           status: possession,
           possession,
           reraNumber,
@@ -196,6 +209,35 @@ export async function fetchAllProperties(forceFresh = false): Promise<PropertyIt
           isCommercial,
           listingType: p.listing_type || 'Sale',
           dossier,
+          refNumber: p.refNumber || dossier.RefNumber || '',
+          propertyName: p.propertyName || dossier.PropertyName || '',
+          buildingName: p.buildingName || dossier.BuildingName || '',
+          plotArea: p.plotArea || dossier.PlotSizeName || null,
+          minArea: p.minArea || dossier.MinAreaName || null,
+          maxArea: p.maxArea || dossier.MaxAreaName || null,
+          ratePsf: p.ratePsf || dossier.PricePerUnitArea || null,
+          securityDeposit: p.securityDeposit || dossier.DepositePrice || null,
+          maintenanceCharges: p.maintenanceCharges || dossier.MaintainCharges || null,
+          propertyTax: p.propertyTax || dossier.PropertyTax || null,
+          facing: p.facing || dossier.FacingText || null,
+          propertyAge: p.propertyAge || dossier.PropertyAge || null,
+          transactionClassification: p.transactionClassification || dossier.TransactionName || null,
+          possessionName: p.possessionName || dossier.PossessionName || null,
+          availabilityStatus: p.availabilityStatus || dossier.Status || null,
+          roi: p.roi || dossier.ROI || null,
+          monthlyRent: p.monthlyRent || dossier.RentPM || null,
+          rentStartDate: p.rentStartDate || dossier.RentStartDate || null,
+          lockinPeriod: p.lockinPeriod || dossier.LockinPeriod || null,
+          leasePeriod: p.leasePeriod || dossier.LeasePeriod || null,
+          searchKeywords: p.searchKeywords || dossier.SearchKeyword || null,
+          branchName: p.branchName || dossier.BranchName || null,
+          sourceName: p.sourceName || dossier.SourceName || null,
+          customerName: p.customerName || dossier.CustomerFullName || null,
+          customerMobile: p.customerMobile || dossier.CustomerMobile || null,
+          customerEmail: p.customerEmail || dossier.CustomerEmail || null,
+          employeeName: p.employeeName || dossier.EmployeeName || null,
+          employeeMobile: p.employeeMobile || dossier.EmployeeMobile || null,
+          employeeEmail: p.employeeEmail || dossier.EmployeeEmail || null,
           businessPurposes: purposesMap[String(p.id)] || []
         };
       });

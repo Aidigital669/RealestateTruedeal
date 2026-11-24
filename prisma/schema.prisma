@@ -145,6 +145,38 @@ model Property {
   latitude       Decimal?
   longitude      Decimal?
   isFeatured     Boolean           
+  // 48 Excel Import Fields
+  refNumber                 String?
+  propertyName              String?
+  buildingName              String?
+  plotArea                  Decimal?
+  minArea                   Decimal?
+  maxArea                   Decimal?
+  ratePsf                   Decimal?
+  securityDeposit           Decimal?
+  maintenanceCharges        String?
+  propertyTax               String?
+  facing                    String?
+  propertyAge               String?
+  transactionClassification String?
+  possessionName            String?
+  availabilityStatus        String?
+  roi                       String?
+  monthlyRent               Decimal?
+  rentStartDate             String?
+  lockinPeriod              String?
+  leasePeriod               String?
+  searchKeywords            String?
+  branchName                String?
+  sourceName                String?
+  customerName              String?
+  customerMobile            String?
+  customerEmail             String?
+  employeeName              String?
+  employeeMobile            String?
+  employeeEmail             String?
+  dossierData               Json?
+  rawExcelId                Int?
   images         PropertyImage[]
   documents      PropertyDocument[]
   amenities      PropertyAmenity[]

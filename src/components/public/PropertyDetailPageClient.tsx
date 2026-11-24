@@ -24,7 +24,8 @@ import {
   Play,
   Briefcase,
   Calendar,
-  Sparkles
+  Sparkles,
+  FileText
 } from 'lucide-react';
 import { usePropertyComparison } from '@/context/PropertyComparisonContext';
 import { useSavedProperties } from '@/context/SavedPropertiesContext';
@@ -356,9 +357,17 @@ export function PropertyDetailPageClient({
   }
 
   // Structured Dossier Parsing & Privacy Settings
-  const { cleanDescription, dossier } = useMemo(() => {
+  const { cleanDescription, dossier: parsedDossier } = useMemo(() => {
     return parseDossierData(property?.description || '', property?.name);
   }, [property?.description, property?.name]);
+
+  const dossier = useMemo(() => {
+    const fromProp = (property as any)?.dossier || {};
+    return {
+      ...fromProp,
+      ...parsedDossier
+    };
+  }, [property, parsedDossier]);
 
   // Helper to split text by newlines and inline bullet markers (*, •, -, #)
   const splitBulletSegments = (text: string): string[] => {
@@ -1035,57 +1044,45 @@ export function PropertyDetailPageClient({
                 const rawPos = (d.PossessionName || property.possession || (property.status && property.status !== 'Ready to Move' ? property.status : '')).toString().trim();
                 const displayPossession = rawPos
                   ? (/immediately|immediate/i.test(rawPos) ? 'Immediate Possession' : rawPos)
-                  : 'Possession on Request';
+                  : '';
 
-                const unitVal = d.FlatNo ? String(d.FlatNo) : '';
+                const unitVal = d.FlatNo ? String(d.FlatNo).trim() : '';
                 const bldgVal = (d.BuildingName || (property as any)?.buildingName || '').toString().trim();
-                const superAreaVal = d.SuperAreaName || '';
-                // Carpet area is strictly shown if CarpetAreaName was explicitly provided,
-                // or if no Super Area was provided and property.sqft exists. Never equate them.
-                const rawSqftStr = property.sqft !== undefined && property.sqft !== null ? String(property.sqft) : '';
-                const carpetAreaVal = d.CarpetAreaName
-                  ? d.CarpetAreaName
-                  : (!superAreaVal && rawSqftStr ? rawSqftStr.replace(/\s*carpet\s*/gi, '').trim() : '');
+                const superAreaVal = (d.SuperAreaName || '').toString().trim();
+                const rawSqftStr = property.sqft !== undefined && property.sqft !== null ? String(property.sqft).trim() : '';
+                const carpetAreaVal = (d.CarpetAreaName ? String(d.CarpetAreaName) : (!superAreaVal && rawSqftStr && rawSqftStr !== '—' && rawSqftStr !== '-' ? rawSqftStr.replace(/\s*carpet\s*/gi, '').trim() : '')).trim();
+
+                const stats: { label: string; val: string; title?: string; color?: string }[] = [];
+
+                if (property.bhk && property.bhk.trim()) {
+                  stats.push({ label: 'Typology', val: property.bhk });
+                }
+                if (bldgVal) {
+                  stats.push({ label: 'Building', val: bldgVal, title: bldgVal, color: 'text-blue-700' });
+                }
+                if (unitVal) {
+                  stats.push({ label: 'Unit No.', val: unitVal, color: 'text-amber-700' });
+                }
+                if (carpetAreaVal) {
+                  stats.push({ label: 'Carpet Area', val: carpetAreaVal });
+                }
+                if (superAreaVal) {
+                  stats.push({ label: 'Super Area', val: superAreaVal, color: 'text-amber-600' });
+                }
+                if (displayPossession && displayPossession !== 'Possession on Request') {
+                  stats.push({ label: 'Possession', val: displayPossession });
+                }
+
+                if (stats.length === 0) return null;
 
                 return (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3 bg-white p-3 sm:p-4 rounded-2xl border border-zinc-200 shadow-xs">
-                    <div className="p-2 sm:p-3 bg-zinc-50 rounded-xl border border-zinc-100 min-w-0">
-                      <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Typology</span>
-                      <span className="text-xs sm:text-sm font-black text-zinc-900 block mt-0.5 truncate">{property.bhk}</span>
-                    </div>
-
-                    {bldgVal && (
-                      <div className="p-2 sm:p-3 bg-zinc-50 rounded-xl border border-zinc-100 min-w-0">
-                        <span className="text-[10px] font-bold text-blue-700 uppercase tracking-wider block">Building</span>
-                        <span className="text-xs sm:text-sm font-black text-zinc-900 block mt-0.5 truncate" title={bldgVal}>{bldgVal}</span>
+                    {stats.map((s, idx) => (
+                      <div key={idx} className="p-2 sm:p-3 bg-zinc-50 rounded-xl border border-zinc-100 min-w-0">
+                        <span className={`text-[10px] font-bold ${s.color || 'text-zinc-400'} uppercase tracking-wider block`}>{s.label}</span>
+                        <span className="text-xs sm:text-sm font-black text-zinc-900 block mt-0.5 truncate" title={s.title || s.val}>{s.val}</span>
                       </div>
-                    )}
-
-                    {unitVal && (
-                      <div className="p-2 sm:p-3 bg-zinc-50 rounded-xl border border-zinc-100 min-w-0">
-                        <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wider block">Unit No.</span>
-                        <span className="text-xs sm:text-sm font-black text-zinc-900 block mt-0.5 truncate">{unitVal}</span>
-                      </div>
-                    )}
-
-                    <div className="p-2 sm:p-3 bg-zinc-50 rounded-xl border border-zinc-100 min-w-0">
-                      <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Carpet Area</span>
-                      <span className="text-xs sm:text-sm font-black text-zinc-900 block mt-0.5 truncate">
-                        {carpetAreaVal || '—'}
-                      </span>
-                    </div>
-
-                    {superAreaVal && (
-                      <div className="p-2 sm:p-3 bg-zinc-50 rounded-xl border border-zinc-100 min-w-0">
-                        <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider block">Super Area</span>
-                        <span className="text-xs sm:text-sm font-black text-zinc-900 block mt-0.5 truncate">{superAreaVal}</span>
-                      </div>
-                    )}
-
-                    <div className="p-2 sm:p-3 bg-zinc-50 rounded-xl border border-zinc-100 min-w-0">
-                      <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Possession</span>
-                      <span className="text-xs sm:text-sm font-black text-zinc-900 block mt-0.5 truncate">{displayPossession}</span>
-                    </div>
+                    ))}
                   </div>
                 );
               })()}
@@ -1115,13 +1112,11 @@ export function PropertyDetailPageClient({
 
               {/* TAB CONTENT */}
               {activeTab === 'overview' && (() => {
-                // Parse # Field: Value, * Field: Value, - Field: Value lines from cleanDescription
                 const descRaw = cleanDescription || property.description || '';
                 const d = ((dossier || (property as any)?.dossier || {}) as Record<string, any>);
 
                 const lineMap: Record<string, string> = {};
                 const extraHighlights: string[] = [];
-                let tagsBlock = '';
 
                 // Break by newline or inline bullet separators (*, •, -, #)
                 const rawLines = descRaw
@@ -1133,7 +1128,6 @@ export function PropertyDetailPageClient({
                   let cleanLine = line.replace(/^[#*\-•\s]+/, '').trim();
                   if (!cleanLine) return;
 
-                  // Strip markdown bold / italic markers around key
                   cleanLine = cleanLine
                     .replace(/^\*\*([^*]+)\*\*:\s*/, '$1: ')
                     .replace(/^\*([^*]+)\*:\s*/, '$1: ')
@@ -1182,172 +1176,278 @@ export function PropertyDetailPageClient({
                   }
                 });
 
-                // Drop broken area heading if it has no numbers (e.g. "TOATAl Carpet Area")
-                if (lineMap['area'] && !/\d/.test(lineMap['area'])) {
-                  delete lineMap['area'];
-                }
-
-                const FIELD_ORDER = [
-                  'Ref Number', 'Posted Date', 'Property Title', 'Unit No.', 'Building Name', 'Landmark, City', 'Location', 'Property Age', 'Possession',
-                  'Expected Price', 'Price Per Sq.Ft.', 'JV Ratio', 'Transaction', 'Ownership',
-                  'Property/Developer Name', 'Super Area', 'Super Built-up Area', 'Carpet Area', 'Total Retail Leasable Area', 'Area : Carpet : Saleable',
-                  'Built-up Area', 'Plot Size / Land Area', 'No of Bedroom', 'Parking Spaces', 'Parking',
-                  'Furnishing', 'H : W : D', 'Total Floors', 'Property on Floor', 'Floor', 'Suitable For',
-                  'Unique Feature', 'Retail Efficiency', 'Façade', 'HVAC', 'Lease Period (Month)', 'Lock-in Period (Year)', 'Rent Start Date',
-                  'Rent Per Month', 'Rent Escalation %', 'Maintenance Charges', 'Security Deposit',
-                  'Property Tax', 'ROI %', 'Facing', 'Branch', 'Lifts', 'Flooring', 'Power (kVA)',
-                  'Backup Power (kVA)', 'Pollution Color Zone', 'Racking Capacity (EOT) - tonnes',
-                  'Floor Strength - ton per meter cube', 'STP/ETP Capacity - litres',
-                  'No of loading bays', 'Canopy Details (Length - Width)', 'Fire NOC', 'Dock Levellers', 'Connectivity'
-                ];
-
-                const resolveField = (field: string): string | undefined => {
-                  const k = field.toLowerCase();
-                  const existing = lineMap[k];
-                  if (existing && existing.trim()) return existing.trim();
-
-                  switch (k) {
-                    case 'ref number':
-                      return d.RefNumber || undefined;
-                    case 'property title':
-                      return property?.name || d.Title || undefined;
-                    case 'posted date':
-                      return d.PostedDate || undefined;
-                    case 'unit no.':
-                    case 'unit no':
-                    case 'unit / flat no':
-                      return d.FlatNo ? String(d.FlatNo) : (lineMap['unit no.'] || lineMap['unit no'] || lineMap['shop no'] || lineMap['flat no'] || undefined);
-                    case 'landmark, city':
-                      if (d.Landmark) return `${d.Landmark}${d.CityName ? ', ' + d.CityName : ''}`;
-                      if (property?.locality) return `${property.locality}, ${d.CityName || 'Pune'}`;
-                      return undefined;
-                    case 'location':
-                      return property?.location || d.LocationName || d.AddressName || undefined;
-                    case 'property age':
-                      return d.PropertyAge || undefined;
-                    case 'possession': {
-                      const rawP = (d.PossessionName || lineMap['possession'] || lineMap['possession at'] || property?.possession || (property?.status && property.status !== 'Ready to Move' ? property.status : '')).toString().trim();
-                      if (!rawP) return 'Possession on Request';
-                      if (/immediately|immediate/i.test(rawP)) return 'Immediate Possession';
-                      return rawP;
-                    }
-                    case 'expected price':
-                      if (d.ExpectedPrice) return String(d.ExpectedPrice).startsWith('₹') ? d.ExpectedPrice : `₹${d.ExpectedPrice}`;
-                      return property?.price || undefined;
-                    case 'price per sq.ft.':
-                      if (d.PricePerUnitArea) {
-                        const num = Number(d.PricePerUnitArea);
-                        return !isNaN(num) && num > 0 ? `₹${num.toLocaleString('en-IN')}/Sq.Ft.` : String(d.PricePerUnitArea);
-                      }
-                      return undefined;
-                    case 'transaction':
-                      return d.TransactionName || d.Lease_Sale || property?.listingType || undefined;
-                    case 'building name':
-                      return d.BuildingName || undefined;
-                    case 'property/developer name':
-                      return d.PropertyName || ((property?.developer && !/anv\b/i.test(property.developer)) ? property.developer : undefined) || undefined;
-                    case 'super area':
-                    case 'super built-up area':
-                    case 'total retail leasable area':
-                      return d.SuperAreaName || lineMap['super area'] || lineMap['super built-up area'] || lineMap['saleable area'] || undefined;
-                    case 'area : carpet : saleable':
-                      if (d.CarpetAreaName || d.SuperAreaName || d.BuiltAreaName) {
-                        const parts = [];
-                        if (d.CarpetAreaName) parts.push(`Carpet: ${d.CarpetAreaName}`);
-                        else if (!d.SuperAreaName && property?.sqft) parts.push(`Carpet: ${property.sqft}`);
-                        if (d.SuperAreaName) parts.push(`Super: ${d.SuperAreaName}`);
-                        if (d.BuiltAreaName) parts.push(`Built-up: ${d.BuiltAreaName}`);
-                        return parts.join(' | ');
-                      }
-                      return undefined;
-                    case 'carpet area':
-                      return d.CarpetAreaName || (!d.SuperAreaName && property?.sqft ? `${property.sqft}` : undefined);
-                    case 'built-up area':
-                      return d.BuiltAreaName || undefined;
-                    case 'plot size / land area':
-                      return d.PlotSizeName || undefined;
-                    case 'no of bedroom':
-                      return property?.bhkNum && property.bhkNum > 0 ? `${property.bhkNum} BHK` : undefined;
-                    case 'parking spaces':
-                    case 'parking':
-                      if (d.ParkingDetails) {
-                        const pNum = String(d.ParkingDetails).replace(/[^0-9]/g, '');
-                        return pNum && Number(pNum) > 0 ? `${pNum} Dedicated Slot(s)` : undefined;
-                      }
-                      return undefined;
-                    case 'furnishing':
-                      return d.FurnishingName || undefined;
-                    case 'property on floor':
-                    case 'floor':
-                      return d.FloorNumber || undefined;
-                    case 'lease period (month)':
-                      return d.LeasePeriod || undefined;
-                    case 'lock-in period (year)':
-                      return d.LockinPeriod || undefined;
-                    case 'rent per month':
-                      return d.RentPM ? (String(d.RentPM).startsWith('₹') ? String(d.RentPM) : `₹${d.RentPM}`) : undefined;
-                    case 'maintenance charges':
-                      return d.MaintainCharges ? (String(d.MaintainCharges).startsWith('₹') ? String(d.MaintainCharges) : `₹${d.MaintainCharges}/month`) : undefined;
-                    case 'security deposit':
-                      return d.DepositePrice ? (String(d.DepositePrice).startsWith('₹') ? String(d.DepositePrice) : `₹${d.DepositePrice}`) : undefined;
-                    case 'property tax':
-                      return d.PropertyTax || undefined;
-                    case 'roi %':
-                      return d.ROI ? `${String(d.ROI).replace(/%/g, '')}%` : undefined;
-                    case 'facing':
-                      return d.FacingText || undefined;
-                    case 'branch':
-                      return d.BranchName || undefined;
-                    default:
-                      return undefined;
+                // Value cleaning & strict conditional visibility helper
+                const cleanValue = (val: any): string => {
+                  if (val === null || val === undefined) return '';
+                  const s = String(val).trim();
+                  if (
+                    s === '' ||
+                    s.toLowerCase() === 'null' ||
+                    s.toLowerCase() === 'undefined' ||
+                    s.toLowerCase() === 'nan' ||
+                    s === '—' ||
+                    s === '-' ||
+                    s.toLowerCase() === 'n/a'
+                  ) {
+                    return '';
                   }
+                  return s;
                 };
 
-                // Build ordered rows — only fields with values
-                const rows: { label: string; value: string }[] = [];
-                const addedKeys = new Set<string>();
-
-                FIELD_ORDER.forEach(field => {
-                  const v = resolveField(field);
-                  if (v && v.trim()) {
-                    rows.push({ label: field, value: v.trim() });
-                    addedKeys.add(field.toLowerCase());
+                const getFirst = (...candidates: any[]): string => {
+                  for (const c of candidates) {
+                    const v = cleanValue(c);
+                    if (v) return v;
                   }
-                });
+                  return '';
+                };
 
-                // Any remaining keys not in FIELD_ORDER (All pasted keys dynamically added!)
+                // 48 End-to-End Excel + DB Fields
+                const valTitle = getFirst(d.Title, property.name, (property as any).title);
+                const valRefNumber = getFirst(d.RefNumber, property.refNumber);
+                const valLeaseSale = getFirst(d.Lease_Sale, d.TransactionName, property.listingType);
+                const valPropertyType = getFirst(d.PropertyTypeName, (property as any).configuration, property.bhk);
+                const valPropertyName = getFirst(d.PropertyName, property.propertyName, property.developer);
+                const valAddress = getFirst(d.AddressName, property.location, (property as any).address);
+                const valFlatNo = getFirst(d.FlatNo, lineMap['unit no.'], lineMap['unit no'], lineMap['flat no'], lineMap['shop no']);
+                const valBuildingName = getFirst(d.BuildingName, property.buildingName);
+                const valLandmark = getFirst(d.Landmark);
+                const valSocietyName = getFirst(d.SocietyName);
+                const valStreet = getFirst(d.Street);
+                const valLocality = getFirst(d.LocationName, property.locality);
+                const valCity = getFirst(d.CityName);
+                const valState = getFirst(d.StateName);
+                const valFurnishing = getFirst(d.FurnishingName, (property as any).furnishing);
+                const valSuperArea = getFirst(d.SuperAreaName, lineMap['super area'], lineMap['super built-up area'], lineMap['saleable area']);
+                const valBuiltArea = getFirst(d.BuiltAreaName, lineMap['built-up area']);
+                const valCarpetArea = getFirst(d.CarpetAreaName, (!valSuperArea && property.sqft ? property.sqft : ''));
+                const valPlotSize = getFirst(d.PlotSizeName, property.plotArea);
+                const valMaxArea = getFirst(d.MaxAreaName, property.maxArea);
+                const valMinArea = getFirst(d.MinAreaName, property.minArea);
+
+                const valRatePsf = (() => {
+                  const raw = getFirst(d.PricePerUnitArea, property.ratePsf);
+                  if (!raw) return '';
+                  const num = Number(raw.replace(/[^0-9.]/g, ''));
+                  return !isNaN(num) && num > 0 ? `₹${num.toLocaleString('en-IN')}/Sq.Ft.` : raw;
+                })();
+
+                const valExpectedPrice = (() => {
+                  const raw = getFirst(d.ExpectedPrice, property.price);
+                  if (!raw) return '';
+                  return raw.startsWith('₹') ? raw : `₹${raw}`;
+                })();
+
+                const valDepositePrice = (() => {
+                  const raw = getFirst(d.DepositePrice, property.securityDeposit);
+                  if (!raw) return '';
+                  return raw.startsWith('₹') ? raw : `₹${raw}`;
+                })();
+
+                const valRentPM = (() => {
+                  const raw = getFirst(d.RentPM, property.monthlyRent);
+                  if (!raw) return '';
+                  return raw.startsWith('₹') ? `${raw}/month` : `₹${raw}/month`;
+                })();
+
+                const valRentStartDate = getFirst(d.RentStartDate, property.rentStartDate);
+                const valLockinPeriod = getFirst(d.LockinPeriod, property.lockinPeriod);
+                const valLeasePeriod = getFirst(d.LeasePeriod, property.leasePeriod);
+                const valPropertyTax = getFirst(d.PropertyTax, property.propertyTax);
+                const valMaintainCharges = (() => {
+                  const raw = getFirst(d.MaintainCharges, property.maintenanceCharges);
+                  if (!raw) return '';
+                  return raw.startsWith('₹') ? raw : `₹${raw}/month`;
+                })();
+
+                const valROI = (() => {
+                  const raw = getFirst(d.ROI, property.roi);
+                  if (!raw) return '';
+                  return raw.endsWith('%') ? raw : `${raw}%`;
+                })();
+
+                const valPropertyAge = getFirst(d.PropertyAge, property.propertyAge);
+                const valSourceName = getFirst(d.SourceName, property.sourceName);
+                const valTransactionName = getFirst(d.TransactionName, property.transactionClassification);
+                const valPossession = (() => {
+                  const raw = getFirst(d.PossessionName, property.possessionName, property.possession, lineMap['possession']);
+                  if (!raw || raw === 'Possession on Request') return '';
+                  return /immediately|immediate/i.test(raw) ? 'Immediate Possession' : raw;
+                })();
+                const valStatus = getFirst(d.Status, property.availabilityStatus, property.status);
+                const valParking = getFirst(d.ParkingDetails, (property as any).parking);
+                const valFloorNumber = getFirst(d.FloorNumber, (property as any).floor);
+                const valSearchKeyword = getFirst(d.SearchKeyword, property.searchKeywords);
+                const valFacing = getFirst(d.FacingText, property.facing);
+                const valBranchName = getFirst(d.BranchName, property.branchName);
+                const valEmployeeName = getFirst(d.EmployeeName, property.employeeName);
+                const valEmployeeMobile = getFirst(d.EmployeeMobile, property.employeeMobile);
+                const valEmployeeEmail = getFirst(d.EmployeeEmail, property.employeeEmail);
+
+                const valHWD = getFirst(lineMap['h : w : d']);
+                const valSuitableFor = suitableForList.length > 0 ? suitableForList.join(' | ') : getFirst(lineMap['suitable for']);
+                const valUniqueFeature = getFirst(lineMap['unique feature']);
+
+                // Dynamic extra rows from pasted text
+                const accountedKeys = new Set([
+                  'h : w : d', 'suitable for', 'unique feature', 'area : carpet : saleable',
+                  'super area', 'super built-up area', 'saleable area', 'built-up area', 'carpet area',
+                  'unit no.', 'unit no', 'flat no', 'shop no', 'possession'
+                ]);
+
+                const dynamicExtraItems: { label: string; value: string }[] = [];
                 Object.keys(lineMap).forEach(k => {
-                  if (!addedKeys.has(k) && !k.startsWith('_extra_')) {
+                  if (!accountedKeys.has(k) && !k.startsWith('_extra_')) {
                     const formattedLabel = k
                       .split(' ')
                       .map(w => w.charAt(0).toUpperCase() + w.slice(1))
                       .join(' ');
-                    rows.push({ label: formattedLabel, value: lineMap[k] });
+                    const v = cleanValue(lineMap[k]);
+                    if (v) {
+                      dynamicExtraItems.push({ label: formattedLabel, value: v });
+                    }
                   }
                 });
 
-                // Tags line (pipe-separated short keyword tags only)
-                const tagLine = tagsBlock.replace(/\s+/g, ' ').trim();
-                const tags = tagLine
-                  ? tagLine
-                    .split('|')
-                    .map(t => t.replace(/^[#*\-•\s]+/, '').trim())
-                    .filter(t => t && t.length > 1 && t.length < 35 && !t.includes(':') && !t.includes('*') && !t.toLowerCase().includes('approx') && !t.toLowerCase().includes('sq. ft'))
+                // Structured Sections with Strict Non-Blank Filtering
+                const sections: {
+                  title: string;
+                  items: { label: string; value: string }[];
+                }[] = [
+                  {
+                    title: 'Property Overview & Identification',
+                    items: [
+                      { label: 'Property Title', value: valTitle },
+                      { label: 'Reference Number', value: valRefNumber },
+                      { label: 'Transaction Type', value: valLeaseSale },
+                      { label: 'Property Type', value: valPropertyType },
+                      { label: 'Project / Property Name', value: valPropertyName },
+                      { label: 'Unit / Flat No.', value: valFlatNo },
+                      { label: 'Building Name', value: valBuildingName },
+                      { label: 'Society Name', value: valSocietyName },
+                      { label: 'Property Age', value: valPropertyAge },
+                      { label: 'Possession Status', value: valPossession },
+                      { label: 'Availability Status', value: valStatus },
+                      { label: 'Transaction Classification', value: valTransactionName },
+                    ]
+                  },
+                  {
+                    title: 'Location & Vicinity Details',
+                    items: [
+                      { label: 'Locality', value: valLocality },
+                      { label: 'Landmark', value: valLandmark },
+                      { label: 'Street', value: valStreet },
+                      { label: 'City', value: valCity },
+                      { label: 'State', value: valState },
+                      { label: 'Full Address', value: valAddress },
+                    ]
+                  },
+                  {
+                    title: 'Area & Spatial Measurements',
+                    items: [
+                      { label: 'Carpet Area', value: valCarpetArea },
+                      { label: 'Built-up Area', value: valBuiltArea },
+                      { label: 'Super Built-up Area', value: valSuperArea },
+                      { label: 'Plot Size / Land Area', value: valPlotSize },
+                      { label: 'Minimum Area', value: valMinArea },
+                      { label: 'Maximum Area', value: valMaxArea },
+                      { label: 'Dimensions (H : W : D)', value: valHWD },
+                    ]
+                  },
+                  {
+                    title: 'Commercial & Financial Terms',
+                    items: [
+                      { label: 'Expected Price', value: valExpectedPrice },
+                      { label: 'Price Per Sq.Ft.', value: valRatePsf },
+                      { label: 'Monthly Rent', value: valRentPM },
+                      { label: 'Security Deposit', value: valDepositePrice },
+                      { label: 'Maintenance Charges', value: valMaintainCharges },
+                      { label: 'Property Tax', value: valPropertyTax },
+                      { label: 'ROI (Yield %)', value: valROI },
+                      { label: 'Rent Start Date', value: valRentStartDate },
+                      { label: 'Lock-in Period', value: valLockinPeriod },
+                      { label: 'Lease Period', value: valLeasePeriod },
+                    ]
+                  },
+                  {
+                    title: 'Unit Specifications & Features',
+                    items: [
+                      { label: 'Furnishing Status', value: valFurnishing },
+                      { label: 'Floor Number', value: valFloorNumber },
+                      { label: 'Facing Direction', value: valFacing },
+                      { label: 'Parking Details', value: valParking },
+                      { label: 'Suitable For', value: valSuitableFor },
+                      { label: 'Unique Feature', value: valUniqueFeature },
+                      ...dynamicExtraItems
+                    ]
+                  },
+                  {
+                    title: 'Advisory & Branch Office',
+                    items: [
+                      { label: 'Branch Office', value: valBranchName },
+                      { label: 'Relationship Manager', value: valEmployeeName },
+                      { label: 'Manager Contact', value: valEmployeeMobile },
+                      { label: 'Manager Email', value: valEmployeeEmail },
+                      { label: 'Source Classification', value: valSourceName },
+                    ]
+                  }
+                ];
+
+                // Filter out empty items, and filter out empty sections
+                const populatedSections = sections
+                  .map(s => ({
+                    ...s,
+                    items: s.items.filter(item => cleanValue(item.value) !== '')
+                  }))
+                  .filter(s => s.items.length > 0);
+
+                // Check narrative description
+                const narrativeDesc = cleanValue(d.Description || cleanDescription || property.description);
+                const isGenericDefault = narrativeDesc.startsWith('Grade-A corporate office space in') || narrativeDesc.startsWith('Spacious and luxurious');
+                const displayNarrative = narrativeDesc && !isGenericDefault ? narrativeDesc : '';
+
+                // Tags from SearchKeywords or tags
+                const tagSource = valSearchKeyword || (property.tags && property.tags.length > 0 ? property.tags.join(' | ') : '');
+                const tags = tagSource
+                  ? tagSource
+                    .split(/[|,]/)
+                    .map(t => t.trim())
+                    .filter(t => t && t.length > 1 && t.length < 40 && !t.includes(':') && !t.includes('*'))
                   : [];
 
                 return (
-                  <div className="bg-white rounded-2xl sm:rounded-3xl border border-zinc-200 p-4 sm:p-6 shadow-xs space-y-4">
-                    {/* Property Details — structured field rows */}
-                    {rows.length > 0 && (
-                      <div>
-                        <h3 className="text-sm font-black text-zinc-950 mb-3 uppercase tracking-wider">Property Details</h3>
-                        <div className="divide-y divide-zinc-100 rounded-xl border border-zinc-200 overflow-hidden text-xs">
-                          {rows.map(({ label, value }, idx) => (
-                            <div key={idx} className="flex items-start gap-3 px-3 sm:px-4 py-2.5 sm:py-3 hover:bg-zinc-50/60 transition-colors">
-                              <span className="text-zinc-500 font-semibold shrink-0 w-[130px] sm:w-[180px] leading-relaxed">{label}</span>
-                              <span className="text-zinc-800 font-medium leading-relaxed break-words min-w-0 flex-1">{value}</span>
+                  <div className="bg-white rounded-2xl sm:rounded-3xl border border-zinc-200 p-4 sm:p-6 shadow-xs space-y-5">
+                    {/* Populated Structured Field Sections */}
+                    {populatedSections.length > 0 && (
+                      <div className="space-y-4">
+                        {populatedSections.map((section, sIdx) => (
+                          <div key={sIdx} className="space-y-2">
+                            <h3 className="text-xs font-black text-zinc-900 uppercase tracking-wider flex items-center gap-1.5 pb-1 border-b border-zinc-100">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                              <span>{section.title}</span>
+                            </h3>
+                            <div className="divide-y divide-zinc-100 rounded-xl border border-zinc-200 overflow-hidden text-xs">
+                              {section.items.map(({ label, value }, rIdx) => (
+                                <div key={rIdx} className="flex items-start gap-3 px-3 sm:px-4 py-2 sm:py-2.5 hover:bg-zinc-50/60 transition-colors">
+                                  <span className="text-zinc-500 font-semibold shrink-0 w-[140px] sm:w-[190px] leading-relaxed">{label}</span>
+                                  <span className="text-zinc-900 font-medium leading-relaxed break-words min-w-0 flex-1">{value}</span>
+                                </div>
+                              ))}
                             </div>
-                          ))}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Narrative Complete Description */}
+                    {displayNarrative && (
+                      <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-200 space-y-2">
+                        <span className="text-xs font-bold text-zinc-950 uppercase tracking-wider flex items-center gap-1.5">
+                          <FileText className="w-3.5 h-3.5 text-zinc-700" />
+                          <span>Property Description &amp; Remarks</span>
+                        </span>
+                        <div className="text-xs text-zinc-700 leading-relaxed whitespace-pre-line bg-white p-3.5 rounded-xl border border-zinc-100">
+                          {displayNarrative}
                         </div>
                       </div>
                     )}

@@ -222,14 +222,16 @@ export function formatPriceDisplay(val: string | number | undefined | null): str
 
 export function cleanSqft(sqft?: any): string {
   try {
-    if (sqft === undefined || sqft === null || sqft === '') return '1,200 Sq.Ft.';
+    if (sqft === undefined || sqft === null || sqft === '' || sqft === '—' || sqft === '-') return '';
     if (typeof sqft === 'number') {
-      return `${sqft.toLocaleString('en-IN')} Sq.Ft.`;
+      return sqft > 0 ? `${sqft.toLocaleString('en-IN')} Sq.Ft.` : '';
     }
     const str = typeof sqft === 'string' ? sqft : String(sqft);
-    return str.replace(/\s*carpet\s*/gi, '').trim() || '1,200 Sq.Ft.';
+    const cleaned = str.replace(/\s*carpet\s*/gi, '').trim();
+    if (cleaned === '—' || cleaned === '-' || cleaned.toLowerCase() === 'null' || cleaned.toLowerCase() === 'undefined') return '';
+    return cleaned;
   } catch {
-    return '1,200 Sq.Ft.';
+    return '';
   }
 }
 
@@ -486,13 +488,13 @@ const PropertyCard = React.memo(function PropertyCard({
               </span>
             </div>
 
-            {/* 2. Carpet Area */}
+            {/* 2. Carpet / Super / Plot Area */}
             <div className="min-w-0">
               <span className="text-[9px] sm:text-[10px] font-bold uppercase text-zinc-400 block tracking-wider truncate">
-                Carpet Area
+                {property.dossier?.PlotSizeName ? 'Plot Area' : (property.dossier?.SuperAreaName && !property.dossier?.CarpetAreaName ? 'Super Area' : 'Carpet Area')}
               </span>
               <span className="font-extrabold text-zinc-900 mt-0.5 block truncate text-[11px] sm:text-xs">
-                {cleanSqft(property.sqft)}
+                {cleanSqft(property.sqft) || property.dossier?.PlotSizeName || property.dossier?.SuperAreaName || property.dossier?.BuiltAreaName || 'On Request'}
               </span>
             </div>
 
