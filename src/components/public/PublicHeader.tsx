@@ -143,11 +143,11 @@ export function PublicHeader() {
                   router.push('/');
                 }
               }}
-              className="px-2.5 py-1.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-800 transition flex items-center gap-1.5 text-xs font-bold cursor-pointer border border-zinc-200/90 group"
-              title="Go back to previous page"
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-zinc-100 hover:bg-zinc-200 active:scale-95 text-zinc-800 transition flex items-center justify-center cursor-pointer border border-zinc-200/90 group shrink-0 shadow-2xs"
+              title="Go back"
+              aria-label="Go back"
             >
-              <ArrowLeft className="w-3.5 h-3.5 text-zinc-700 group-hover:-translate-x-0.5 transition-transform" />
-              <span className="hidden sm:inline">Back</span>
+              <ArrowLeft className="w-4 h-4 text-zinc-700 group-hover:-translate-x-0.5 transition-transform" />
             </button>
           )}
 
