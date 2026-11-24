@@ -48,6 +48,7 @@ import {
   History,
   Shield,
   ShieldCheck,
+  Pencil,
   ShieldAlert
 } from 'lucide-react';
 
@@ -1312,9 +1313,11 @@ export default function AdminPage() {
                                 setEditingProperty(p);
                                 setEditPropertyModalOpen(true);
                               }}
-                              className="text-amber-600 hover:underline font-medium text-xs cursor-pointer"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-xl transition-colors cursor-pointer shadow-2xs shrink-0"
+                              title="Edit listing and paste details"
                             >
-                              Edit
+                              <Pencil className="w-3.5 h-3.5 text-amber-700" />
+                              <span>Edit / Paste Details</span>
                             </button>
                             <button
                               onClick={() => handleDeleteProperty(p.id, p.name || p.title)}

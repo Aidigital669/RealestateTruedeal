@@ -24,11 +24,6 @@ import {
   Play,
   Briefcase,
   Calendar,
-  Pencil,
-  X,
-  Save,
-  Loader2,
-  Building,
   Sparkles
 } from 'lucide-react';
 import { usePropertyComparison } from '@/context/PropertyComparisonContext';
@@ -83,103 +78,6 @@ export function PropertyDetailPageClient({
   const [clientEmail, setClientEmail] = useState('');
   const [preferredSlot, setPreferredSlot] = useState('This Saturday (04:00 PM)');
   const [formSubmitted, setFormSubmitted] = useState(false);
-
-  // In-Page Property Edit & Specification States
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editTitle, setEditTitle] = useState('');
-  const [editPrice, setEditPrice] = useState('');
-  const [editUnitNo, setEditUnitNo] = useState('');
-  const [editSuperArea, setEditSuperArea] = useState('');
-  const [editCarpetArea, setEditCarpetArea] = useState('');
-  const [editPossession, setEditPossession] = useState('');
-  const [editBuildingName, setEditBuildingName] = useState('');
-  const [editDescription, setEditDescription] = useState('');
-  const [isSavingEdit, setIsSavingEdit] = useState(false);
-  const [editSuccessMsg, setEditSuccessMsg] = useState('');
-
-  useEffect(() => {
-    if (isEditModalOpen && property) {
-      const { cleanDescription, dossier: d } = parseDossierData(property.description || '');
-      const mergedD = { ...((property as any)?.dossier || {}), ...d };
-      setEditTitle(property.name || '');
-      setEditPrice((property as any).priceFormatted || property.price || '');
-      setEditUnitNo(mergedD.FlatNo ? String(mergedD.FlatNo) : '');
-      setEditSuperArea(mergedD.SuperAreaName || '');
-      setEditCarpetArea(mergedD.CarpetAreaName || property.sqft || '');
-      setEditPossession(mergedD.PossessionName || (property as any).possession || (property.status && property.status !== 'Ready to Move' ? property.status : ''));
-      setEditBuildingName(mergedD.BuildingName || '');
-      setEditDescription(cleanDescription || property.description || '');
-      setEditSuccessMsg('');
-    }
-  }, [isEditModalOpen, property]);
-
-  const handleSavePropertyDetails = async () => {
-    setIsSavingEdit(true);
-    setEditSuccessMsg('');
-    try {
-      const { dossier: d } = parseDossierData(property.description || '');
-      const mergedD = { ...((property as any)?.dossier || {}), ...d };
-      const updatedDossier = {
-        ...mergedD,
-        Title: editTitle.trim(),
-        FlatNo: editUnitNo.trim(),
-        SuperAreaName: editSuperArea.trim(),
-        CarpetAreaName: editCarpetArea.trim(),
-        PossessionName: editPossession.trim(),
-        possession: editPossession.trim(),
-        BuildingName: editBuildingName.trim(),
-      };
-
-      const finalDescription = embedDossierData(editDescription.trim(), updatedDossier);
-
-      const payload = {
-        name: editTitle.trim(),
-        title: editTitle.trim(),
-        price: editPrice.trim(),
-        sqft: editCarpetArea.trim(),
-        carpetArea: editCarpetArea.trim(),
-        status: editPossession.trim() || 'Possession on Request',
-        possession: editPossession.trim() || 'Possession on Request',
-        description: finalDescription,
-        dossier: updatedDossier,
-        FlatNo: editUnitNo.trim(),
-        SuperAreaName: editSuperArea.trim(),
-        BuildingName: editBuildingName.trim(),
-        CarpetAreaName: editCarpetArea.trim(),
-        PossessionName: editPossession.trim(),
-      };
-
-      const res = await fetch(`/api/admin/properties/${property.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        throw new Error(`Failed to save changes (${res.status})`);
-      }
-
-      setProperty(prev => ({
-        ...prev,
-        name: editTitle.trim(),
-        price: editPrice.trim(),
-        sqft: editCarpetArea.trim(),
-        status: editPossession.trim() || 'Possession on Request',
-        possession: editPossession.trim() || 'Possession on Request',
-        description: finalDescription,
-        dossier: updatedDossier,
-      }));
-
-      setEditSuccessMsg('Details updated successfully!');
-      setTimeout(() => {
-        setIsEditModalOpen(false);
-      }, 700);
-    } catch (err: any) {
-      alert(err.message || 'Failed to save changes');
-    } finally {
-      setIsSavingEdit(false);
-    }
-  };
   const [submitting, setSubmitting] = useState(false);
 
   // Client-side fetch & slug canonical URL replacement
@@ -961,16 +859,6 @@ export function PropertyDetailPageClient({
                     <Maximize2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
-
-                <button
-                  type="button"
-                  onClick={() => setIsEditModalOpen(true)}
-                  className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold bg-zinc-900 text-white hover:bg-black transition cursor-pointer flex items-center gap-1.5 shrink-0 shadow-xs"
-                  title="Edit Listing & Specifications"
-                >
-                  <Pencil className="w-3 h-3 text-amber-400" />
-                  <span>Edit Details</span>
-                </button>
               </div>
             </div>
           </div>
@@ -1431,17 +1319,7 @@ export function PropertyDetailPageClient({
                     {/* Property Details — structured field rows */}
                     {rows.length > 0 && (
                       <div>
-                        <div className="flex items-center justify-between mb-3">
-                          <h3 className="text-sm font-black text-zinc-950 uppercase tracking-wider">Property Details</h3>
-                          <button
-                            type="button"
-                            onClick={() => setIsEditModalOpen(true)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg transition-colors cursor-pointer"
-                          >
-                            <Pencil className="w-3.5 h-3.5 text-amber-600" />
-                            <span>Edit / Paste Details</span>
-                          </button>
-                        </div>
+                        <h3 className="text-sm font-black text-zinc-950 mb-3 uppercase tracking-wider">Property Details</h3>
                         <div className="divide-y divide-zinc-100 rounded-xl border border-zinc-200 overflow-hidden text-xs">
                           {rows.map(({ label, value }, idx) => (
                             <div key={idx} className="flex items-start gap-3 px-3 sm:px-4 py-2.5 sm:py-3 hover:bg-zinc-50/60 transition-colors">
@@ -2022,161 +1900,6 @@ export function PropertyDetailPageClient({
         onClose={() => setShareModalOpen(false)}
         property={property}
       />
-
-      {/* Interactive In-Page Property Edit Modal */}
-      {isEditModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-2xl max-w-2xl w-full p-4 sm:p-6 border border-zinc-200 shadow-2xl space-y-4 max-h-[92vh] flex flex-col">
-            <div className="flex items-center justify-between pb-3 border-b border-zinc-100 shrink-0">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center font-bold">
-                  <Pencil className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-zinc-950 text-base">Edit Details &amp; Specifications</h3>
-                  <p className="text-xs text-zinc-500">Edit fields or paste new text to dynamically add details</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsEditModalOpen(false)}
-                className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="space-y-3.5 overflow-y-auto pr-1 flex-1 text-xs">
-              <div>
-                <label className="block text-zinc-700 font-semibold mb-1">Property Title</label>
-                <input
-                  type="text"
-                  value={editTitle}
-                  onChange={(e) => setEditTitle(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-xs text-zinc-900"
-                  placeholder="e.g. Commercial Shop for Sale in Undri, Pune"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-zinc-700 font-semibold mb-1">Unit No. / Shop No.</label>
-                  <input
-                    type="text"
-                    value={editUnitNo}
-                    onChange={(e) => setEditUnitNo(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-xs text-zinc-900"
-                    placeholder="e.g. 102, Ground Floor"
-                  />
-                </div>
-                <div>
-                  <label className="block text-zinc-700 font-semibold mb-1">Building Name</label>
-                  <input
-                    type="text"
-                    value={editBuildingName}
-                    onChange={(e) => setEditBuildingName(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-xs text-zinc-900"
-                    placeholder="e.g. TRADE PARK, NEW SUJATA"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-zinc-700 font-semibold mb-1">Carpet Area</label>
-                  <input
-                    type="text"
-                    value={editCarpetArea}
-                    onChange={(e) => setEditCarpetArea(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-xs text-zinc-900"
-                    placeholder="e.g. 600 Sq.Ft."
-                  />
-                </div>
-                <div>
-                  <label className="block text-zinc-700 font-semibold mb-1">Super Area</label>
-                  <input
-                    type="text"
-                    value={editSuperArea}
-                    onChange={(e) => setEditSuperArea(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-xs text-zinc-900"
-                    placeholder="e.g. 900 Sq.Ft."
-                  />
-                </div>
-                <div>
-                  <label className="block text-zinc-700 font-semibold mb-1">Possession</label>
-                  <input
-                    type="text"
-                    value={editPossession}
-                    onChange={(e) => setEditPossession(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-xs text-zinc-900"
-                    placeholder="e.g. 3/2030, Immediately"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-zinc-700 font-semibold mb-1">Price</label>
-                <input
-                  type="text"
-                  value={editPrice}
-                  onChange={(e) => setEditPrice(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-xs text-zinc-900"
-                  placeholder="e.g. ₹1.26 Cr or ₹5.4 Lakh"
-                />
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-zinc-700 font-semibold">Description &amp; Pasted Details</label>
-                  <span className="text-[10px] text-zinc-400 font-normal">Paste any text, bullet points or Key: Value pairs</span>
-                </div>
-                <textarea
-                  rows={6}
-                  value={editDescription}
-                  onChange={(e) => setEditDescription(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-xs text-zinc-900 font-mono leading-relaxed"
-                  placeholder="Paste details here, e.g.:&#10;*Property Title:* 900 Sq.Ft. Shop&#10;Frontage: 200 Feet&#10;Power Backup: 100%&#10;Highway property"
-                />
-              </div>
-
-              {editSuccessMsg && (
-                <div className="p-2.5 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-semibold flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  <span>{editSuccessMsg}</span>
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-zinc-100 shrink-0">
-              <button
-                type="button"
-                onClick={() => setIsEditModalOpen(false)}
-                className="px-4 py-2 rounded-xl border border-zinc-200 text-xs font-bold text-zinc-600 hover:bg-zinc-50 transition cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleSavePropertyDetails}
-                disabled={isSavingEdit}
-                className="px-5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-black font-black text-xs transition flex items-center gap-1.5 shadow-sm cursor-pointer disabled:opacity-50"
-              >
-                {isSavingEdit ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span>Saving...</span>
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-3.5 h-3.5" />
-                    <span>Save Changes</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Auth Modal */}
       <AuthInquiryModal

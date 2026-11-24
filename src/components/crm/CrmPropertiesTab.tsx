@@ -17,7 +17,8 @@ import {
   Shield,
   ShieldCheck,
   ShieldAlert,
-  EyeOff
+  EyeOff,
+  Pencil
 } from 'lucide-react';
 import Image from 'next/image';
 import { AddPropertyModal, EditPropertyModal } from '@/components/admin/Modals';
@@ -854,9 +855,11 @@ export function CrmPropertiesTab() {
                         setEditingProperty(prop);
                         setIsEditOpen(true);
                       }}
-                      className="px-2.5 py-1.5 bg-zinc-100 text-zinc-700 hover:bg-zinc-200 border border-zinc-200 rounded-lg text-[11px] font-bold transition cursor-pointer flex items-center justify-center"
+                      className="px-2.5 py-1.5 bg-amber-50 text-amber-900 hover:bg-amber-100 border border-amber-200 rounded-xl text-[11px] font-bold transition cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs shrink-0"
+                      title="Edit listing and paste details"
                     >
-                      Edit
+                      <Pencil className="w-3.5 h-3.5 text-amber-700" />
+                      <span>Edit / Paste Details</span>
                     </button>
                     <button 
                       onClick={() => handleDeleteProperty(prop)}
