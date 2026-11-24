@@ -212,18 +212,29 @@ export function formatPriceDisplay(val: string | number | undefined | null): str
   return `₹${num.toLocaleString('en-IN')}`;
 }
 
-export function cleanSqft(sqft?: string | number | null): string {
-  if (sqft === undefined || sqft === null || sqft === '') return '1,200 Sq.Ft.';
-  const str = typeof sqft === 'number' ? `${sqft.toLocaleString('en-IN')} Sq.Ft.` : String(sqft);
-  return str.replace(/\s*carpet\s*/gi, '').trim() || '1,200 Sq.Ft.';
+export function cleanSqft(sqft?: any): string {
+  try {
+    if (sqft === undefined || sqft === null || sqft === '') return '1,200 Sq.Ft.';
+    if (typeof sqft === 'number') {
+      return `${sqft.toLocaleString('en-IN')} Sq.Ft.`;
+    }
+    const str = typeof sqft === 'string' ? sqft : String(sqft);
+    return str.replace(/\s*carpet\s*/gi, '').trim() || '1,200 Sq.Ft.';
+  } catch {
+    return '1,200 Sq.Ft.';
+  }
 }
 
 export function getPropertySqftNumber(p: PropertyItem): number {
-  if (typeof p.sqftNum === 'number' && !isNaN(p.sqftNum) && p.sqftNum > 0) return p.sqftNum;
-  if (p.sqft === undefined || p.sqft === null || p.sqft === '') return 0;
-  const str = String(p.sqft);
-  const match = str.replace(/,/g, '').match(/\d+(\.\d+)?/);
-  return match ? parseFloat(match[0]) : 0;
+  try {
+    if (typeof p.sqftNum === 'number' && !isNaN(p.sqftNum) && p.sqftNum > 0) return p.sqftNum;
+    if (p.sqft === undefined || p.sqft === null || p.sqft === '') return 0;
+    const str = typeof p.sqft === 'string' ? p.sqft : String(p.sqft);
+    const match = str.replace(/,/g, '').match(/\d+(\.\d+)?/);
+    return match ? parseFloat(match[0]) : 0;
+  } catch {
+    return 0;
+  }
 }
 
 export function getSortLabel(sort: string): string {
