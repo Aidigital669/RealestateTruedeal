@@ -39,6 +39,9 @@ export interface PropertyMatchCriteria {
   nameWords: string[];
   hasSpecificIntent: boolean;
   isMultiCategory?: boolean;
+  transactionType?: 'sale' | 'rent' | 'preleased' | null;
+  minSqft?: number | null;
+  maxSqft?: number | null;
 }
 
 export function detectPropertyTypology(prop: {
@@ -538,6 +541,32 @@ export function parseQueryCriteria(queryText: string, conversationContext?: stri
       return true;
     });
 
+  // Transaction Type Extraction (Sale vs Rent vs Preleased)
+  let transactionType: 'sale' | 'rent' | 'preleased' | null = null;
+  if (/\b(?:pre[-_\s]*leased|prelease|roi|rental\s*yield)\b/i.test(lowerQuery)) {
+    transactionType = 'preleased';
+  } else if (/\b(?:for\s*rent|rent|lease|on\s*rent|to\s*let|per\s*month|\/month)\b/i.test(lowerQuery)) {
+    transactionType = 'rent';
+  } else if (/\b(?:for\s*sale|sale|buy|purchase|resale)\b/i.test(lowerQuery)) {
+    transactionType = 'sale';
+  }
+
+  // Sq.Ft. Area Range or Amount Extraction (e.g. "870-900 Sq.Ft.", "1200 sqft")
+  let minSqft: number | null = null;
+  let maxSqft: number | null = null;
+  const sqftRangeMatch = lowerQuery.match(/(\d+(?:\.\d+)?)\s*(?:[-–to]+)\s*(\d+(?:\.\d+)?)\s*(?:sqft|sq\.ft|square\s*feet|sq\s*ft)?/i);
+  if (sqftRangeMatch && lowerQuery.includes('sq')) {
+    minSqft = parseFloat(sqftRangeMatch[1]);
+    maxSqft = parseFloat(sqftRangeMatch[2]);
+  } else {
+    const singleSqftMatch = lowerQuery.match(/(\d+(?:\.\d+)?)\s*(?:sqft|sq\.ft|square\s*feet|sq\s*ft)/i);
+    if (singleSqftMatch) {
+      const val = parseFloat(singleSqftMatch[1]);
+      minSqft = Math.round(val * 0.85);
+      maxSqft = Math.round(val * 1.15);
+    }
+  }
+
   const isViewOrProvideRequest = /\b(?:prov(?:ide|iede)|show|view|see|give|send|share|details|dossier|walkthrough)\b/i.test(lowerQuery);
 
   const hasSpecificIntent =
@@ -548,6 +577,8 @@ export function parseQueryCriteria(queryText: string, conversationContext?: stri
     maxBudget !== null ||
     purposeSlugs.length > 0 ||
     nameWords.length > 0 ||
+    transactionType !== null ||
+    minSqft !== null ||
     isViewOrProvideRequest;
 
   return {
@@ -573,7 +604,10 @@ export function parseQueryCriteria(queryText: string, conversationContext?: stri
     purposeSlugs,
     nameWords,
     hasSpecificIntent,
-    isMultiCategory
+    isMultiCategory,
+    transactionType,
+    minSqft,
+    maxSqft
   };
 }
 
@@ -618,12 +652,10 @@ export function scorePropertyMatch(
       if (intent === 'healthcare_hospital') return pTypology === 'healthcare_hospital';
       if (intent === 'industrial') return pTypology === 'industrial';
       if (intent === 'commercial_office') {
-        return (
-          pTypology === 'commercial_office' ||
-          (pTypology === 'preleased' && (titleAndDesc.includes('office') || titleAndDesc.includes('commercial'))) ||
-          titleAndDesc.includes('office') ||
-          (prop.isCommercial && !titleAndDesc.includes('residential'))
-        );
+        const isOfficeDirect = pTypology === 'commercial_office' || titleAndDesc.includes('office') || titleAndDesc.includes('workspace') || titleAndDesc.includes('it park');
+        const isShopOrRetail = (pTypology === 'commercial_shop' || pTypology === 'commercial_showroom') && !titleAndDesc.includes('office');
+        if (isShopOrRetail) return false;
+        return isOfficeDirect || (pTypology === 'preleased' && (titleAndDesc.includes('office') || titleAndDesc.includes('commercial')));
       }
       if (intent === 'commercial_showroom') {
         return (
@@ -708,19 +740,57 @@ export function scorePropertyMatch(
     }
   }
 
-  // 3. LOCALITY MATCHING (UNION MATCHING)
+  // 3. LOCALITY MATCHING (STRICT LOCALITY MATCHING)
   const locsToCheck = criteria.localities && criteria.localities.length > 0
     ? criteria.localities
     : (criteria.locality ? [criteria.locality] : []);
 
   if (locsToCheck.length > 0) {
-    const matchesAnyLoc = locsToCheck.some((loc) => titleAndDesc.includes(loc));
-    if (matchesAnyLoc) {
-      score += 150;
+    const propLocalityText = `${prop.locality || ''} ${prop.location || ''} ${prop.title || ''} ${prop.name || ''}`.toLowerCase();
+    const matchesPrimaryLoc = locsToCheck.some((loc) => propLocalityText.includes(loc));
+    if (matchesPrimaryLoc) {
+      score += 200;
     } else if (criteria.isExplicitLocality) {
       return -999;
     } else {
-      score -= 50;
+      score -= 80;
+    }
+  }
+
+  // 3b. TRANSACTION TYPE MATCHING (Sale vs Rent)
+  if (criteria.transactionType) {
+    const rawListingType = String((prop as any).listingType || (prop as any).listing_type || '').toLowerCase();
+    const isRentProp = rawListingType.includes('rent') || rawListingType.includes('lease') || titleAndDesc.includes('for rent');
+    const isSaleProp = rawListingType.includes('sale') || rawListingType.includes('buy') || titleAndDesc.includes('for sale') || (!isRentProp && (prop.priceRaw || 0) > 1000000);
+
+    if (criteria.transactionType === 'sale') {
+      if (isSaleProp) {
+        score += 250;
+      } else if (isRentProp) {
+        score -= 600;
+      }
+    } else if (criteria.transactionType === 'rent') {
+      if (isRentProp) {
+        score += 250;
+      } else if (isSaleProp) {
+        score -= 600;
+      }
+    }
+  }
+
+  // 3c. SQ.FT. MATCHING
+  if (criteria.minSqft || criteria.maxSqft) {
+    const pSqft = (prop as any).sqftNum || (prop as any).sqft_num || (typeof (prop as any).sqft === 'number' ? (prop as any).sqft : parseFloat(String((prop as any).sqft || '').replace(/,/g, '')) || 0);
+    if (pSqft > 0) {
+      if (criteria.minSqft && criteria.maxSqft) {
+        if (pSqft >= criteria.minSqft * 0.85 && pSqft <= criteria.maxSqft * 1.15) {
+          score += 300; // Major boost for matching exact size range!
+        } else {
+          const mid = (criteria.minSqft + criteria.maxSqft) / 2;
+          const diff = Math.abs(pSqft - mid) / mid;
+          if (diff > 0.3) score -= 150;
+        }
+      }
     }
   }
 

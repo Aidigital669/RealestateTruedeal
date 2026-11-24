@@ -12,6 +12,8 @@ import {
 import { isUserSeller } from "@/lib/seller-intent";
 import { getPurposesForProperties } from "@/lib/business-purposes";
 import { detectQueryIntent, extractQueryLines, filterBuyerDemandsByQuery } from "@/lib/search-training-corpus";
+import { executePhase2Search } from "@/lib/phase2-search-engine";
+import { DEFAULT_SEARCH_CONFIG } from "@/lib/search-config";
 
 export const dynamic = 'force-dynamic';
 
@@ -273,6 +275,7 @@ STRICT INSTRUCTIONS:
 
     // 3. Fetch Properties from Database
     let properties: any[] = [];
+    let p2Result: any = null;
     try {
       const propRows = await query(`
         SELECT 
@@ -356,52 +359,32 @@ STRICT INSTRUCTIONS:
         };
       });
 
-      // Filter & Score properties using property-matching engine (Strict Typology Boundaries + Name Words)
+      // Execute Phase 2 Search Engine (Synonym Mapping, 5km Geosearch, Strict -> Expanded Fallback)
       const criteria = parseQueryCriteria(cleanSearch);
       const isMultiCat = criteria.isMultiCategory || (criteria.typologyIntents && criteria.typologyIntents.length > 1) || (criteria.bhkNums && criteria.bhkNums.length > 1);
 
-      if (locFilterLower && (!criteria.locality || criteria.locality === 'All')) {
-        criteria.locality = locFilterLower;
-        criteria.isExplicitLocality = true;
-      }
-      if (!isMultiCat && bhkFilterLower && bhkFilterLower !== 'all') {
-        const d = bhkFilterLower.match(/\d+/)?.[0];
-        if (d && !bhkFilterLower.includes('penthouse')) criteria.bhkNum = parseInt(d, 10);
-        if (bhkFilterLower.includes('commercial')) criteria.typologyIntent = 'commercial_office';
-      }
+      const effectiveTransactionType = (transactionType && transactionType !== "All" && transactionType !== "all")
+        ? transactionType
+        : criteria.transactionType;
 
-      if (criteria.hasSpecificIntent || cleanSearch.trim() || locFilterLower || (!isMultiCat && bhkFilterLower && bhkFilterLower !== 'all')) {
-        const scoredProperties = properties
-          .map((p) => ({ p, score: scorePropertyMatch(p, criteria) }))
-          .filter((item) => {
-            if (item.score <= 0) return false;
-            // If criteria has specific name/project words, property MUST match at least one
-            if (criteria.nameWords && criteria.nameWords.length > 0) {
-              const pText = `${item.p.name || ''} ${item.p.title || ''} ${item.p.developer || ''} ${item.p.description || ''} ${item.p.configuration || ''} ${item.p.bhk || ''}`.toLowerCase();
-              const matchesAnyNameWord = criteria.nameWords.some((w) => pText.includes(w));
-              if (!matchesAnyNameWord) return false;
-            }
-            const price = getPropertyRawPrice(item.p);
-            if (price > 0) {
-              if (criteria.maxBudget && price > criteria.maxBudget) return false;
-              if (criteria.minBudget && price < criteria.minBudget) return false;
-            }
-            return true;
-          })
-          .sort((a, b) => b.score - a.score);
+      p2Result = executePhase2Search(properties, {
+        query: cleanSearch,
+        locality: (locFilterLower && locFilterLower !== "all") ? locFilterLower : (criteria.locality || undefined),
+        transactionType: effectiveTransactionType ? (effectiveTransactionType.toLowerCase().includes('rent') ? 'rent' : 'sale') : undefined,
+        propertyType: (bhkFilterLower && bhkFilterLower !== 'all') ? bhkFilterLower : (criteria.typologyIntent || undefined),
+        minPrice: criteria.minBudget || undefined,
+        maxPrice: criteria.maxBudget || undefined,
+        minArea: criteria.minSqft || undefined,
+        maxArea: criteria.maxSqft || undefined,
+        radiusKm: 5
+      });
 
-        const topScore = scoredProperties.length > 0 ? scoredProperties[0].score : 0;
-        const filteredByRelevance = topScore >= 200
-          ? scoredProperties.filter((item) => item.score >= topScore * 0.45)
-          : scoredProperties;
-
-        properties = filteredByRelevance.map((item) => item.p);
-      }
-
-      // Filter by Business Purpose
+      // Filter by Business Purpose if specified
+      let finalMatches = p2Result.allMatches;
       if (purpose && purpose !== "All" && purpose !== "all") {
         const pLower = purpose.toLowerCase().trim();
-        properties = properties.filter((prop) => {
+        finalMatches = finalMatches.filter((m: any) => {
+          const prop = m.property;
           if (!prop.businessPurposes || prop.businessPurposes.length === 0) return false;
           return prop.businessPurposes.some(
             (bp: any) => bp.slug.toLowerCase() === pLower || String(bp.id) === pLower || bp.name.toLowerCase() === pLower
@@ -409,24 +392,19 @@ STRICT INSTRUCTIONS:
         });
       }
 
-      // Filter by Transaction Type (Buy vs Rent)
-      if (transactionType && transactionType !== "All" && transactionType !== "all") {
-        const ttLower = transactionType.toLowerCase().trim();
-        if (ttLower.includes("rent") || ttLower.includes("lease")) {
-          properties = properties.filter((prop) => {
-            const lt = String(prop.listingType || '').toLowerCase();
-            return lt.includes('rent') || lt.includes('lease');
-          });
-        } else if (ttLower.includes("buy") || ttLower.includes("sale")) {
-          properties = properties.filter((prop) => {
-            const lt = String(prop.listingType || '').toLowerCase();
-            return lt.includes('sale') || lt.includes('buy') || !prop.listingType;
-          });
-        }
-      }
+      properties = finalMatches.map((m: any) => ({
+        ...m.property,
+        searchBadges: m.badges,
+        distanceKm: m.distanceKm,
+        isStrictMatch: m.isStrictMatch,
+        isExpandedMatch: m.isExpandedMatch,
+        matchType: m.matchType,
+        priceComparison: m.priceComparison,
+        areaComparison: m.areaComparison
+      }));
 
       if (cleanSearch.trim() && properties.length === 0 && filteredDemands.length === 0) {
-        aiSummary = `No matching properties or buyers found for "${cleanSearch}" in Pune.`;
+        aiSummary = p2Result?.noResultData?.message || `No matching properties or buyers found for "${cleanSearch}" within 5 km in Pune.`;
       }
     } catch (pErr: any) {
       console.log("DB properties query notice:", pErr.message);
@@ -443,6 +421,15 @@ STRICT INSTRUCTIONS:
         priceRange: priceRange || null,
         isAiPowered: aiParsed
       },
+      phase2: p2Result ? {
+        isFallbackActivated: p2Result.isFallbackActivated,
+        fallbackBanner: p2Result.fallbackBanner,
+        strictCount: p2Result.strictCount,
+        expandedCount: p2Result.expandedCount,
+        totalCount: p2Result.totalCount,
+        appliedFilters: p2Result.appliedFilters,
+        noResultData: p2Result.noResultData
+      } : null,
       officialHelpline: OFFICIAL_ANV_PHONE,
       propertiesCount: properties.length,
       buyerDemandsCount: filteredDemands.length,

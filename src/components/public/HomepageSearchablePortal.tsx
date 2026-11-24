@@ -38,6 +38,7 @@ import {
   Video,
   Expand,
   Maximize2,
+  Compass,
   ArrowUpDown
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
@@ -143,6 +144,13 @@ export interface PropertyItem {
   hideDirectContact?: boolean;
   realName?: string;
   dossier?: Record<string, any>;
+  searchBadges?: string[];
+  distanceKm?: number | null;
+  isStrictMatch?: boolean;
+  isExpandedMatch?: boolean;
+  matchType?: string;
+  priceComparison?: string | null;
+  areaComparison?: string | null;
 }
 
 export interface BlogItem {
@@ -408,6 +416,24 @@ const PropertyCard = React.memo(function PropertyCard({
                       <span className="px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
                         Confidential
                       </span>
+                    )}
+                    {property.searchBadges && property.searchBadges.length > 0 && (
+                      property.searchBadges.map((badge, bIdx) => (
+                        <span
+                          key={bIdx}
+                          className={`shrink-0 px-2 py-0.5 rounded text-[10px] font-bold border shadow-2xs ${
+                            badge.includes('Exact')
+                              ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                              : badge.includes('Nearby')
+                              ? 'bg-blue-50 text-blue-800 border-blue-300'
+                              : badge.includes('Above')
+                              ? 'bg-orange-50 text-orange-800 border-orange-300'
+                              : 'bg-amber-50 text-amber-900 border-amber-300'
+                          }`}
+                        >
+                          {badge}
+                        </span>
+                      ))
                     )}
                   </span>
                 </Link>
@@ -681,6 +707,15 @@ export function HomepageSearchablePortal({
   const [blogCategory, setBlogCategory] = useState('All');
   const [showAllBlogs, setShowAllBlogs] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
+  const [phase2Data, setPhase2Data] = useState<{
+    isFallbackActivated?: boolean;
+    fallbackBanner?: string;
+    strictCount?: number;
+    expandedCount?: number;
+    totalCount?: number;
+    appliedFilters?: any;
+    noResultData?: any;
+  } | null>(null);
 
   // Tab State: Properties vs Active Registered Buyer Demands
   const [activeResultTab, setActiveResultTab] = useState<'properties' | 'buyer_leads'>(() => {
@@ -1190,9 +1225,10 @@ export function HomepageSearchablePortal({
   };
 
   const applyCorrection = (correctedText: string) => {
-    setCatalogueSearch(correctedText);
-    setSearchQuery(correctedText);
-    setActiveFilterQuery(correctedText);
+    const cleanText = correctedText.replace(/\b(\w+)(?:\s+\1\b)+/gi, '$1').trim();
+    setCatalogueSearch(cleanText);
+    setSearchQuery(cleanText);
+    setActiveFilterQuery(cleanText);
     setDidYouMean(null);
     setIsSearchSuggestionsOpen(false);
     setSelectedSuggestionIndex(-1);
@@ -1472,9 +1508,13 @@ export function HomepageSearchablePortal({
       });
     }
 
-    // Transaction Type Filtering (Buy vs Rent)
-    if (qTransactionType && qTransactionType !== 'All' && qTransactionType !== 'all') {
-      const ttLower = qTransactionType.toLowerCase().trim();
+    // Transaction Type Filtering (Buy vs Rent) - check explicit param and query criteria
+    const effectiveTransactionType = (qTransactionType && qTransactionType !== 'All' && qTransactionType !== 'all')
+      ? qTransactionType
+      : criteria.transactionType;
+
+    if (effectiveTransactionType) {
+      const ttLower = effectiveTransactionType.toLowerCase().trim();
       if (ttLower.includes('rent') || ttLower.includes('lease')) {
         list = list.filter((p) => {
           const lt = String(p.listingType || '').toLowerCase();
@@ -1483,8 +1523,21 @@ export function HomepageSearchablePortal({
       } else if (ttLower.includes('buy') || ttLower.includes('sale')) {
         list = list.filter((p) => {
           const lt = String(p.listingType || '').toLowerCase();
-          return lt.includes('sale') || lt.includes('buy') || !p.listingType;
+          return lt.includes('sale') || lt.includes('buy') || !lt;
         });
+      }
+    }
+
+    // Filter by SqFt range if specifically extracted from search query (e.g. 870-900 Sq.Ft.)
+    if (criteria.minSqft && criteria.maxSqft) {
+      const minVal = criteria.minSqft * 0.8;
+      const maxVal = criteria.maxSqft * 1.2;
+      const sizeFiltered = list.filter((p) => {
+        const s = p.sqftNum || parseFloat(String(p.sqft || '').replace(/,/g, '')) || 0;
+        return s >= minVal && s <= maxVal;
+      });
+      if (sizeFiltered.length > 0) {
+        list = sizeFiltered;
       }
     }
 
@@ -1763,6 +1816,11 @@ export function HomepageSearchablePortal({
       if (data.success) {
         if (Array.isArray(data.properties)) fetchedProperties = data.properties;
         if (Array.isArray(data.buyerDemands)) fetchedDemands = data.buyerDemands;
+        if (data.phase2) {
+          setPhase2Data(data.phase2);
+        } else {
+          setPhase2Data(null);
+        }
         if (isSellerText || data.ai?.primaryView === 'buyer_leads' || data.ai?.intent === 'seller') {
           setActiveResultTab('buyer_leads');
         } else {
@@ -1771,6 +1829,7 @@ export function HomepageSearchablePortal({
         setProperties(fetchedProperties);
         setBuyerDemands(fetchedDemands);
       } else {
+        setPhase2Data(null);
         const fallbackMatched = filterClientSide(qSearch, qLocality, qBhk, qPrice, qStatus, qPurpose, qTransactionType);
         setProperties(fallbackMatched);
       }
@@ -1789,6 +1848,7 @@ export function HomepageSearchablePortal({
   };
 
   const handleResetFilters = () => {
+    setPhase2Data(null);
     setSearchQuery('');
     setCatalogueSearch('');
     setActiveFilterQuery('');
@@ -2360,6 +2420,17 @@ export function HomepageSearchablePortal({
 
           {/* ================= SECTION 1: VERIFIED PROPERTIES ================= */}
           <div id="properties-section" className="space-y-6">
+            {/* Phase 2 Fallback Banner */}
+            {phase2Data?.isFallbackActivated && phase2Data?.fallbackBanner && (
+              <div className="bg-amber-50/95 border border-amber-300 rounded-2xl p-4 flex items-start gap-3 text-amber-950 shadow-xs">
+                <Sparkles className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                <div className="flex-1 text-xs sm:text-sm font-medium">
+                  <strong className="font-bold text-amber-900">Notice: </strong>
+                  {phase2Data.fallbackBanner}
+                </div>
+              </div>
+            )}
+
             {/* ================= 1. INSTITUTIONAL COMPARISON TABLE (SEEN FIRST) ================= */}
             {propertyViewMode === 'table' && sortedProperties.length > 0 && (
               <div id="properties-table-container" className="mb-4 sm:mb-8 bg-white rounded-xl sm:rounded-2xl lg:rounded-3xl shadow-sm border border-zinc-200 overflow-hidden w-full max-w-full">
@@ -3203,6 +3274,24 @@ export function HomepageSearchablePortal({
                                         Confidential
                                       </span>
                                     )}
+                                    {row.searchBadges && row.searchBadges.length > 0 && (
+                                      row.searchBadges.map((badge, bIdx) => (
+                                        <span
+                                          key={bIdx}
+                                          className={`shrink-0 px-1.5 py-0.2 rounded text-[9px] font-bold border ${
+                                            badge.includes('Exact')
+                                              ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                                              : badge.includes('Nearby')
+                                              ? 'bg-blue-50 text-blue-800 border-blue-300'
+                                              : badge.includes('Above')
+                                              ? 'bg-orange-50 text-orange-800 border-orange-300'
+                                              : 'bg-amber-50 text-amber-900 border-amber-300'
+                                          }`}
+                                        >
+                                          {badge}
+                                        </span>
+                                      ))
+                                    )}
                                   </span>
                                 </Link>
                                 {row.developer &&
@@ -3358,6 +3447,24 @@ export function HomepageSearchablePortal({
                                   <span className="shrink-0 px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
                                     Confidential
                                   </span>
+                                )}
+                                {row.searchBadges && row.searchBadges.length > 0 && (
+                                  row.searchBadges.map((badge, bIdx) => (
+                                    <span
+                                      key={bIdx}
+                                      className={`shrink-0 px-1.5 py-0.2 rounded text-[9px] font-bold border ${
+                                        badge.includes('Exact')
+                                          ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                                          : badge.includes('Nearby')
+                                          ? 'bg-blue-50 text-blue-800 border-blue-300'
+                                          : badge.includes('Above')
+                                          ? 'bg-orange-50 text-orange-800 border-orange-300'
+                                          : 'bg-amber-50 text-amber-900 border-amber-300'
+                                      }`}
+                                    >
+                                      {badge}
+                                    </span>
+                                  ))
                                 )}
                               </span>
                             </Link>
@@ -3700,33 +3807,129 @@ export function HomepageSearchablePortal({
                 </div>
               </div>
             ) : (
-              <div className="bg-white rounded-3xl border border-zinc-200/90 p-10 sm:p-14 text-center space-y-6 shadow-sm w-full max-w-xl mx-auto my-6">
+              <div className="bg-white rounded-3xl border border-zinc-200/90 p-8 sm:p-12 text-center space-y-6 shadow-sm w-full max-w-2xl mx-auto my-6">
                 <div className="w-16 h-16 rounded-2xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center mx-auto shadow-2xs">
                   <Search className="w-8 h-8 text-amber-600" />
                 </div>
-                <div className="space-y-1.5">
-                  <h3 className="text-2xl sm:text-3xl font-black text-zinc-950 tracking-tight">
-                    0 Properties Found
+                <div className="space-y-2">
+                  <h3 className="text-xl sm:text-2xl font-black text-zinc-950 tracking-tight">
+                    {selectedLocality !== 'All' || (searchQuery && /in\s+([a-zA-Z\s]+)/i.test(searchQuery))
+                      ? 'Property not found within 5 km of your selected location'
+                      : '0 Properties Found matching your criteria'}
                   </h3>
-                  <p className="text-zinc-500 text-sm font-medium">
-                    Please modify your search
+                  <p className="text-zinc-500 text-xs sm:text-sm font-medium max-w-md mx-auto">
+                    We could not find matching verified properties. Try one of the quick recovery actions below:
                   </p>
                 </div>
 
-                <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+                {/* 6 Actionable Recovery Buttons */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 pt-2 text-left">
+                  {/* 1. Change Location */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const input = document.getElementById('main-search-input') as HTMLInputElement | null;
+                      if (input) {
+                        input.focus();
+                        input.select();
+                      }
+                      setSelectedLocality('All');
+                    }}
+                    className="p-3 rounded-xl border border-zinc-200 hover:border-amber-400 bg-zinc-50 hover:bg-amber-50/50 transition cursor-pointer text-xs group"
+                  >
+                    <div className="font-bold text-zinc-900 group-hover:text-amber-900 flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                      <span>Change Location</span>
+                    </div>
+                    <p className="text-[11px] text-zinc-500 mt-0.5">Select a different corridor or locality</p>
+                  </button>
+
+                  {/* 2. Increase Search Radius */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedLocality('All');
+                      executeSearch({ search: searchQuery.replace(/\b(?:in\s+[a-zA-Z\s,]+)\b/gi, '').trim(), locality: 'All' });
+                    }}
+                    className="p-3 rounded-xl border border-zinc-200 hover:border-amber-400 bg-zinc-50 hover:bg-amber-50/50 transition cursor-pointer text-xs group"
+                  >
+                    <div className="font-bold text-zinc-900 group-hover:text-amber-900 flex items-center gap-1.5">
+                      <Compass className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                      <span>Increase Radius</span>
+                    </div>
+                    <p className="text-[11px] text-zinc-500 mt-0.5">Expand search to entire Pune region</p>
+                  </button>
+
+                  {/* 3. Modify Budget */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedPriceRange('All');
+                      executeSearch({ priceRange: 'All' });
+                    }}
+                    className="p-3 rounded-xl border border-zinc-200 hover:border-amber-400 bg-zinc-50 hover:bg-amber-50/50 transition cursor-pointer text-xs group"
+                  >
+                    <div className="font-bold text-zinc-900 group-hover:text-amber-900 flex items-center gap-1.5">
+                      <Tag className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                      <span>Modify Budget</span>
+                    </div>
+                    <p className="text-[11px] text-zinc-500 mt-0.5">Explore properties across all budgets</p>
+                  </button>
+
+                  {/* 4. Modify Property Area */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const cleaned = searchQuery.replace(/\b\d+[\d,\s-]*(?:sq\.?ft\.?|sqft|sq\s*feet|carpet)\b/gi, '').trim();
+                      setSearchQuery(cleaned);
+                      executeSearch({ search: cleaned });
+                    }}
+                    className="p-3 rounded-xl border border-zinc-200 hover:border-amber-400 bg-zinc-50 hover:bg-amber-50/50 transition cursor-pointer text-xs group"
+                  >
+                    <div className="font-bold text-zinc-900 group-hover:text-amber-900 flex items-center gap-1.5">
+                      <Maximize2 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                      <span>Modify Property Area</span>
+                    </div>
+                    <p className="text-[11px] text-zinc-500 mt-0.5">Remove strict Sq.Ft. filter</p>
+                  </button>
+
+                  {/* 5. Change Property Type */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedBhk('All');
+                      executeSearch({ bhk: 'All' });
+                    }}
+                    className="p-3 rounded-xl border border-zinc-200 hover:border-amber-400 bg-zinc-50 hover:bg-amber-50/50 transition cursor-pointer text-xs group"
+                  >
+                    <div className="font-bold text-zinc-900 group-hover:text-amber-900 flex items-center gap-1.5">
+                      <Building2 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                      <span>Change Type</span>
+                    </div>
+                    <p className="text-[11px] text-zinc-500 mt-0.5">View all property configurations</p>
+                  </button>
+
+                  {/* 6. Submit Property Requirement */}
                   <button
                     type="button"
                     onClick={() => setRequirementModalOpen(true)}
-                    className="w-full sm:w-auto bg-[#b9974f] hover:bg-[#a4823d] text-zinc-950 font-black px-8 py-3.5 rounded-xl text-sm shadow-md hover:shadow-lg transition cursor-pointer"
+                    className="p-3 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100/80 transition cursor-pointer text-xs group"
                   >
-                    Please Fill Your Requirement
+                    <div className="font-bold text-amber-950 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                      <span>Submit Requirement</span>
+                    </div>
+                    <p className="text-[11px] text-amber-800/80 mt-0.5">We source verified off-market matches</p>
                   </button>
+                </div>
+
+                <div className="pt-2">
                   <button
                     type="button"
                     onClick={handleResetFilters}
-                    className="text-xs font-bold text-zinc-500 hover:text-zinc-900 px-4 py-2 transition cursor-pointer"
+                    className="text-xs font-bold text-zinc-500 hover:text-zinc-900 px-4 py-2 transition cursor-pointer underline underline-offset-4"
                   >
-                    Reset Filters
+                    Reset All Filters
                   </button>
                 </div>
               </div>

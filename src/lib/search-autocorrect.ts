@@ -189,7 +189,6 @@ export const COMMON_TYPO_MAPPINGS: Record<string, string> = {
   khraadi: 'Kharadi',
 
   // Kalyani Nagar variants
-  kalyani: 'Kalyani Nagar',
   'kalyani nagr': 'Kalyani Nagar',
   kalyaninagar: 'Kalyani Nagar',
   kalyaninagr: 'Kalyani Nagar',
@@ -218,13 +217,28 @@ export const COMMON_TYPO_MAPPINGS: Record<string, string> = {
 
   // Real estate typologies & words
   comercial: 'Commercial',
+  commerical: 'Commercial',
   commercal: 'Commercial',
   comercl: 'Commercial',
   comercile: 'Commercial',
+  godwon: 'Godown',
+  indushed: 'Industrial Shed',
   offce: 'Office',
   ofice: 'Office',
   ofic: 'Office',
   offices: 'Office',
+  chiar: 'Chair',
+  'ofice chiar': 'Office Chair',
+  furnitur: 'Furniture',
+  cemant: 'Cement',
+  asain: 'Asian',
+  'asain paints': 'Asian Paints',
+  ceramik: 'Ceramic',
+  tiels: 'Tiles',
+  'ceramik tiels': 'Ceramic Tiles',
+  plywod: 'Plywood',
+  watrproofing: 'Waterproofing',
+  waterprofing: 'Waterproofing',
   penthaus: 'Penthouse',
   penthoues: 'Penthouse',
   penthose: 'Penthouse',
@@ -443,7 +457,7 @@ export function detectQueryAutocorrect(
   const replacedTerms: Array<{ original: string; corrected: string }> = [];
   let hasCorrection = false;
 
-  const correctedTokens = words.map((token) => {
+  const correctedTokens = words.map((token, idx) => {
     if (/^\s+$/.test(token) || token.length < 3) return token;
     // Strip punctuation for matching
     const cleanToken = token.replace(/[^a-zA-Z0-9]/g, '');
@@ -456,9 +470,29 @@ export function detectQueryAutocorrect(
       return token;
     }
 
+    // Lookahead: find next non-whitespace word to prevent double-appending words
+    let nextWord = '';
+    for (let j = idx + 1; j < words.length; j++) {
+      const w = words[j].replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+      if (w) {
+        nextWord = w;
+        break;
+      }
+    }
+
     // Check direct typo map (e.g. 'hinjwadi' -> 'Hinjewadi')
     const mapped = COMMON_TYPO_MAPPINGS[lowerClean];
     if (mapped && mapped.toLowerCase() !== lowerClean) {
+      const mappedWords = mapped.split(/\s+/);
+      if (mappedWords.length > 1 && nextWord && mappedWords[mappedWords.length - 1].toLowerCase() === nextWord) {
+        const singleMapped = mappedWords.slice(0, -1).join(' ');
+        if (singleMapped.toLowerCase() !== lowerClean) {
+          hasCorrection = true;
+          replacedTerms.push({ original: token, corrected: singleMapped });
+          return singleMapped;
+        }
+        return token;
+      }
       hasCorrection = true;
       replacedTerms.push({ original: token, corrected: mapped });
       return mapped;
@@ -467,6 +501,16 @@ export function detectQueryAutocorrect(
     // Check Levenshtein fuzzy match with strict thresholds
     const closest = findClosestTypo(cleanToken, fullDictionary, 2);
     if (closest && closest.toLowerCase() !== lowerClean) {
+      const closestWords = closest.split(/\s+/);
+      if (closestWords.length > 1 && nextWord && closestWords[closestWords.length - 1].toLowerCase() === nextWord) {
+        const singleClosest = closestWords.slice(0, -1).join(' ');
+        if (singleClosest.toLowerCase() !== lowerClean) {
+          hasCorrection = true;
+          replacedTerms.push({ original: token, corrected: singleClosest });
+          return singleClosest;
+        }
+        return token;
+      }
       hasCorrection = true;
       replacedTerms.push({ original: token, corrected: closest });
       return closest;
@@ -475,12 +519,13 @@ export function detectQueryAutocorrect(
     return token;
   });
 
-  const correctedQuery = correctedTokens.join('');
+  // Deduplicate any consecutive identical words (e.g. "Nagar Nagar", "Peth Peth")
+  let correctedQuery = correctedTokens.join('').replace(/\b(\w+)(?:\s+\1\b)+/gi, '$1').trim();
 
   return {
     hasCorrection: hasCorrection && correctedQuery.toLowerCase() !== rawQuery.toLowerCase().trim(),
     originalQuery: rawQuery,
-    correctedQuery: hasCorrection ? correctedQuery : rawQuery,
+    correctedQuery: hasCorrection && correctedQuery.toLowerCase() !== rawQuery.toLowerCase().trim() ? correctedQuery : rawQuery,
     replacedTerms
   };
 }
