@@ -1042,9 +1042,10 @@ export function PropertyDetailPageClient({
                 const superAreaVal = d.SuperAreaName || '';
                 // Carpet area is strictly shown if CarpetAreaName was explicitly provided,
                 // or if no Super Area was provided and property.sqft exists. Never equate them.
+                const rawSqftStr = property.sqft !== undefined && property.sqft !== null ? String(property.sqft) : '';
                 const carpetAreaVal = d.CarpetAreaName
                   ? d.CarpetAreaName
-                  : (!superAreaVal && property.sqft ? property.sqft.replace(/\s*carpet\s*/gi, '').trim() : '');
+                  : (!superAreaVal && rawSqftStr ? rawSqftStr.replace(/\s*carpet\s*/gi, '').trim() : '');
 
                 return (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3 bg-white p-3 sm:p-4 rounded-2xl border border-zinc-200 shadow-xs">

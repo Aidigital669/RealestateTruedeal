@@ -772,7 +772,7 @@ export default function SavedPropertiesPage() {
                               Layout / Carpet
                             </span>
                             <span className="text-[11px] sm:text-xs font-black text-zinc-900">
-                              {prop.bhk} &bull; {prop.sqft ? prop.sqft.replace(/\s*carpet\s*/gi, '').trim() : '1,200 Sq.Ft.'}
+                              {prop.bhk} &bull; {prop.sqft ? String(prop.sqft).replace(/\s*carpet\s*/gi, '').trim() : '1,200 Sq.Ft.'}
                             </span>
                           </div>
                         </div>

@@ -358,9 +358,10 @@ export function PropertyDetailsModal({
                     : 'Possession on Request';
 
                   const superAreaVal = d.SuperAreaName || '';
+                  const rawSqftStr = property?.sqft !== undefined && property?.sqft !== null ? String(property.sqft) : '';
                   const carpetAreaVal = d.CarpetAreaName
                     ? d.CarpetAreaName
-                    : (!superAreaVal && property.sqft ? property.sqft.replace(/\s*carpet\s*/gi, '').trim() : '');
+                    : (!superAreaVal && rawSqftStr ? rawSqftStr.replace(/\s*carpet\s*/gi, '').trim() : '');
 
                   return (
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">

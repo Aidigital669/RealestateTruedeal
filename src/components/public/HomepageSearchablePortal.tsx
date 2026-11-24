@@ -212,15 +212,17 @@ export function formatPriceDisplay(val: string | number | undefined | null): str
   return `₹${num.toLocaleString('en-IN')}`;
 }
 
-export function cleanSqft(sqft?: string): string {
-  if (!sqft) return '1,200 Sq.Ft.';
-  return sqft.replace(/\s*carpet\s*/gi, '').trim();
+export function cleanSqft(sqft?: string | number | null): string {
+  if (sqft === undefined || sqft === null || sqft === '') return '1,200 Sq.Ft.';
+  const str = typeof sqft === 'number' ? `${sqft.toLocaleString('en-IN')} Sq.Ft.` : String(sqft);
+  return str.replace(/\s*carpet\s*/gi, '').trim() || '1,200 Sq.Ft.';
 }
 
 export function getPropertySqftNumber(p: PropertyItem): number {
   if (typeof p.sqftNum === 'number' && !isNaN(p.sqftNum) && p.sqftNum > 0) return p.sqftNum;
-  if (!p.sqft) return 0;
-  const match = p.sqft.replace(/,/g, '').match(/\d+(\.\d+)?/);
+  if (p.sqft === undefined || p.sqft === null || p.sqft === '') return 0;
+  const str = String(p.sqft);
+  const match = str.replace(/,/g, '').match(/\d+(\.\d+)?/);
   return match ? parseFloat(match[0]) : 0;
 }
 
