@@ -238,7 +238,8 @@ export async function fetchAllProperties(forceFresh = false): Promise<PropertyIt
           employeeName: p.employeeName || dossier.EmployeeName || null,
           employeeMobile: p.employeeMobile || dossier.EmployeeMobile || null,
           employeeEmail: p.employeeEmail || dossier.EmployeeEmail || null,
-          businessPurposes: purposesMap[String(p.id)] || []
+          businessPurposes: purposesMap[String(p.id)] || [],
+          ...dossier
         };
       });
 

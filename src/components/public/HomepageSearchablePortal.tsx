@@ -151,6 +151,55 @@ export interface PropertyItem {
   matchType?: string;
   priceComparison?: string | null;
   areaComparison?: string | null;
+  // Exact Excel 48 Headers
+  Title?: string | null;
+  RefNumber?: string | null;
+  Lease_Sale?: string | null;
+  PropertyTypeName?: string | null;
+  PropertyName?: string | null;
+  AddressName?: string | null;
+  FlatNo?: string | number | null;
+  BuildingName?: string | null;
+  Landmark?: string | null;
+  SocietyName?: string | null;
+  Street?: string | null;
+  LocationName?: string | null;
+  CityName?: string | null;
+  StateName?: string | null;
+  FurnishingName?: string | null;
+  SuperAreaName?: string | null;
+  BuiltAreaName?: string | null;
+  CarpetAreaName?: string | null;
+  PlotSizeName?: string | null;
+  MaxAreaName?: string | null;
+  MinAreaName?: string | null;
+  PricePerUnitArea?: string | number | null;
+  ExpectedPrice?: string | number | null;
+  DepositePrice?: string | number | null;
+  CustomerFullName?: string | null;
+  CustomerMobile?: string | null;
+  CustomerEmail?: string | null;
+  Description?: string | null;
+  EmployeeName?: string | null;
+  EmployeeMobile?: string | null;
+  EmployeeEmail?: string | null;
+  PropertyAge?: string | null;
+  SourceName?: string | null;
+  TransactionName?: string | null;
+  PossessionName?: string | null;
+  Status?: string | null;
+  ParkingDetails?: string | null;
+  FloorNumber?: string | null;
+  SearchKeyword?: string | null;
+  FacingText?: string | null;
+  BranchName?: string | null;
+  ROI?: string | null;
+  RentPM?: string | number | null;
+  RentStartDate?: string | null;
+  LockinPeriod?: string | null;
+  LeasePeriod?: string | null;
+  PropertyTax?: string | null;
+  MaintainCharges?: string | null;
 }
 
 export interface BlogItem {
