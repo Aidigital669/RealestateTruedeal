@@ -1038,6 +1038,7 @@ export function PropertyDetailPageClient({
                   : 'Possession on Request';
 
                 const unitVal = d.FlatNo ? String(d.FlatNo) : '';
+                const bldgVal = (d.BuildingName || (property as any)?.buildingName || '').toString().trim();
                 const superAreaVal = d.SuperAreaName || '';
                 // Carpet area is strictly shown if CarpetAreaName was explicitly provided,
                 // or if no Super Area was provided and property.sqft exists. Never equate them.
@@ -1046,11 +1047,18 @@ export function PropertyDetailPageClient({
                   : (!superAreaVal && property.sqft ? property.sqft.replace(/\s*carpet\s*/gi, '').trim() : '');
 
                 return (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3 bg-white p-3 sm:p-4 rounded-2xl border border-zinc-200 shadow-xs">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3 bg-white p-3 sm:p-4 rounded-2xl border border-zinc-200 shadow-xs">
                     <div className="p-2 sm:p-3 bg-zinc-50 rounded-xl border border-zinc-100 min-w-0">
                       <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Typology</span>
                       <span className="text-xs sm:text-sm font-black text-zinc-900 block mt-0.5 truncate">{property.bhk}</span>
                     </div>
+
+                    {bldgVal && (
+                      <div className="p-2 sm:p-3 bg-zinc-50 rounded-xl border border-zinc-100 min-w-0">
+                        <span className="text-[10px] font-bold text-blue-700 uppercase tracking-wider block">Building</span>
+                        <span className="text-xs sm:text-sm font-black text-zinc-900 block mt-0.5 truncate" title={bldgVal}>{bldgVal}</span>
+                      </div>
+                    )}
 
                     {unitVal && (
                       <div className="p-2 sm:p-3 bg-zinc-50 rounded-xl border border-zinc-100 min-w-0">
@@ -1234,9 +1242,9 @@ export function PropertyDetailPageClient({
                     case 'transaction':
                       return d.TransactionName || d.Lease_Sale || property?.listingType || undefined;
                     case 'building name':
-                      return d.BuildingName || d.PropertyName || undefined;
+                      return d.BuildingName || undefined;
                     case 'property/developer name':
-                      return d.PropertyName || ((property?.developer && !/anv\b/i.test(property.developer)) ? property.developer : undefined) || d.BuildingName || undefined;
+                      return d.PropertyName || ((property?.developer && !/anv\b/i.test(property.developer)) ? property.developer : undefined) || undefined;
                     case 'super area':
                     case 'super built-up area':
                     case 'total retail leasable area':

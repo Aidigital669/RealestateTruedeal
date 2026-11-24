@@ -130,7 +130,7 @@ export function PropertyDetailsModal({
     add('Ref Number', d.RefNumber);
     add('Property Title', property?.name || d.Title);
     add('Unit No.', d.FlatNo);
-    add('Building Name', d.BuildingName || d.PropertyName);
+    add('Building Name', d.BuildingName);
     add('Transaction', d.TransactionName || d.Lease_Sale || property?.listingType);
     add('Property Type', d.PropertyTypeName || property?.bhk);
     add('Super Built-up Area', d.SuperAreaName);
@@ -368,7 +368,12 @@ export function PropertyDetailsModal({
                         <span className="text-[10px] text-zinc-400 font-bold uppercase block">Typology</span>
                         <span className="font-extrabold text-zinc-900 truncate block mt-0.5">{d.PropertyTypeName || property.bhk}</span>
                       </div>
-                      {d.FlatNo ? (
+                      {d.BuildingName ? (
+                        <div className="bg-zinc-50 p-2.5 rounded-xl border border-zinc-200">
+                          <span className="text-[10px] text-blue-700 font-bold uppercase block">Building</span>
+                          <span className="font-extrabold text-zinc-900 truncate block mt-0.5" title={d.BuildingName}>{d.BuildingName}</span>
+                        </div>
+                      ) : d.FlatNo ? (
                         <div className="bg-zinc-50 p-2.5 rounded-xl border border-zinc-200">
                           <span className="text-[10px] text-amber-700 font-bold uppercase block">Unit No.</span>
                           <span className="font-extrabold text-zinc-900 truncate block mt-0.5">{d.FlatNo}</span>

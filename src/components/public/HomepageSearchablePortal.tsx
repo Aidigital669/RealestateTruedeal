@@ -109,6 +109,7 @@ export interface PropertyItem {
   slug?: string;
   name: string;
   developer: string;
+  buildingName?: string;
   locality?: string;
   location: string;
   price: string;
@@ -361,17 +362,22 @@ const PropertyCard = React.memo(function PropertyCard({
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2.5 sm:gap-3 pb-2.5 sm:pb-3 border-b border-zinc-100">
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5 sm:gap-2 mb-1 sm:mb-1.5 flex-wrap">
-                {property.developer &&
-                  !/anv\b/i.test(property.developer) && (
+                {(() => {
+                  const bldgOrDev = (property.developer && !/anv\b/i.test(property.developer))
+                    ? property.developer
+                    : (property.buildingName || (property as any)?.dossier?.BuildingName);
+                  if (!bldgOrDev) return null;
+                  return (
                     <span
                       className={`text-[9px] sm:text-[10px] font-bold uppercase tracking-wider px-1.5 sm:px-2 py-0.5 rounded-md border ${property.isCommercial || property.bhk.includes('Commercial')
                         ? 'text-blue-950 bg-blue-50 border-blue-200/60'
                         : 'text-amber-800 bg-amber-50 border-amber-200/60'
                         }`}
                     >
-                      {property.developer}
+                      {bldgOrDev}
                     </span>
-                  )}
+                  );
+                })()}
                 <span className="text-[11px] sm:text-xs font-semibold text-zinc-500 flex items-center gap-1">
                   <MapPin className="w-3 h-3 text-amber-600 shrink-0" />
                   <span className="truncate">{property.location}</span>
@@ -3342,13 +3348,18 @@ export function HomepageSearchablePortal({
                                 )}
                               </span>
                             </Link>
-                            {row.developer &&
-                              !/anv\b/i.test(row.developer) && (
+                            {(() => {
+                              const bldgOrDev = (row.developer && !/anv\b/i.test(row.developer))
+                                ? row.developer
+                                : (row.buildingName || (row as any)?.dossier?.BuildingName);
+                              if (!bldgOrDev) return null;
+                              return (
                                 <div className="text-[11px] text-zinc-500 font-medium truncate mt-0.5 flex items-center gap-1">
                                   <Building2 className="w-3 h-3 text-zinc-400 shrink-0" />
-                                  <span>{row.developer}</span>
+                                  <span>{bldgOrDev}</span>
                                 </div>
-                              )}
+                              );
+                            })()}
                           </div>
                         </div>
 
@@ -3519,15 +3530,20 @@ export function HomepageSearchablePortal({
                             {cleanSqft(hoveredTableProperty.property.sqft)}
                           </span>
                         </div>
-                        {hoveredTableProperty.property.developer &&
-                          !/anv\b/i.test(hoveredTableProperty.property.developer) && (
+                        {(() => {
+                          const bldgOrDev = (hoveredTableProperty.property.developer && !/anv\b/i.test(hoveredTableProperty.property.developer))
+                            ? hoveredTableProperty.property.developer
+                            : (hoveredTableProperty.property.buildingName || (hoveredTableProperty.property as any)?.dossier?.BuildingName);
+                          if (!bldgOrDev) return null;
+                          return (
                             <div>
-                              <span className="text-[9px] uppercase tracking-wider text-zinc-400 font-bold block">Developer</span>
+                              <span className="text-[9px] uppercase tracking-wider text-zinc-400 font-bold block">Building / Project</span>
                               <span className="font-semibold text-zinc-800 truncate block text-[11px]">
-                                {hoveredTableProperty.property.developer}
+                                {bldgOrDev}
                               </span>
                             </div>
-                          )}
+                          );
+                        })()}
                         <div>
                           <span className="text-[9px] uppercase tracking-wider text-zinc-400 font-bold block">MahaRERA</span>
                           <span className="font-mono font-bold text-emerald-700 text-[10px] truncate block">

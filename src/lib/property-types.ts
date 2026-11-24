@@ -4,6 +4,7 @@ export interface PropertyItem {
   name: string;
   realName?: string;
   developer: string;
+  buildingName?: string;
   locality?: string;
   location: string;
   price: string;

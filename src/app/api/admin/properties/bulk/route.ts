@@ -225,29 +225,7 @@ function constructPropertyTitle(row: any, category: string, location: string, ar
   let namePart = '';
 
   if (bldg && !isCustomerOrAgent(bldg, cust)) {
-    const bldgLower = bldg.toLowerCase();
-    const propLower = prop.toLowerCase();
-    if (bldgLower === 'hospital') {
-      namePart = prop && !isCustomerOrAgent(prop, cust) ? prop : `${category} Facility`;
-    } else if (bldgLower === 'hospital undri') {
-      namePart = 'Hospital Facility';
-    } else if (bldgLower === 'residences' && propLower === 'mantra') {
-      namePart = 'Mantra Residences';
-    } else if (bldgLower === 'prelease baner') {
-      namePart = 'Pre-Leased Commercial Showroom';
-    } else if (bldgLower === 'prelease restaurant') {
-      namePart = 'Pre-Leased Restaurant & Commercial Space';
-    } else if (bldgLower === 'business') {
-      namePart = prop ? prop : 'Commercial Business Bay';
-    } else if (bldgLower === 'sbh') {
-      namePart = 'Solitaire Business Hub (SBH)';
-    } else if (bldgLower === 'poona wala') {
-      namePart = 'Poonawalla Business Towers';
-    } else if (bldgLower === 'scared world mall') {
-      namePart = 'Sacred World Mall';
-    } else {
-      namePart = bldg;
-    }
+    namePart = bldg;
   } else if (prop && !isCustomerOrAgent(prop, cust)) {
     namePart = prop;
   }
@@ -269,10 +247,6 @@ function detectDeveloper(bldg: string, prop: string, rowDev: string): string {
   if (rowDev && rowDev.trim()) {
     const trimmed = rowDev.trim();
     if (!/anv\b/i.test(trimmed)) return trimmed;
-  }
-  const combined = `${bldg} ${prop}`.toLowerCase();
-  for (const dev of DEVELOPER_PATTERNS) {
-    if (dev.match.test(combined)) return dev.name;
   }
   return '';
 }

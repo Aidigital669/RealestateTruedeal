@@ -20,7 +20,7 @@ export const EXCEL_48_COLUMNS: Excel48ColumnDef[] = [
     shortLabel: 'Title',
     group: 'Core',
     type: 'text',
-    aliases: ['title', 'propertytitle', 'projectname', 'heading', 'propertyname']
+    aliases: ['title', 'propertytitle', 'heading', 'proptitle', 'listingtitle']
   },
   {
     key: 'RefNumber',
@@ -52,7 +52,7 @@ export const EXCEL_48_COLUMNS: Excel48ColumnDef[] = [
     shortLabel: 'Project',
     group: 'Core',
     type: 'text',
-    aliases: ['propertyname', 'property', 'project', 'project_name', 'society', 'building']
+    aliases: ['propertyname', 'projectname', 'project', 'project_name', 'property']
   },
 
   // 6-14: Address & Geography
@@ -78,7 +78,7 @@ export const EXCEL_48_COLUMNS: Excel48ColumnDef[] = [
     shortLabel: 'Building',
     group: 'Location',
     type: 'text',
-    aliases: ['buildingname', 'building', 'tower', 'towername', 'complex', 'wing']
+    aliases: ['buildingname', 'building', 'tower', 'towername', 'complex', 'wing', 'bldg', 'bldgname', 'building_name', 'tower_name']
   },
   {
     key: 'Landmark',
@@ -94,7 +94,7 @@ export const EXCEL_48_COLUMNS: Excel48ColumnDef[] = [
     shortLabel: 'Society',
     group: 'Location',
     type: 'text',
-    aliases: ['societyname', 'society', 'community', 'township']
+    aliases: ['societyname', 'society', 'community', 'township', 'society_name']
   },
   {
     key: 'Street',
@@ -110,7 +110,7 @@ export const EXCEL_48_COLUMNS: Excel48ColumnDef[] = [
     shortLabel: 'Location',
     group: 'Location',
     type: 'text',
-    aliases: ['locationname', 'location', 'locality', 'suburb', 'micromarket', 'area']
+    aliases: ['locationname', 'location', 'locality', 'suburb', 'micromarket', 'areaname']
   },
   {
     key: 'CityName',

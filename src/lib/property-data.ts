@@ -168,6 +168,7 @@ export async function fetchAllProperties(forceFresh = false): Promise<PropertyIt
           customCostSheet: dossier.customCostSheet,
           legalVettingText,
           developer: (p.developer && !/anv\b/i.test(p.developer)) ? p.developer : '',
+          buildingName: dossier.BuildingName || '',
           locality: p.locality,
           location: p.location || `${p.locality}, Pune, Maharashtra`,
           price: displayPrice,

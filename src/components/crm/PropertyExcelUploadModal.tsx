@@ -44,6 +44,7 @@ export interface ParsedPropertyRow {
   title: string;
   category: string;
   location: string;
+  buildingName?: string;
   price: string | number;
   priceFormatted: string;
   status: string;
@@ -435,29 +436,7 @@ function constructPropertyTitle(row: any, category: string, location: string, ar
   let namePart = '';
 
   if (bldg && !isCustomerOrAgent(bldg, cust)) {
-    const bldgLower = bldg.toLowerCase();
-    const propLower = prop.toLowerCase();
-    if (bldgLower === 'hospital') {
-      namePart = prop && !isCustomerOrAgent(prop, cust) ? prop : `${category} Facility`;
-    } else if (bldgLower === 'hospital undri') {
-      namePart = 'Hospital Facility';
-    } else if (bldgLower === 'residences' && propLower === 'mantra') {
-      namePart = 'Mantra Residences';
-    } else if (bldgLower === 'prelease baner') {
-      namePart = 'Pre-Leased Commercial Showroom';
-    } else if (bldgLower === 'prelease restaurant') {
-      namePart = 'Pre-Leased Restaurant & Commercial Space';
-    } else if (bldgLower === 'business') {
-      namePart = prop ? prop : 'Commercial Business Bay';
-    } else if (bldgLower === 'sbh') {
-      namePart = 'Solitaire Business Hub (SBH)';
-    } else if (bldgLower === 'poona wala') {
-      namePart = 'Poonawalla Business Towers';
-    } else if (bldgLower === 'scared world mall') {
-      namePart = 'Sacred World Mall';
-    } else {
-      namePart = bldg;
-    }
+    namePart = bldg;
   } else if (prop && !isCustomerOrAgent(prop, cust)) {
     namePart = prop;
   }
@@ -490,10 +469,6 @@ function detectDeveloper(bldg: string, prop: string, rowDev: string): string {
   if (rowDev && rowDev.trim()) {
     const trimmed = rowDev.trim();
     if (!/anv\b/i.test(trimmed)) return trimmed;
-  }
-  const combined = `${bldg} ${prop}`.toLowerCase();
-  for (const dev of DEVELOPER_PATTERNS) {
-    if (dev.match.test(combined)) return dev.name;
   }
   return '';
 }
@@ -720,11 +695,14 @@ export function PropertyExcelUploadModal({
 
             const publishStatus = (row["Publish Status"] || row.publishStatus || "Published").toString().trim();
 
+            const bldgName = (fields48.BuildingName || row['BuildingName'] || row['Building Name'] || row['Building'] || '').toString().trim();
+
             return {
               id: `row-${idx}-${Date.now()}`,
               title,
               category,
               location: rawLoc,
+              buildingName: bldgName,
               price,
               priceFormatted,
               status,
@@ -1377,7 +1355,8 @@ export function PropertyExcelUploadModal({
                           <thead className="bg-zinc-50 border-b border-zinc-200 sticky top-0 z-10 text-[11px] font-bold text-zinc-600">
                             <tr>
                               <th className="py-2.5 px-3">#</th>
-                              <th className="py-2.5 px-3">Property Name</th>
+                              <th className="py-2.5 px-3">Property Title</th>
+                              <th className="py-2.5 px-3">Building / Project</th>
                               <th className="py-2.5 px-3">Unit No.</th>
                               <th className="py-2.5 px-3">Category</th>
                               <th className="py-2.5 px-3">Location</th>
@@ -1392,8 +1371,17 @@ export function PropertyExcelUploadModal({
                             {filteredPreview.map((row, idx) => (
                               <tr key={row.id} className="hover:bg-zinc-50/80 transition">
                                 <td className="py-2.5 px-3 font-mono text-[10px] text-zinc-400">{idx + 1}</td>
-                                <td className="py-2.5 px-3 font-semibold text-zinc-900 max-w-[200px] truncate" title={row.title}>
+                                <td className="py-2.5 px-3 font-semibold text-zinc-900 max-w-[180px] truncate" title={row.title}>
                                   {row.title}
+                                </td>
+                                <td className="py-2.5 px-3">
+                                  {row.buildingName || row.extracted48?.BuildingName ? (
+                                    <span className="px-2 py-0.5 bg-blue-50 text-blue-900 border border-blue-200/60 rounded text-[11px] font-bold truncate max-w-[140px] inline-block" title={row.buildingName || row.extracted48?.BuildingName}>
+                                      {row.buildingName || row.extracted48?.BuildingName}
+                                    </span>
+                                  ) : (
+                                    <span className="text-zinc-400 text-[11px]">—</span>
+                                  )}
                                 </td>
                                 <td className="py-2.5 px-3">
                                   {row.extracted48?.FlatNo ? (

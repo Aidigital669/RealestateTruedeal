@@ -532,6 +532,7 @@ Return ONLY valid JSON (no markdown formatting).`;
         slug: p.slug || getPropertySlug({ id: p.id, name: p.name, locality: p.locality }),
         name: p.name,
         developer: (p.developer && !/anv\b/i.test(p.developer)) ? p.developer : '',
+        buildingName: d.BuildingName || '',
         locality: p.locality,
         location: p.location || `${p.locality}, Pune, Maharashtra`,
         price: formattedPrice,
