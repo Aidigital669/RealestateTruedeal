@@ -6,20 +6,30 @@ const globalForPg = globalThis as unknown as {
   pgPool: pg.Pool | undefined;
 };
 
-export const pool =
-  globalForPg.pgPool ??
-  new pg.Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false },
-    max: 10,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 10000
-  });
+export function getPool(): pg.Pool {
+  if (!globalForPg.pgPool) {
+    globalForPg.pgPool = new pg.Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: { rejectUnauthorized: false },
+      max: 10,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 10000
+    });
+  }
+  return globalForPg.pgPool;
+}
 
-globalForPg.pgPool = pool;
+export const pool = new Proxy({} as pg.Pool, {
+  get(_, prop) {
+    const p = getPool();
+    const val = (p as any)[prop];
+    return typeof val === 'function' ? val.bind(p) : val;
+  }
+});
 
 export async function query<T = any>(text: string, params?: any[]): Promise<T[]> {
-  const res = await pool.query(text, params);
+  const p = getPool();
+  const res = await p.query(text, params);
   return res.rows;
 }
 
