@@ -759,7 +759,37 @@ export async function POST(req: NextRequest) {
         bathrooms,
         category,
         videoUrl: videoUrl || null,
-        imageUrl: imageList[0] || getCategoryPhoto(category, index)
+        imageUrl: imageList[0] || getCategoryPhoto(category, index),
+        refNumber: fields48.RefNumber || row.refNumber || null,
+        propertyName: fields48.PropertyName || row.propertyName || null,
+        buildingName: fields48.BuildingName || bldg || null,
+        plotArea: numPlotArea,
+        minArea: fields48.MinAreaName ? parseAreaNumber(fields48.MinAreaName) : null,
+        maxArea: fields48.MaxAreaName ? parseAreaNumber(fields48.MaxAreaName) : null,
+        ratePsf: fields48.PricePerUnitArea ? parseAreaNumber(fields48.PricePerUnitArea) : null,
+        securityDeposit: deposit ? parseIndianPriceNumber(deposit) : null,
+        maintenanceCharges: maintenance || null,
+        propertyTax: fields48.PropertyTax || null,
+        facing: facing || null,
+        propertyAge: fields48.PropertyAge || null,
+        transactionClassification: fields48.TransactionName || null,
+        possessionName: rawPossession || null,
+        availabilityStatus: rawStatus || null,
+        roi: roi || null,
+        monthlyRent: rent && rent > 0 ? rent : null,
+        rentStartDate: fields48.RentStartDate || null,
+        lockinPeriod: lockin || null,
+        leasePeriod: leasePeriod || null,
+        searchKeywords: fields48.SearchKeyword || null,
+        branchName: fields48.BranchName || null,
+        sourceName: fields48.SourceName || null,
+        customerName: custName || null,
+        customerMobile: custPhone || null,
+        customerEmail: fields48.CustomerEmail || null,
+        employeeName: empName || null,
+        employeeMobile: fields48.EmployeeMobile || null,
+        employeeEmail: fields48.EmployeeEmail || null,
+        dossierData: JSON.stringify(dossierPayload)
       });
     }
 
@@ -771,9 +801,9 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    // 4. Chunked Multi-Row Parameterized Insert (200 rows per chunk: safe, atomic, 100x faster!)
-    const DB_CHUNK_SIZE = 200;
-    const COLS_PER_ROW = 20;
+    // 4. Chunked Multi-Row Parameterized Insert (100 rows per chunk with all 48 fields)
+    const DB_CHUNK_SIZE = 100;
+    const COLS_PER_ROW = 50;
 
     for (let c = 0; c < preparedProps.length; c += DB_CHUNK_SIZE) {
       const chunk = preparedProps.slice(c, c + DB_CHUNK_SIZE);
@@ -787,7 +817,14 @@ export async function POST(req: NextRequest) {
           $${offset + 6}, $${offset + 7}, $${offset + 8}, $${offset + 9}, $${offset + 10},
           $${offset + 11}, $${offset + 12}, $${offset + 13}, $${offset + 14}, $${offset + 15},
           $${offset + 16}, 'Sq.Ft.', $${offset + 17}, $${offset + 18}, $${offset + 19},
-          $${offset + 20}, false, NOW(), NOW()
+          $${offset + 20}, false,
+          $${offset + 21}, $${offset + 22}, $${offset + 23}, $${offset + 24}, $${offset + 25},
+          $${offset + 26}, $${offset + 27}, $${offset + 28}, $${offset + 29}, $${offset + 30},
+          $${offset + 31}, $${offset + 32}, $${offset + 33}, $${offset + 34}, $${offset + 35},
+          $${offset + 36}, $${offset + 37}, $${offset + 38}, $${offset + 39}, $${offset + 40},
+          $${offset + 41}, $${offset + 42}, $${offset + 43}, $${offset + 44}, $${offset + 45},
+          $${offset + 46}, $${offset + 47}, $${offset + 48}, $${offset + 49}, $${offset + 50}::jsonb,
+          NOW(), NOW()
         )`);
 
         params.push(
@@ -810,7 +847,37 @@ export async function POST(req: NextRequest) {
           p.bedrooms,
           p.bathrooms,
           p.category,
-          p.videoUrl
+          p.videoUrl,
+          p.refNumber,
+          p.propertyName,
+          p.buildingName,
+          p.plotArea,
+          p.minArea,
+          p.maxArea,
+          p.ratePsf,
+          p.securityDeposit,
+          p.maintenanceCharges,
+          p.propertyTax,
+          p.facing,
+          p.propertyAge,
+          p.transactionClassification,
+          p.possessionName,
+          p.availabilityStatus,
+          p.roi,
+          p.monthlyRent,
+          p.rentStartDate,
+          p.lockinPeriod,
+          p.leasePeriod,
+          p.searchKeywords,
+          p.branchName,
+          p.sourceName,
+          p.customerName,
+          p.customerMobile,
+          p.customerEmail,
+          p.employeeName,
+          p.employeeMobile,
+          p.employeeEmail,
+          p.dossierData
         );
       });
 
@@ -820,11 +887,19 @@ export async function POST(req: NextRequest) {
           "listingType", status, "publishStatus", description, address,
           price, rent, floor, furnishing, parking,
           "carpetArea", "areaUnit", bedrooms, bathrooms, "configuration",
-          "videoUrl", "isFeatured", "createdAt", "updatedAt"
+          "videoUrl", "isFeatured",
+          "refNumber", "propertyName", "buildingName", "plotArea", "minArea",
+          "maxArea", "ratePsf", "securityDeposit", "maintenanceCharges", "propertyTax",
+          facing, "propertyAge", "transactionClassification", "possessionName", "availabilityStatus",
+          roi, "monthlyRent", "rentStartDate", "lockinPeriod", "leasePeriod",
+          "searchKeywords", "branchName", "sourceName", "customerName", "customerMobile",
+          "customerEmail", "employeeName", "employeeMobile", "employeeEmail", "dossierData",
+          "createdAt", "updatedAt"
         )
         VALUES ${valueClauses.join(', ')}
         ON CONFLICT (slug) DO UPDATE SET
           title = EXCLUDED.title,
+          "dossierData" = EXCLUDED."dossierData",
           "updatedAt" = NOW()
         RETURNING id, title;`,
         params

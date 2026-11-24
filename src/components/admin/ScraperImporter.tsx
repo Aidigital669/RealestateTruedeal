@@ -25,8 +25,18 @@ import {
   Edit2,
   X,
   ShieldCheck,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Table,
+  Eye,
+  Download,
+  CheckSquare,
+  ChevronLeft,
+  ChevronRight,
+  Filter,
+  Info
 } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import { EXCEL_48_COLUMNS, extract48Fields, format48ValueForTable } from '@/lib/excel-48-extractor';
 import { EditPropertyModal } from '@/components/admin/Modals';
 import { formatPropertyDescription } from '@/lib/dossier-parser';
 
@@ -64,7 +74,24 @@ interface ScraperImporterProps {
 }
 
 export function ScraperImporter({ onImportComplete, showToast }: ScraperImporterProps) {
-  const [activeMode, setActiveMode] = useState<'link' | 'pdf' | 'inventory'>('link');
+  const [activeMode, setActiveMode] = useState<'excel' | 'link' | 'pdf' | 'inventory'>('excel');
+
+  // Excel Importer State (48 Schema Fields)
+  const [excelFile, setExcelFile] = useState<File | null>(null);
+  const [isParsingExcel, setIsParsingExcel] = useState(false);
+  const [excelParseError, setExcelParseError] = useState<string | null>(null);
+  const [extractedExcelRows, setExtractedExcelRows] = useState<any[]>([]);
+  const [excelSearchQuery, setExcelSearchQuery] = useState('');
+  const [excelFilterTx, setExcelFilterTx] = useState<'All' | 'Sale' | 'Rent'>('All');
+  const [excelPage, setExcelPage] = useState(1);
+  const [excelRowsPerPage, setExcelRowsPerPage] = useState(10);
+  const [excelViewMode, setExcelViewMode] = useState<'summary' | 'full48'>('summary');
+  const [previewRowForDescription, setPreviewRowForDescription] = useState<any | null>(null);
+  const [matchedSchemaColumns, setMatchedSchemaColumns] = useState<string[]>([]);
+  const [isImportingExcel, setIsImportingExcel] = useState(false);
+  const [excelImportProgress, setExcelImportProgress] = useState<{ processed: number; total: number } | null>(null);
+  const [isDraggingExcel, setIsDraggingExcel] = useState(false);
+  const excelInputRef = useRef<HTMLInputElement>(null);
 
   // Link Scraper State
   const [url, setUrl] = useState('');
@@ -233,6 +260,209 @@ export function ScraperImporter({ onImportComplete, showToast }: ScraperImporter
     setIsEditModalOpen(false);
     setEditingItem(null);
     showToast?.('Listing updated successfully!');
+  };
+
+  // Process and extract 48 fields from uploaded Excel spreadsheet
+  const processExcelUpload = async (file: File) => {
+    setIsParsingExcel(true);
+    setExcelParseError(null);
+    setExtractedExcelRows([]);
+    try {
+      const buffer = await file.arrayBuffer();
+      const workbook = XLSX.read(buffer, { type: 'array' });
+      if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+        throw new Error('The uploaded Excel file does not contain any worksheets.');
+      }
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      const rawRows: any[] = XLSX.utils.sheet_to_json(sheet);
+
+      if (!rawRows || rawRows.length === 0) {
+        throw new Error('No data rows found in the selected worksheet.');
+      }
+
+      // Detect matched headers from the first row
+      const detectedKeys = Object.keys(rawRows[0] || {});
+      const matchedSet = new Set<string>();
+      for (const col of EXCEL_48_COLUMNS) {
+        for (const k of detectedKeys) {
+          const cleanK = k.toLowerCase().replace(/[^a-z0-9]/g, '');
+          const colAlpha = col.key.toLowerCase().replace(/[^a-z0-9]/g, '');
+          if (cleanK === colAlpha || col.aliases.some(a => a.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanK)) {
+            matchedSet.add(col.key);
+            break;
+          }
+        }
+      }
+      setMatchedSchemaColumns(Array.from(matchedSet));
+
+      // Extract & normalize all 48 fields for each row
+      const processed = rawRows.map((row, idx) => {
+        const fields48 = extract48Fields(row);
+        
+        // Count non-empty fields in this row
+        let populatedCount = 0;
+        Object.values(fields48).forEach((val) => {
+          if (val !== undefined && val !== null && String(val).trim() !== '') {
+            populatedCount++;
+          }
+        });
+
+        // Determine title
+        const rawTitle = fields48.Title || row.title || row.Title || '';
+        const rawBldg = fields48.BuildingName || row.BuildingName || '';
+        const rawLoc = fields48.LocationName || fields48.AddressName || row.LocationName || 'Pune';
+        const displayTitle = rawTitle || (rawBldg ? `${rawBldg} - ${fields48.PropertyTypeName || 'Commercial Space'}` : `Property ${fields48.RefNumber || idx + 1}`);
+
+        // Price display
+        let displayPrice = fields48.ExpectedPrice || '';
+        if (displayPrice && !String(displayPrice).startsWith('₹')) {
+          const num = parseFloat(String(displayPrice).replace(/[^0-9.]/g, ''));
+          if (!isNaN(num) && num > 0) {
+            displayPrice = num >= 10000000 ? `₹${(num / 10000000).toFixed(2)} Cr` : (num >= 100000 ? `₹${(num / 100000).toFixed(1)} Lakh` : `₹${num.toLocaleString('en-IN')}`);
+          }
+        }
+
+        return {
+          id: `extracted-${idx + 1}`,
+          rowNumber: idx + 2,
+          refNumber: fields48.RefNumber || `REF-${idx + 1}`,
+          title: displayTitle,
+          transactionType: /rent|lease/i.test(fields48.Lease_Sale || fields48.TransactionName || '') ? 'Rent' : 'Sale',
+          propertyType: fields48.PropertyTypeName || 'Commercial',
+          propertyName: fields48.PropertyName || '',
+          buildingName: rawBldg,
+          location: rawLoc,
+          city: fields48.CityName || 'Pune',
+          carpetArea: fields48.CarpetAreaName || '',
+          superArea: fields48.SuperAreaName || '',
+          plotArea: fields48.PlotSizeName || '',
+          price: displayPrice || 'Price on Request',
+          pricePsf: fields48.PricePerUnitArea || '',
+          monthlyRent: fields48.RentPM || '',
+          status: fields48.Status || fields48.PossessionName || 'Ready',
+          populatedFieldsCount: populatedCount,
+          rawRow: row,
+          extracted48: fields48
+        };
+      });
+
+      setExtractedExcelRows(processed);
+      setExcelFile(file);
+      setExcelPage(1);
+      notify('success', `Successfully extracted ${processed.length} properties! ${matchedSet.size}/48 schema columns matched.`);
+    } catch (err: any) {
+      console.error('Excel extraction error:', err);
+      setExcelParseError(err.message || 'Failed to parse Excel file.');
+      notify('error', err.message || 'Failed to parse Excel file.');
+    } finally {
+      setIsParsingExcel(false);
+    }
+  };
+
+  const handleImportExtractedExcel = async () => {
+    if (!extractedExcelRows || extractedExcelRows.length === 0) return;
+    setIsImportingExcel(true);
+    setExcelImportProgress({ processed: 0, total: extractedExcelRows.length });
+
+    try {
+      const payloadRows = extractedExcelRows.map((r) => ({
+        ...r.rawRow,
+        ...r.extracted48,
+        title: r.title
+      }));
+
+      const CHUNK_SIZE = 150;
+      let totalImported = 0;
+
+      for (let i = 0; i < payloadRows.length; i += CHUNK_SIZE) {
+        const chunk = payloadRows.slice(i, i + CHUNK_SIZE);
+        const res = await fetch('/api/admin/properties/bulk', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ properties: chunk })
+        });
+
+        const data = await res.json();
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to import batch');
+        }
+
+        totalImported += data.savedCount || chunk.length;
+        setExcelImportProgress({ processed: Math.min(i + CHUNK_SIZE, payloadRows.length), total: payloadRows.length });
+      }
+
+      notify('success', `🎉 Successfully imported ${totalImported} properties into live database!`);
+      onImportComplete?.(totalImported);
+      fetchInventory();
+      setTimeout(() => {
+        setActiveMode('inventory');
+      }, 1500);
+    } catch (err: any) {
+      console.error('Excel import error:', err);
+      notify('error', `Import failed: ${err.message}`);
+    } finally {
+      setIsImportingExcel(false);
+      setExcelImportProgress(null);
+    }
+  };
+
+  const handleDownloadExcelTemplate = () => {
+    const sampleRow: Record<string, any> = {
+      Title: 'Commercial Office Space for Sale in Kalyani Nagar',
+      RefNumber: 'PROPERTY9001',
+      Lease_Sale: 'Sale',
+      PropertyTypeName: 'Commercial Office',
+      PropertyName: 'Trade Center Tower',
+      AddressName: 'Central Avenue, Kalyani Nagar, Pune',
+      FlatNo: '502',
+      BuildingName: 'Trade Center Tower',
+      Landmark: 'Near Metro Station',
+      SocietyName: 'Trade Center Association',
+      Street: 'Central Avenue',
+      LocationName: 'Kalyani Nagar',
+      CityName: 'Pune',
+      StateName: 'Maharashtra',
+      FurnishingName: 'Fully Furnished',
+      SuperAreaName: '3,200 Sq.Ft.',
+      BuiltAreaName: '2,800 Sq.Ft.',
+      CarpetAreaName: '2,400 Sq.Ft.',
+      PlotSizeName: '',
+      MaxAreaName: '',
+      MinAreaName: '',
+      PricePerUnitArea: '14500',
+      ExpectedPrice: '4.64 Cr',
+      DepositePrice: '',
+      CustomerFullName: 'Mr. Rajesh Verma',
+      CustomerMobile: '9822001122',
+      CustomerEmail: 'rajesh.verma@example.com',
+      Description: 'Grade-A fully furnished office with 35 workstations, 3 cabins, conference room and cafeteria.',
+      EmployeeName: 'Amit Deshmukh',
+      EmployeeMobile: '9823004455',
+      EmployeeEmail: 'amit.d@anvrealty.com',
+      PropertyAge: '2 Years',
+      SourceName: 'Direct Mandate',
+      TransactionName: 'Resale',
+      PossessionName: 'Ready to Move',
+      Status: 'Available',
+      ParkingDetails: '4 Dedicated Covered Slots',
+      FloorNumber: '5th Floor',
+      SearchKeyword: 'Commercial Office | Kalyani Nagar | Furnished | Resale',
+      FacingText: 'North Facing Road View',
+      BranchName: 'Kalyani Nagar Branch',
+      ROI: '8.5%',
+      RentPM: '',
+      RentStartDate: '',
+      LockinPeriod: '',
+      LeasePeriod: '',
+      PropertyTax: 'Paid up to 2026',
+      MaintainCharges: '₹12,000/month'
+    };
+
+    const ws = XLSX.utils.json_to_sheet([sampleRow]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Table1');
+    XLSX.writeFile(wb, 'ANV_48_Field_Property_Template.xlsx');
   };
 
   // Quick URL Presets for instant testing
@@ -441,10 +671,22 @@ export function ScraperImporter({ onImportComplete, showToast }: ScraperImporter
       </div>
 
       {/* Mode Switcher Tabs */}
-      <div className="flex items-center gap-2 border-b border-zinc-200 pb-3">
+      <div className="flex items-center gap-2 border-b border-zinc-200 pb-3 overflow-x-auto">
+        <button
+          onClick={() => setActiveMode('excel')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition shrink-0 ${
+            activeMode === 'excel'
+              ? 'bg-black text-white shadow-xs'
+              : 'bg-white hover:bg-zinc-100 text-zinc-600 border border-zinc-200'
+          }`}
+        >
+          <Table className="w-4 h-4 text-emerald-400" />
+          <span>Excel Sheet Drop &amp; Extract (48 Fields)</span>
+        </button>
+
         <button
           onClick={() => setActiveMode('link')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition shrink-0 ${
             activeMode === 'link'
               ? 'bg-black text-white shadow-xs'
               : 'bg-white hover:bg-zinc-100 text-zinc-600 border border-zinc-200'
@@ -456,7 +698,7 @@ export function ScraperImporter({ onImportComplete, showToast }: ScraperImporter
 
         <button
           onClick={() => setActiveMode('pdf')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition shrink-0 ${
             activeMode === 'pdf'
               ? 'bg-black text-white shadow-xs'
               : 'bg-white hover:bg-zinc-100 text-zinc-600 border border-zinc-200'
@@ -468,7 +710,7 @@ export function ScraperImporter({ onImportComplete, showToast }: ScraperImporter
 
         <button
           onClick={() => setActiveMode('inventory')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition shrink-0 ${
             activeMode === 'inventory'
               ? 'bg-black text-white shadow-xs'
               : 'bg-white hover:bg-zinc-100 text-zinc-600 border border-zinc-200'
@@ -478,6 +720,663 @@ export function ScraperImporter({ onImportComplete, showToast }: ScraperImporter
           <span>Scraped Inventory ({importedItems.length})</span>
         </button>
       </div>
+
+      {/* ================= TAB 0: EXCEL SHEET DROP & EXTRACT (48 FIELDS) ================= */}
+      {activeMode === 'excel' && (
+        <div className="space-y-6 animate-in fade-in">
+          {/* Dropzone Card */}
+          <div className="bg-white border border-zinc-200 rounded-2xl p-5 sm:p-6 shadow-2xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="font-bold text-zinc-900 text-base flex items-center gap-2">
+                  <Table className="w-5 h-5 text-emerald-600" />
+                  <span>Excel Sheet Dropzone &amp; 48-Field Schema Matcher</span>
+                </h3>
+                <p className="text-xs text-zinc-500 mt-0.5">
+                  Drop your Excel (.xlsx, .xls, .csv) file to extract all 48 fields, inspect the table view, and preview description pages before importing.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleDownloadExcelTemplate}
+                  className="px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition border border-zinc-200 shadow-2xs"
+                  title="Download standard 48-column Excel template"
+                >
+                  <Download className="w-3.5 h-3.5 text-zinc-600" />
+                  <span>Download 48-Field Template</span>
+                </button>
+
+                {extractedExcelRows.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setExtractedExcelRows([]);
+                      setExcelFile(null);
+                      setMatchedSchemaColumns([]);
+                    }}
+                    className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition border border-rose-200"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Clear Extracted Data</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Dropzone Area */}
+            <div
+              onDragOver={(e) => {
+                e.preventDefault();
+                setIsDraggingExcel(true);
+              }}
+              onDragLeave={(e) => {
+                e.preventDefault();
+                setIsDraggingExcel(false);
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                setIsDraggingExcel(false);
+                if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                  processExcelUpload(e.dataTransfer.files[0]);
+                }
+              }}
+              onClick={() => excelInputRef.current?.click()}
+              className={`border-2 border-dashed rounded-2xl p-8 text-center transition cursor-pointer ${
+                isDraggingExcel
+                  ? 'border-emerald-500 bg-emerald-50/60'
+                  : 'border-zinc-200 hover:border-zinc-400 bg-zinc-50/50 hover:bg-zinc-50'
+              }`}
+            >
+              <input
+                ref={excelInputRef}
+                type="file"
+                accept=".xlsx,.xls,.csv"
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files && e.target.files[0]) {
+                    processExcelUpload(e.target.files[0]);
+                  }
+                }}
+              />
+
+              <div className="w-12 h-12 rounded-full bg-white border border-zinc-200 flex items-center justify-center text-zinc-400 mx-auto mb-2 shadow-2xs">
+                {isParsingExcel ? (
+                  <Loader2 className="w-6 h-6 animate-spin text-emerald-600" />
+                ) : (
+                  <UploadCloud className="w-6 h-6 text-emerald-600" />
+                )}
+              </div>
+
+              {isParsingExcel ? (
+                <div>
+                  <p className="text-xs font-bold text-zinc-900">Parsing Excel File &amp; Mapping 48 Columns...</p>
+                  <p className="text-[11px] text-zinc-500 mt-0.5">Matching schema definitions and normalizing property values</p>
+                </div>
+              ) : excelFile ? (
+                <div>
+                  <p className="text-xs font-bold text-zinc-900">{excelFile.name}</p>
+                  <p className="text-[11px] text-zinc-500 mt-0.5">
+                    {(excelFile.size / 1024).toFixed(1)} KB &bull; {extractedExcelRows.length} Properties Extracted &bull; {matchedSchemaColumns.length}/48 Columns Matched
+                  </p>
+                  <p className="text-[10px] text-emerald-700 font-semibold mt-1">Click or drop another file to replace</p>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-xs font-semibold text-zinc-800">
+                    Click to select or drag &amp; drop your Excel Spreadsheet (.xlsx, .xls, .csv)
+                  </p>
+                  <p className="text-[11px] text-zinc-400 mt-1">
+                    Supports complete 48-column catalog files with automatic schema alignment
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {excelParseError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{excelParseError}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Extracted Stats & Table View Before Importing */}
+          {extractedExcelRows.length > 0 && (() => {
+            // Filter by search query & transaction type
+            const filtered = extractedExcelRows.filter((r) => {
+              if (excelFilterTx !== 'All' && r.transactionType !== excelFilterTx) return false;
+              if (!excelSearchQuery.trim()) return true;
+              const q = excelSearchQuery.toLowerCase();
+              return (
+                r.title.toLowerCase().includes(q) ||
+                r.refNumber.toLowerCase().includes(q) ||
+                r.buildingName.toLowerCase().includes(q) ||
+                r.location.toLowerCase().includes(q) ||
+                r.propertyType.toLowerCase().includes(q)
+              );
+            });
+
+            const totalPages = Math.max(1, Math.ceil(filtered.length / excelRowsPerPage));
+            const currentPage = Math.min(excelPage, totalPages);
+            const startIdx = (currentPage - 1) * excelRowsPerPage;
+            const paginatedRows = filtered.slice(startIdx, startIdx + excelRowsPerPage);
+
+            const saleCount = extractedExcelRows.filter(r => r.transactionType === 'Sale').length;
+            const rentCount = extractedExcelRows.filter(r => r.transactionType === 'Rent').length;
+
+            return (
+              <div className="bg-white border border-zinc-200 rounded-2xl overflow-hidden shadow-2xs space-y-4 p-5 animate-in fade-in">
+                {/* Metric Strip */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="p-3 bg-zinc-50 rounded-xl border border-zinc-200/80">
+                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Extracted Records</span>
+                    <span className="text-base font-black text-zinc-900 block mt-0.5">{extractedExcelRows.length.toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="p-3 bg-emerald-50/50 rounded-xl border border-emerald-200/60">
+                    <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block">Schema Match</span>
+                    <span className="text-base font-black text-emerald-950 block mt-0.5">{matchedSchemaColumns.length} / 48 Columns</span>
+                  </div>
+                  <div className="p-3 bg-blue-50/50 rounded-xl border border-blue-200/60">
+                    <span className="text-[10px] font-bold text-blue-800 uppercase tracking-wider block">For Sale</span>
+                    <span className="text-base font-black text-blue-950 block mt-0.5">{saleCount.toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="p-3 bg-amber-50/50 rounded-xl border border-amber-200/60">
+                    <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider block">For Rent / Lease</span>
+                    <span className="text-base font-black text-amber-950 block mt-0.5">{rentCount.toLocaleString('en-IN')}</span>
+                  </div>
+                </div>
+
+                {/* Table Header & Controls */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* Search */}
+                    <div className="relative w-64">
+                      <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+                      <input
+                        type="text"
+                        placeholder="Filter by ref, title, locality..."
+                        value={excelSearchQuery}
+                        onChange={(e) => {
+                          setExcelSearchQuery(e.target.value);
+                          setExcelPage(1);
+                        }}
+                        className="w-full pl-8 pr-3 py-1.5 text-xs bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-zinc-400"
+                      />
+                      {excelSearchQuery && (
+                        <button
+                          onClick={() => setExcelSearchQuery('')}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Transaction Filter */}
+                    <div className="flex items-center gap-1 bg-zinc-100 p-1 rounded-xl text-xs font-semibold">
+                      {(['All', 'Sale', 'Rent'] as const).map((tx) => (
+                        <button
+                          key={tx}
+                          onClick={() => {
+                            setExcelFilterTx(tx);
+                            setExcelPage(1);
+                          }}
+                          className={`px-2.5 py-1 rounded-lg transition ${
+                            excelFilterTx === tx
+                              ? 'bg-white text-zinc-950 shadow-2xs'
+                              : 'text-zinc-600 hover:text-zinc-900'
+                          }`}
+                        >
+                          {tx}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* View Mode Toggle */}
+                    <div className="flex items-center gap-1 bg-zinc-100 p-1 rounded-xl text-xs font-semibold">
+                      <button
+                        onClick={() => setExcelViewMode('summary')}
+                        className={`px-2.5 py-1 rounded-lg transition ${
+                          excelViewMode === 'summary'
+                            ? 'bg-white text-zinc-950 shadow-2xs'
+                            : 'text-zinc-600 hover:text-zinc-900'
+                        }`}
+                      >
+                        Summary View
+                      </button>
+                      <button
+                        onClick={() => setExcelViewMode('full48')}
+                        className={`px-2.5 py-1 rounded-lg transition ${
+                          excelViewMode === 'full48'
+                            ? 'bg-white text-zinc-950 shadow-2xs'
+                            : 'text-zinc-600 hover:text-zinc-900'
+                        }`}
+                      >
+                        All 48 Columns Table
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Import Button */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleImportExtractedExcel}
+                      disabled={isImportingExcel}
+                      className="px-4 py-2 bg-black hover:bg-zinc-800 disabled:opacity-50 text-white text-xs font-semibold rounded-xl flex items-center gap-2 transition shadow-xs cursor-pointer"
+                    >
+                      {isImportingExcel ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-400" />
+                          <span>
+                            Importing ({excelImportProgress?.processed || 0} / {excelImportProgress?.total || extractedExcelRows.length})...
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>Import All {extractedExcelRows.length.toLocaleString('en-IN')} Properties to Database</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Import Progress Bar */}
+                {excelImportProgress && (
+                  <div className="w-full bg-zinc-100 rounded-full h-2 overflow-hidden">
+                    <div
+                      className="bg-emerald-600 h-full transition-all duration-300"
+                      style={{
+                        width: `${Math.round((excelImportProgress.processed / excelImportProgress.total) * 100)}%`
+                      }}
+                    />
+                  </div>
+                )}
+
+                {/* TABLE VIEW */}
+                {excelViewMode === 'summary' ? (
+                  /* Summary Table */
+                  <div className="border border-zinc-200 rounded-xl overflow-x-auto text-xs">
+                    <table className="w-full divide-y divide-zinc-200">
+                      <thead className="bg-zinc-50 text-zinc-600 font-bold uppercase text-[10px] tracking-wider text-left">
+                        <tr>
+                          <th className="py-2.5 px-3">#</th>
+                          <th className="py-2.5 px-3">Ref #</th>
+                          <th className="py-2.5 px-3">Title &amp; Property</th>
+                          <th className="py-2.5 px-3">Type</th>
+                          <th className="py-2.5 px-3">Location</th>
+                          <th className="py-2.5 px-3">Price / Rate</th>
+                          <th className="py-2.5 px-3">Carpet / Super Area</th>
+                          <th className="py-2.5 px-3">Fields</th>
+                          <th className="py-2.5 px-3 text-right">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-zinc-100">
+                        {paginatedRows.length === 0 ? (
+                          <tr>
+                            <td colSpan={9} className="py-8 text-center text-zinc-400">
+                              No properties match your filter criteria.
+                            </td>
+                          </tr>
+                        ) : (
+                          paginatedRows.map((row) => (
+                            <tr key={row.id} className="hover:bg-zinc-50/70 transition-colors">
+                              <td className="py-2.5 px-3 text-zinc-400 font-mono text-[11px]">{row.rowNumber}</td>
+                              <td className="py-2.5 px-3 font-mono font-bold text-amber-900 text-[11px] whitespace-nowrap">
+                                <span className="bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/60">
+                                  {row.refNumber}
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-3 min-w-[220px]">
+                                <p className="font-bold text-zinc-900 truncate max-w-xs" title={row.title}>{row.title}</p>
+                                {row.buildingName && (
+                                  <p className="text-[11px] text-zinc-500 truncate" title={row.buildingName}>{row.buildingName}</p>
+                                )}
+                              </td>
+                              <td className="py-2.5 px-3 whitespace-nowrap">
+                                <span className={`px-2 py-0.5 rounded-md font-semibold text-[10px] border ${
+                                  row.transactionType === 'Rent'
+                                    ? 'bg-amber-50 text-amber-800 border-amber-200'
+                                    : 'bg-blue-50 text-blue-800 border-blue-200'
+                                }`}>
+                                  {row.propertyType} &bull; {row.transactionType}
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-3 text-zinc-700 whitespace-nowrap">{row.location}</td>
+                              <td className="py-2.5 px-3 font-bold text-zinc-950 whitespace-nowrap">
+                                {row.price}
+                                {row.pricePsf && (
+                                  <span className="block text-[10px] text-zinc-400 font-normal">₹{row.pricePsf}/sqft</span>
+                                )}
+                              </td>
+                              <td className="py-2.5 px-3 whitespace-nowrap text-zinc-700">
+                                {row.carpetArea ? (
+                                  <span>{row.carpetArea}</span>
+                                ) : (
+                                  row.superArea || row.plotArea || '—'
+                                )}
+                              </td>
+                              <td className="py-2.5 px-3 whitespace-nowrap">
+                                <span className="text-[10px] font-semibold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                                  {row.populatedFieldsCount}/48
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-3 text-right whitespace-nowrap">
+                                <button
+                                  type="button"
+                                  onClick={() => setPreviewRowForDescription(row)}
+                                  className="px-2.5 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 transition border border-zinc-200/80 cursor-pointer"
+                                  title="Live preview dynamic description page for this row"
+                                >
+                                  <Eye className="w-3.5 h-3.5 text-zinc-600" />
+                                  <span>Preview</span>
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  /* Full 48-Column Table */
+                  <div className="border border-zinc-200 rounded-xl overflow-x-auto text-xs max-h-[500px]">
+                    <table className="w-full divide-y divide-zinc-200">
+                      <thead className="bg-zinc-50 text-zinc-600 font-bold uppercase text-[10px] tracking-wider text-left sticky top-0 z-10">
+                        <tr>
+                          <th className="py-2.5 px-3 bg-zinc-50 sticky left-0 z-20">#</th>
+                          <th className="py-2.5 px-3 bg-zinc-50 sticky left-8 z-20">Ref #</th>
+                          <th className="py-2.5 px-3 text-right">Preview</th>
+                          {EXCEL_48_COLUMNS.map((col) => (
+                            <th key={col.key} className="py-2.5 px-3 whitespace-nowrap" title={`${col.label} (${col.key})`}>
+                              {col.shortLabel || col.label}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-zinc-100">
+                        {paginatedRows.map((row) => (
+                          <tr key={row.id} className="hover:bg-zinc-50/70 transition-colors">
+                            <td className="py-2 px-3 text-zinc-400 font-mono text-[11px] bg-white sticky left-0 z-10">{row.rowNumber}</td>
+                            <td className="py-2 px-3 font-mono font-bold text-amber-900 text-[11px] bg-white sticky left-8 z-10 whitespace-nowrap">
+                              {row.refNumber}
+                            </td>
+                            <td className="py-2 px-3 text-right whitespace-nowrap">
+                              <button
+                                type="button"
+                                onClick={() => setPreviewRowForDescription(row)}
+                                className="px-2 py-1 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 rounded-md text-[11px] font-semibold inline-flex items-center gap-1 transition"
+                              >
+                                <Eye className="w-3 h-3" />
+                                <span>Preview</span>
+                              </button>
+                            </td>
+                            {EXCEL_48_COLUMNS.map((col) => {
+                              const rawVal = row.extracted48?.[col.key];
+                              const displayVal = format48ValueForTable(col.key, rawVal);
+                              const isPopulated = rawVal !== undefined && rawVal !== null && String(rawVal).trim() !== '';
+                              return (
+                                <td
+                                  key={col.key}
+                                  className={`py-2 px-3 whitespace-nowrap text-[11px] ${
+                                    isPopulated ? 'text-zinc-900 font-medium' : 'text-zinc-300'
+                                  }`}
+                                  title={isPopulated ? String(rawVal) : undefined}
+                                >
+                                  {displayVal}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {/* Pagination Controls */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 text-xs text-zinc-500">
+                  <div className="flex items-center gap-2">
+                    <span>Rows per page:</span>
+                    <select
+                      value={excelRowsPerPage}
+                      onChange={(e) => {
+                        setExcelRowsPerPage(Number(e.target.value));
+                        setExcelPage(1);
+                      }}
+                      className="px-2 py-1 bg-zinc-50 border border-zinc-200 rounded-lg text-xs text-zinc-900"
+                    >
+                      {[10, 25, 50, 100].map(n => (
+                        <option key={n} value={n}>{n}</option>
+                      ))}
+                    </select>
+                    <span>
+                      Showing {filtered.length === 0 ? 0 : startIdx + 1} to {Math.min(startIdx + excelRowsPerPage, filtered.length)} of {filtered.length.toLocaleString('en-IN')} properties
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={currentPage <= 1}
+                      onClick={() => setExcelPage(p => Math.max(1, p - 1))}
+                      className="px-3 py-1 bg-zinc-50 hover:bg-zinc-100 disabled:opacity-40 border border-zinc-200 rounded-lg font-semibold flex items-center gap-1 transition cursor-pointer"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" />
+                      <span>Previous</span>
+                    </button>
+                    <span className="font-semibold text-zinc-800">
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={currentPage >= totalPages}
+                      onClick={() => setExcelPage(p => Math.min(totalPages, p + 1))}
+                      className="px-3 py-1 bg-zinc-50 hover:bg-zinc-100 disabled:opacity-40 border border-zinc-200 rounded-lg font-semibold flex items-center gap-1 transition cursor-pointer"
+                    >
+                      <span>Next</span>
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* ================= DYNAMIC PROPERTY DESCRIPTION PAGE LIVE PREVIEW MODAL ================= */}
+      {previewRowForDescription && (() => {
+        const r = previewRowForDescription;
+        const f = (r.extracted48 || {}) as Record<string, any>;
+
+        const cleanVal = (val: any): string => {
+          if (val === null || val === undefined) return '';
+          const s = String(val).trim();
+          if (
+            s === '' ||
+            s.toLowerCase() === 'null' ||
+            s.toLowerCase() === 'undefined' ||
+            s.toLowerCase() === 'nan' ||
+            s === '—' ||
+            s === '-' ||
+            s.toLowerCase() === 'n/a'
+          ) {
+            return '';
+          }
+          return s;
+        };
+
+        const sections = [
+          {
+            title: 'Property Overview & Identification',
+            items: [
+              { label: 'Property Title', value: cleanVal(f.Title || r.title) },
+              { label: 'Reference Number', value: cleanVal(f.RefNumber || r.refNumber) },
+              { label: 'Transaction Type', value: cleanVal(f.Lease_Sale || f.TransactionName || r.transactionType) },
+              { label: 'Property Type', value: cleanVal(f.PropertyTypeName || r.propertyType) },
+              { label: 'Project / Property Name', value: cleanVal(f.PropertyName || r.propertyName) },
+              { label: 'Unit / Flat No.', value: cleanVal(f.FlatNo) },
+              { label: 'Building Name', value: cleanVal(f.BuildingName || r.buildingName) },
+              { label: 'Society Name', value: cleanVal(f.SocietyName) },
+              { label: 'Property Age', value: cleanVal(f.PropertyAge) },
+              { label: 'Possession Status', value: cleanVal(f.PossessionName) },
+              { label: 'Availability Status', value: cleanVal(f.Status) },
+              { label: 'Transaction Classification', value: cleanVal(f.TransactionName) }
+            ]
+          },
+          {
+            title: 'Location & Vicinity Details',
+            items: [
+              { label: 'Locality', value: cleanVal(f.LocationName || r.location) },
+              { label: 'Landmark', value: cleanVal(f.Landmark) },
+              { label: 'Street', value: cleanVal(f.Street) },
+              { label: 'City', value: cleanVal(f.CityName || r.city) },
+              { label: 'State', value: cleanVal(f.StateName) },
+              { label: 'Full Address', value: cleanVal(f.AddressName) }
+            ]
+          },
+          {
+            title: 'Area & Spatial Measurements',
+            items: [
+              { label: 'Carpet Area', value: cleanVal(f.CarpetAreaName || r.carpetArea) },
+              { label: 'Built-up Area', value: cleanVal(f.BuiltAreaName) },
+              { label: 'Super Built-up Area', value: cleanVal(f.SuperAreaName || r.superArea) },
+              { label: 'Plot Size / Land Area', value: cleanVal(f.PlotSizeName || r.plotArea) },
+              { label: 'Minimum Area', value: cleanVal(f.MinAreaName) },
+              { label: 'Maximum Area', value: cleanVal(f.MaxAreaName) }
+            ]
+          },
+          {
+            title: 'Commercial & Financial Terms',
+            items: [
+              { label: 'Expected Price', value: cleanVal(f.ExpectedPrice ? (String(f.ExpectedPrice).startsWith('₹') ? f.ExpectedPrice : `₹${f.ExpectedPrice}`) : '') },
+              { label: 'Price Per Sq.Ft.', value: cleanVal(f.PricePerUnitArea ? `₹${f.PricePerUnitArea}/Sq.Ft.` : '') },
+              { label: 'Monthly Rent', value: cleanVal(f.RentPM ? (String(f.RentPM).startsWith('₹') ? `${f.RentPM}/month` : `₹${f.RentPM}/month`) : '') },
+              { label: 'Security Deposit', value: cleanVal(f.DepositePrice ? (String(f.DepositePrice).startsWith('₹') ? f.DepositePrice : `₹${f.DepositePrice}`) : '') },
+              { label: 'Maintenance Charges', value: cleanVal(f.MaintainCharges) },
+              { label: 'Property Tax', value: cleanVal(f.PropertyTax) },
+              { label: 'ROI (Yield %)', value: cleanVal(f.ROI ? (String(f.ROI).endsWith('%') ? f.ROI : `${f.ROI}%`) : '') },
+              { label: 'Rent Start Date', value: cleanVal(f.RentStartDate) },
+              { label: 'Lock-in Period', value: cleanVal(f.LockinPeriod) },
+              { label: 'Lease Period', value: cleanVal(f.LeasePeriod) }
+            ]
+          },
+          {
+            title: 'Unit Specifications & Features',
+            items: [
+              { label: 'Furnishing Status', value: cleanVal(f.FurnishingName) },
+              { label: 'Floor Number', value: cleanVal(f.FloorNumber) },
+              { label: 'Facing Direction', value: cleanVal(f.FacingText) },
+              { label: 'Parking Details', value: cleanVal(f.ParkingDetails) }
+            ]
+          },
+          {
+            title: 'Advisory & Branch Office',
+            items: [
+              { label: 'Branch Office', value: cleanVal(f.BranchName) },
+              { label: 'Relationship Manager', value: cleanVal(f.EmployeeName) },
+              { label: 'Manager Contact', value: cleanVal(f.EmployeeMobile) },
+              { label: 'Manager Email', value: cleanVal(f.EmployeeEmail) },
+              { label: 'Source Classification', value: cleanVal(f.SourceName) }
+            ]
+          }
+        ];
+
+        // Filter populated sections strictly: only non-empty fields!
+        const populatedSections = sections
+          .map(s => ({
+            ...s,
+            items: s.items.filter(item => cleanVal(item.value) !== '')
+          }))
+          .filter(s => s.items.length > 0);
+
+        const narrativeDesc = cleanVal(f.Description);
+
+        return (
+          <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+            <div className="bg-white rounded-3xl border border-zinc-200 max-w-2xl w-full p-6 shadow-2xl space-y-5 my-8 animate-in zoom-in-95">
+              {/* Modal Header */}
+              <div className="flex items-start justify-between gap-3 pb-3 border-b border-zinc-200">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded-md font-mono font-bold text-xs bg-amber-100 text-amber-900 border border-amber-300">
+                      {r.refNumber}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-md font-bold text-xs bg-zinc-100 text-zinc-800">
+                      Row #{r.rowNumber}
+                    </span>
+                  </div>
+                  <h3 className="font-black text-zinc-950 text-base sm:text-lg mt-1">{r.title}</h3>
+                  <p className="text-xs text-zinc-500 mt-0.5">
+                    Live Dynamic Description Page Verification &bull; {populatedSections.reduce((acc, s) => acc + s.items.length, 0)} non-empty fields active
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPreviewRowForDescription(null)}
+                  className="p-1.5 hover:bg-zinc-100 text-zinc-400 hover:text-zinc-700 rounded-xl transition"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Strict Conditional Notice */}
+              <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-xs text-emerald-800 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>
+                  <strong>Strict Conditional Visibility Verified:</strong> Only populated fields from your Excel file are shown. All empty or blank fields are automatically hidden.
+                </span>
+              </div>
+
+              {/* Rendered Sections */}
+              <div className="max-h-[60vh] overflow-y-auto space-y-4 pr-1">
+                {populatedSections.map((section, sIdx) => (
+                  <div key={sIdx} className="space-y-1.5">
+                    <h4 className="text-xs font-black text-zinc-900 uppercase tracking-wider flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                      <span>{section.title}</span>
+                    </h4>
+                    <div className="divide-y divide-zinc-100 rounded-xl border border-zinc-200 overflow-hidden text-xs">
+                      {section.items.map(({ label, value }, rIdx) => (
+                        <div key={rIdx} className="flex items-start gap-3 px-3 py-2 hover:bg-zinc-50/60 transition-colors">
+                          <span className="text-zinc-500 font-semibold shrink-0 w-[140px] sm:w-[180px]">{label}</span>
+                          <span className="text-zinc-900 font-medium break-words flex-1">{value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Narrative Description if present */}
+                {narrativeDesc && (
+                  <div className="p-3.5 bg-zinc-50 rounded-xl border border-zinc-200 space-y-1.5">
+                    <span className="text-xs font-bold text-zinc-950 uppercase tracking-wider block">
+                      Complete Property Description &amp; Remarks
+                    </span>
+                    <p className="text-xs text-zinc-700 leading-relaxed whitespace-pre-line bg-white p-3 rounded-lg border border-zinc-100">
+                      {narrativeDesc}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Modal Footer */}
+              <div className="flex justify-end pt-3 border-t border-zinc-200">
+                <button
+                  type="button"
+                  onClick={() => setPreviewRowForDescription(null)}
+                  className="px-5 py-2 bg-zinc-950 text-white rounded-xl text-xs font-semibold hover:bg-zinc-800 transition"
+                >
+                  Close Preview
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ================= TAB 1: WEB LINK SCRAPER ================= */}
       {activeMode === 'link' && (
