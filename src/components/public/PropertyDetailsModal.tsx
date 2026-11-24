@@ -84,8 +84,14 @@ export function PropertyDetailsModal({
       if (valid.length > 0) return valid;
     }
     const list: string[] = [];
-    if (d.CarpetAreaName || property?.sqft) {
-      list.push(`Optimized ${d.CarpetAreaName || property?.sqft} usable carpet area${d.SuperAreaName ? ' with ' + d.SuperAreaName + ' super built-up layout' : ''}`);
+    if (d.CarpetAreaName) {
+      list.push(`Optimized ${d.CarpetAreaName} usable carpet area${d.SuperAreaName ? ' (' + d.SuperAreaName + ' super built-up layout)' : ''}`);
+    } else if (d.SuperAreaName) {
+      list.push(`Super Built-up Area: ${d.SuperAreaName} commercial space`);
+    } else if (d.BuiltAreaName) {
+      list.push(`Built-up Area: ${d.BuiltAreaName}`);
+    } else if (property?.sqft) {
+      list.push(`Optimized ${property.sqft} floor space`);
     }
     const validBldg = d.BuildingName || d.PropertyName || ((property?.developer && !/anv\b/i.test(property.developer)) ? property.developer : '');
     if (validBldg) {
@@ -128,7 +134,7 @@ export function PropertyDetailsModal({
     add('Transaction', d.TransactionName || d.Lease_Sale || property?.listingType);
     add('Property Type', d.PropertyTypeName || property?.bhk);
     add('Super Built-up Area', d.SuperAreaName);
-    add('Carpet Area', d.CarpetAreaName || property?.sqft);
+    add('Carpet Area', d.CarpetAreaName || (!d.SuperAreaName ? property?.sqft : undefined));
     add('Built-up Area', d.BuiltAreaName);
     add('Plot Size / Land Area', d.PlotSizeName);
     add('Expected Price', d.ExpectedPrice ? (String(d.ExpectedPrice).startsWith('₹') ? d.ExpectedPrice : `₹${d.ExpectedPrice}`) : property?.price);
@@ -351,6 +357,11 @@ export function PropertyDetailsModal({
                     ? (/immediately|immediate/i.test(rawP) ? 'Immediate Possession' : rawP)
                     : 'Possession on Request';
 
+                  const superAreaVal = d.SuperAreaName || '';
+                  const carpetAreaVal = d.CarpetAreaName
+                    ? d.CarpetAreaName
+                    : (!superAreaVal && property.sqft ? property.sqft.replace(/\s*carpet\s*/gi, '').trim() : '');
+
                   return (
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
                       <div className="bg-zinc-50 p-2.5 rounded-xl border border-zinc-200">
@@ -362,10 +373,10 @@ export function PropertyDetailsModal({
                           <span className="text-[10px] text-amber-700 font-bold uppercase block">Unit No.</span>
                           <span className="font-extrabold text-zinc-900 truncate block mt-0.5">{d.FlatNo}</span>
                         </div>
-                      ) : d.SuperAreaName ? (
+                      ) : superAreaVal ? (
                         <div className="bg-zinc-50 p-2.5 rounded-xl border border-zinc-200">
                           <span className="text-[10px] text-amber-600 font-bold uppercase block">Super Area</span>
-                          <span className="font-extrabold text-zinc-900 truncate block mt-0.5">{d.SuperAreaName}</span>
+                          <span className="font-extrabold text-zinc-900 truncate block mt-0.5">{superAreaVal}</span>
                         </div>
                       ) : (
                         <div className="bg-zinc-50 p-2.5 rounded-xl border border-zinc-200">
@@ -377,7 +388,7 @@ export function PropertyDetailsModal({
                       )}
                       <div className="bg-zinc-50 p-2.5 rounded-xl border border-zinc-200">
                         <span className="text-[10px] text-zinc-400 font-bold uppercase block">Carpet Area</span>
-                        <span className="font-extrabold text-zinc-900 block mt-0.5">{d.CarpetAreaName || (property.sqft ? property.sqft.replace(/\s*carpet\s*/gi, '').trim() : '1,200 Sq.Ft.')}</span>
+                        <span className="font-extrabold text-zinc-900 block mt-0.5">{carpetAreaVal || '—'}</span>
                       </div>
                       <div className="bg-zinc-50 p-2.5 rounded-xl border border-zinc-200">
                         <span className="text-[10px] text-zinc-400 font-bold uppercase block">Possession</span>

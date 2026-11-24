@@ -503,27 +503,55 @@ export async function POST(req: NextRequest) {
         row["Locality"]
       );
 
-      // 3. Resolve Area
-      const sqftRaw =
+      // 3. Resolve Area metrics independently - DO NOT equate Carpet Area with Super Area
+      const carpetRaw = (
         fields48.CarpetAreaName ||
-        row.sqft ||
         row["CarpetAreaName"] ||
-        fields48.BuiltAreaName ||
-        row["BuiltAreaName"] ||
-        fields48.SuperAreaName ||
-        row["SuperAreaName"] ||
-        fields48.PlotSizeName ||
-        row["PlotSizeName"] ||
         row["Carpet Area (sqft)"] ||
         row["Carpet Area"] ||
-        row["Sqft"] ||
-        1200;
-      const numArea = parseAreaNumber(sqftRaw);
+        row["carpet"] ||
+        ""
+      ).toString().trim();
+
+      const superRaw = (
+        fields48.SuperAreaName ||
+        row["SuperAreaName"] ||
+        row["Super Built-up Area"] ||
+        row["Super Area"] ||
+        row["Saleable Area"] ||
+        row["sbua"] ||
+        ""
+      ).toString().trim();
+
+      const builtRaw = (
+        fields48.BuiltAreaName ||
+        row["BuiltAreaName"] ||
+        row["Built-up Area"] ||
+        row["Built Area"] ||
+        row["bua"] ||
+        ""
+      ).toString().trim();
+
+      const plotRaw = (
+        fields48.PlotSizeName ||
+        row["PlotSizeName"] ||
+        row["Plot Area"] ||
+        row["Plot Size"] ||
+        ""
+      ).toString().trim();
+
+      const numCarpetArea = carpetRaw ? parseAreaNumber(carpetRaw) : null;
+      const numSuperArea = superRaw ? parseAreaNumber(superRaw) : null;
+      const numBuiltArea = builtRaw ? parseAreaNumber(builtRaw) : null;
+      const numPlotArea = plotRaw ? parseAreaNumber(plotRaw) : null;
+
+      // Area used for title generation and calculations when total price is missing
+      const effectiveAreaForCalculations = numCarpetArea || numSuperArea || numBuiltArea || numPlotArea || 1200;
 
       // 4. Resolve Title
       let title = (fields48.Title || row.title ? String(fields48.Title || row.title).trim() : "");
       if (!title || title.startsWith("Untitled Property")) {
-        title = constructPropertyTitle(row, category, locationRaw, numArea);
+        title = constructPropertyTitle(row, category, locationRaw, effectiveAreaForCalculations);
       }
 
       if (!title) {
@@ -539,7 +567,7 @@ export async function POST(req: NextRequest) {
         }
       }
       if (numPrice === 0) {
-        numPrice = calculatePriceData(row, numArea);
+        numPrice = calculatePriceData(row, effectiveAreaForCalculations);
       }
 
       // 6. Resolve Status & Possession (Preserve actual possession dates like "3/2030" or "Immediately")
@@ -608,19 +636,29 @@ export async function POST(req: NextRequest) {
       const lockinInfo = lockin ? ` Lock-in Period: ${lockin}.` : '';
       const maintInfo = maintenance ? ` Maintenance: ${maintenance}.` : '';
 
+      const areaNarrative = fields48.CarpetAreaName
+        ? `${fields48.CarpetAreaName} Carpet Area${fields48.SuperAreaName ? ' (' + fields48.SuperAreaName + ' Super Area)' : ''}`
+        : (fields48.SuperAreaName ? `${fields48.SuperAreaName} Super Built-up Area` : `${effectiveAreaForCalculations.toLocaleString('en-IN')} Sq.Ft.`);
+
       const baseNarrative = (
         fields48.Description ||
         row.description ||
         row["Description"] ||
         row.details ||
         row["Details"] ||
-        `Prime ${category} available in ${locationRaw}${facingInfo}. Featuring ${numArea.toLocaleString('en-IN')} Sq.Ft.${furnishing ? ' with ' + furnishing + ' specifications' : ''}${floor ? ', located on ' + floor : ''}${parking ? ', including ' + parking + ' reserved parking spaces' : ''}${rentInfo}${roiInfo}.${leaseInfo}${lockinInfo}${maintInfo} Verified catalog listing with complete compliance.${refInfo}`
+        `Prime ${category} available in ${locationRaw}${facingInfo}. Featuring ${areaNarrative}${furnishing ? ' with ' + furnishing + ' specifications' : ''}${floor ? ', located on ' + floor : ''}${parking ? ', including ' + parking + ' reserved parking spaces' : ''}${rentInfo}${roiInfo}.${leaseInfo}${lockinInfo}${maintInfo} Verified catalog listing with complete compliance.${refInfo}`
       ).toString().trim();
 
       // Build authentic dynamic highlights from actual property metrics
       const dynamicHighlights: string[] = [];
-      if (fields48.CarpetAreaName || numArea > 0) {
-        dynamicHighlights.push(`Optimized ${fields48.CarpetAreaName || numArea + ' Sq.Ft.'} usable carpet area${fields48.SuperAreaName ? ' with ' + fields48.SuperAreaName + ' layout' : ''}`);
+      if (fields48.CarpetAreaName) {
+        dynamicHighlights.push(`Optimized ${fields48.CarpetAreaName} usable carpet area${fields48.SuperAreaName ? ' (' + fields48.SuperAreaName + ' super built-up layout)' : ''}`);
+      } else if (fields48.SuperAreaName) {
+        dynamicHighlights.push(`Super Built-up Area: ${fields48.SuperAreaName} commercial space`);
+      } else if (fields48.BuiltAreaName) {
+        dynamicHighlights.push(`Built-up Area: ${fields48.BuiltAreaName}`);
+      } else if (numCarpetArea) {
+        dynamicHighlights.push(`Optimized ${numCarpetArea.toLocaleString('en-IN')} Sq.Ft. usable carpet area`);
       }
       if (bldg) {
         dynamicHighlights.push(`Prime commercial landmark at ${bldg} with high-street connectivity`);
@@ -742,7 +780,7 @@ export async function POST(req: NextRequest) {
         floor: floor || null,
         furnishing: furnishing || null,
         parking,
-        numArea,
+        numArea: numCarpetArea,
         bedrooms,
         bathrooms,
         category,

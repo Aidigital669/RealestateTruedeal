@@ -76,13 +76,13 @@ export async function fetchAllProperties(forceFresh = false): Promise<PropertyIt
             ? (p.type_name || "Commercial Office")
             : (p.bhk_num ? `${p.bhk_num} BHK` : "3 BHK"));
 
-        const sqftStr = p.sqft_num ? `${Number(p.sqft_num).toLocaleString()} Sq.Ft.` : "1,200 Sq.Ft.";
         const defaultDesc = isCommercial
           ? `Grade-A corporate office space in ${p.locality}, Pune. Landmark business address with optimized workspace efficiency and airport corridor connectivity.`
           : `Spacious and luxurious ${bhkStr} residence in ${p.locality}. High floor inventory with scenic skyline views.`;
 
         // Parse structured dossier metadata if present in description
         const { cleanDescription, dossier } = parseDossierData(p.description || '', p.name);
+        const sqftStr = dossier.CarpetAreaName || dossier.SuperAreaName || (p.sqft_num ? `${Number(p.sqft_num).toLocaleString()} Sq.Ft.` : "1,200 Sq.Ft.");
 
         const highlights = dossier.highlights && dossier.highlights.length > 0
           ? dossier.highlights

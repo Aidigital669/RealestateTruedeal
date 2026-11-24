@@ -48,6 +48,8 @@ export interface ParsedPropertyRow {
   priceFormatted: string;
   status: string;
   sqft: string | number;
+  carpetArea?: number | string | null;
+  superArea?: number | string | null;
   developer: string;
   imageUrl: string;
   description: string;
@@ -631,28 +633,24 @@ export function PropertyExcelUploadModal({
               row["Locality"]
             );
 
-            // 3. Resolve Area
-            const rawArea =
-              fields48.CarpetAreaName ||
-              row["CarpetAreaName"] ||
-              fields48.BuiltAreaName ||
-              row["BuiltAreaName"] ||
-              fields48.SuperAreaName ||
-              row["SuperAreaName"] ||
-              fields48.PlotSizeName ||
-              row["PlotSizeName"] ||
-              row["Carpet Area (sqft)"] ||
-              row["Carpet Area"] ||
-              row["Sqft"] ||
-              row.sqft ||
-              1200;
-            const numArea = parseAreaNumber(rawArea);
+            // 3. Resolve Area metrics independently - DO NOT equate Carpet Area with Super Area
+            const rawCarpet = (fields48.CarpetAreaName || row["CarpetAreaName"] || row["Carpet Area (sqft)"] || row["Carpet Area"] || row["carpet"] || "").toString().trim();
+            const rawSuper = (fields48.SuperAreaName || row["SuperAreaName"] || row["Super Built-up Area"] || row["Super Area"] || row["Saleable Area"] || row["sbua"] || "").toString().trim();
+            const rawBuilt = (fields48.BuiltAreaName || row["BuiltAreaName"] || row["Built-up Area"] || row["bua"] || "").toString().trim();
+            const rawPlot = (fields48.PlotSizeName || row["PlotSizeName"] || row["Plot Area"] || "").toString().trim();
+
+            const numCarpet = rawCarpet ? parseAreaNumber(rawCarpet) : 0;
+            const numSuper = rawSuper ? parseAreaNumber(rawSuper) : 0;
+            const numBuilt = rawBuilt ? parseAreaNumber(rawBuilt) : 0;
+            const numPlot = rawPlot ? parseAreaNumber(rawPlot) : 0;
+
+            const effectiveArea = numCarpet || numSuper || numBuilt || numPlot || 1200;
 
             // 4. Construct Clean, Realistic Title
-            const title = constructPropertyTitle(row, category, rawLoc, numArea, fields48);
+            const title = constructPropertyTitle(row, category, rawLoc, effectiveArea, fields48);
 
             // 5. Calculate and Format Price
-            const { price, formatted: priceFormatted } = calculatePriceData(row, numArea, fields48);
+            const { price, formatted: priceFormatted } = calculatePriceData(row, effectiveArea, fields48);
 
             // 6. Resolve Status & Possession (Preserve authentic possession dates like "3/2030" or "Immediately")
             const rawPossession = (fields48.PossessionName || row["PossessionName"] || '').toString().trim();
@@ -709,11 +707,15 @@ export function PropertyExcelUploadModal({
             const lockinInfo = lockin ? ` Lock-in Period: ${lockin}.` : '';
             const maintInfo = maintenance ? ` Maintenance: ${maintenance}.` : '';
 
+            const areaNarrative = fields48.CarpetAreaName
+              ? `${fields48.CarpetAreaName} Carpet Area${fields48.SuperAreaName ? ' (' + fields48.SuperAreaName + ' Super Area)' : ''}`
+              : (fields48.SuperAreaName ? `${fields48.SuperAreaName} Super Built-up Area` : `${effectiveArea.toLocaleString('en-IN')} Sq.Ft.`);
+
             const description = (
               fields48.Description ||
               row["Description"] ||
               row.description ||
-              `Prime ${category} available in ${rawLoc}${facingInfo}. Featuring ${numArea.toLocaleString('en-IN')} Sq.Ft.${furnishing ? ' with ' + furnishing + ' specifications' : ''}${floor ? ', located on ' + floor : ''}${parking ? ', including ' + parking + ' reserved parking spaces' : ''}${rentInfo}${roiInfo}.${leaseInfo}${lockinInfo}${maintInfo} Verified commercial listing with clean titles and complete compliance.${refInfo}`
+              `Prime ${category} available in ${rawLoc}${facingInfo}. Featuring ${areaNarrative}${furnishing ? ' with ' + furnishing + ' specifications' : ''}${floor ? ', located on ' + floor : ''}${parking ? ', including ' + parking + ' reserved parking spaces' : ''}${rentInfo}${roiInfo}.${leaseInfo}${lockinInfo}${maintInfo} Verified commercial listing with clean titles and complete compliance.${refInfo}`
             ).toString().trim();
 
             const publishStatus = (row["Publish Status"] || row.publishStatus || "Published").toString().trim();
@@ -726,7 +728,9 @@ export function PropertyExcelUploadModal({
               price,
               priceFormatted,
               status,
-              sqft: numArea,
+              sqft: numCarpet > 0 ? numCarpet : (numSuper > 0 ? numSuper : effectiveArea),
+              carpetArea: numCarpet > 0 ? numCarpet : null,
+              superArea: numSuper > 0 ? numSuper : null,
               developer,
               imageUrl,
               description,
@@ -824,7 +828,9 @@ export function PropertyExcelUploadModal({
             location: r.location,
             price: r.price,
             status: r.status,
-            sqft: r.sqft,
+            sqft: r.carpetArea || (r.extracted48?.CarpetAreaName ? r.sqft : undefined),
+            carpetArea: r.carpetArea,
+            superArea: r.superArea,
             developer: r.developer,
             imageUrl: r.imageUrl,
             description: r.description,
@@ -1417,10 +1423,10 @@ export function PropertyExcelUploadModal({
                                   </span>
                                 </td>
                                 <td className="py-2.5 px-3 text-zinc-600">
-                                  {row.extracted48?.CarpetAreaName || `${row.sqft} sqft`}
+                                  {row.extracted48?.CarpetAreaName || (row.carpetArea ? `${row.carpetArea} sqft` : '—')}
                                 </td>
                                 <td className="py-2.5 px-3 text-zinc-600">
-                                  {row.extracted48?.SuperAreaName || '—'}
+                                  {row.extracted48?.SuperAreaName || (row.superArea ? `${row.superArea} sqft` : '—')}
                                 </td>
                                 <td className="py-2.5 px-3 text-center">
                                   <div className="flex items-center justify-center gap-1.5">
@@ -1674,7 +1680,7 @@ export function PropertyExcelUploadModal({
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1 text-[11px]">
                   <div className="bg-white p-2.5 rounded-xl border border-emerald-100">
                     <span className="text-[10px] text-zinc-400 font-bold uppercase block">Carpet Area</span>
-                    <span className="font-bold text-zinc-900 block mt-0.5">{format48ValueForTable('CarpetAreaName', selectedRowDetail.extracted48?.CarpetAreaName || selectedRowDetail.sqft)}</span>
+                    <span className="font-bold text-zinc-900 block mt-0.5">{format48ValueForTable('CarpetAreaName', selectedRowDetail.extracted48?.CarpetAreaName || (selectedRowDetail.carpetArea ? `${selectedRowDetail.carpetArea} sqft` : '—'))}</span>
                   </div>
                   <div className="bg-white p-2.5 rounded-xl border border-emerald-100">
                     <span className="text-[10px] text-zinc-400 font-bold uppercase block">Built Area</span>

@@ -442,8 +442,14 @@ export function PropertyDetailPageClient({
 
     if (isGenericOnly || validRaw.length === 0) {
       const dynamicSpecs: string[] = [];
-      if (d.CarpetAreaName || property?.sqft) {
-        dynamicSpecs.push(`Optimized ${d.CarpetAreaName || property?.sqft} usable carpet area${d.SuperAreaName ? ' with ' + d.SuperAreaName + ' super built-up layout' : ''}`);
+      if (d.CarpetAreaName) {
+        dynamicSpecs.push(`Optimized ${d.CarpetAreaName} usable carpet area${d.SuperAreaName ? ' (' + d.SuperAreaName + ' super built-up layout)' : ''}`);
+      } else if (d.SuperAreaName) {
+        dynamicSpecs.push(`Super Built-up Area: ${d.SuperAreaName} commercial space`);
+      } else if (d.BuiltAreaName) {
+        dynamicSpecs.push(`Built-up Area: ${d.BuiltAreaName}`);
+      } else if (property?.sqft) {
+        dynamicSpecs.push(`Optimized ${property.sqft} floor space`);
       }
       const validBldg = d.BuildingName || d.PropertyName || ((property?.developer && !/anv\b/i.test(property.developer)) ? property.developer : '');
       if (validBldg) {
@@ -1033,6 +1039,11 @@ export function PropertyDetailPageClient({
 
                 const unitVal = d.FlatNo ? String(d.FlatNo) : '';
                 const superAreaVal = d.SuperAreaName || '';
+                // Carpet area is strictly shown if CarpetAreaName was explicitly provided,
+                // or if no Super Area was provided and property.sqft exists. Never equate them.
+                const carpetAreaVal = d.CarpetAreaName
+                  ? d.CarpetAreaName
+                  : (!superAreaVal && property.sqft ? property.sqft.replace(/\s*carpet\s*/gi, '').trim() : '');
 
                 return (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3 bg-white p-3 sm:p-4 rounded-2xl border border-zinc-200 shadow-xs">
@@ -1051,7 +1062,7 @@ export function PropertyDetailPageClient({
                     <div className="p-2 sm:p-3 bg-zinc-50 rounded-xl border border-zinc-100 min-w-0">
                       <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Carpet Area</span>
                       <span className="text-xs sm:text-sm font-black text-zinc-900 block mt-0.5 truncate">
-                        {d.CarpetAreaName || (property.sqft ? property.sqft.replace(/\s*carpet\s*/gi, '').trim() : '1,200 Sq.Ft.')}
+                        {carpetAreaVal || '—'}
                       </span>
                     </div>
 
@@ -1233,14 +1244,15 @@ export function PropertyDetailPageClient({
                     case 'area : carpet : saleable':
                       if (d.CarpetAreaName || d.SuperAreaName || d.BuiltAreaName) {
                         const parts = [];
-                        if (d.CarpetAreaName || property?.sqft) parts.push(`Carpet: ${d.CarpetAreaName || property?.sqft}`);
+                        if (d.CarpetAreaName) parts.push(`Carpet: ${d.CarpetAreaName}`);
+                        else if (!d.SuperAreaName && property?.sqft) parts.push(`Carpet: ${property.sqft}`);
                         if (d.SuperAreaName) parts.push(`Super: ${d.SuperAreaName}`);
                         if (d.BuiltAreaName) parts.push(`Built-up: ${d.BuiltAreaName}`);
                         return parts.join(' | ');
                       }
                       return undefined;
                     case 'carpet area':
-                      return d.CarpetAreaName || (property?.sqft ? `${property.sqft}` : undefined);
+                      return d.CarpetAreaName || (!d.SuperAreaName && property?.sqft ? `${property.sqft}` : undefined);
                     case 'built-up area':
                       return d.BuiltAreaName || undefined;
                     case 'plot size / land area':

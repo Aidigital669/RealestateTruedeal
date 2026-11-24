@@ -501,7 +501,7 @@ Return ONLY valid JSON (no markdown formatting).`;
       const isCommercial = detectedTypology !== 'residential' && detectedTypology !== 'land_plot';
 
       const bhkStr = d.PropertyTypeName || p.configuration || (isCommercial ? (p.type_name || "Commercial Space") : (p.bhk_num ? `${p.bhk_num} BHK` : "3 BHK"));
-      const sqftStr = d.CarpetAreaName || (p.sqft_num ? `${Number(p.sqft_num).toLocaleString()} Sq.Ft.` : "1,200 Sq.Ft.");
+      const sqftStr = d.CarpetAreaName || d.SuperAreaName || (p.sqft_num ? `${Number(p.sqft_num).toLocaleString()} Sq.Ft.` : "1,200 Sq.Ft.");
 
       const defaultDesc = isCommercial
         ? `Grade-A corporate office space in ${p.locality}, Pune. Landmark business address with optimized workspace efficiency and airport corridor connectivity.`
