@@ -44,6 +44,8 @@ export const PUNE_LOCALITIES_DICTIONARY: string[] = [
   'Senapati Bapat Road',
   'Boat Club Road',
   'Model Colony',
+  'Sadhu Vaswani Chowk',
+  'Sant Kabir Chowk',
   'Camp',
   'Bund Garden',
   'Pashan',

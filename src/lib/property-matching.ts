@@ -37,6 +37,7 @@ export interface PropertyMatchCriteria {
   typologyIntents?: PropertyTypology[];
   purposeSlugs?: string[];
   nameWords: string[];
+  descriptionKeywords?: string[];
   hasSpecificIntent: boolean;
   isMultiCategory?: boolean;
   transactionType?: 'sale' | 'rent' | 'preleased' | null;
@@ -107,18 +108,103 @@ export function detectPropertyTypology(prop: {
 }
 
 export const KNOWN_PUNE_LOCALITIES = [
+  // Multi-word chowks, junctions & roads (ordered longer first for accurate greedy matching)
+  'sadhu vaswani chowk',
+  'sadhu vaswani',
+  'sant kabir chowk',
+  'balewadi high street',
+  'senapati bapat road',
+  'boat club road',
+  'dhole patil road',
+  'law college road',
+  'prabhat road',
+  'bhandarkar road',
+  'karve road',
+  'paud road',
+  'sinhagad road',
+  'satara road',
+  'solapur road',
+  'nagar road',
+  'ahmednagar road',
+  'old mumbai pune highway',
+  'bt kawade road',
+  'm g road',
+  'mg road',
+  'east street',
+  'west street',
+  'dange chowk',
+  'chandani chowk',
+  'bhumkar chowk',
+  'kokate chowk',
+  'goodluck chowk',
+  'alka talkies chowk',
+  'alka talkies',
+  'nal stop',
+  'parihar chowk',
+  'bremen chowk',
+  'jagtap dairy',
+  'pune station',
+  'eon free zone',
+  'eon it park',
+  'world trade center',
   'koregaon park',
+  'kalyani nagar',
+  'viman nagar',
+  'pimple saudagar',
+  'pimple nilakh',
+  'pimple gurav',
+  'senapati bapat',
+  'deccan gymkhana',
+  'fatima nagar',
+  'karve nagar',
+  'keshav nagar',
+  'tingre nagar',
+  'loni kalbhor',
+  'chandan nagar',
+  'wadgaon sheri',
+  'nana peth',
+  'rasta peth',
+  'somwar peth',
+  'mangalwar peth',
+  'budhwar peth',
+  'guruwar peth',
+  'shukrawar peth',
+  'shaniwar peth',
+  'raviwar peth',
+  'bhavani peth',
+  'kasba peth',
+  'ganj peth',
+  'market yard',
+  'salunke vihar',
+  'lulla nagar',
+  'lullanagar',
+  'chakan midc',
+  'bhosari midc',
+  'talawade it park',
+  'ranjangaon midc',
+  'ranjangaon',
+  'shikrapur',
+  'sanaswadi',
+  'supa midc',
+  'talegaon',
+  'mohammadwadi',
+  'gultekadi',
+  'model colony',
+  'sb road',
+  'dp road',
+  'fc road',
+  'jm road',
   'baner',
   'balewadi',
-  'kalyani nagar',
   'bavdhan',
   'mahalunge',
   'shivajinagar',
   'kharadi',
-  'viman nagar',
   'hinjewadi',
+  'hinjawadi',
   'wakad',
   'undri',
+  'nibm road',
   'nibm',
   'camp',
   'bund garden',
@@ -126,18 +212,9 @@ export const KNOWN_PUNE_LOCALITIES = [
   'hadapsar',
   'wagholi',
   'kothrud',
-  'talegaon',
-  'mohammadwadi',
   'talawade',
-  'gultekadi',
   'aundh',
-  'senapati bapat road',
-  'sb road',
-  'boat club road',
-  'model colony',
   'pashan',
-  'pimple saudagar',
-  'pimple nilakh',
   'chinchwad',
   'pimpri',
   'ravet',
@@ -147,22 +224,14 @@ export const KNOWN_PUNE_LOCALITIES = [
   'dhanori',
   'kondhwa',
   'wanowrie',
-  'fatima nagar',
   'swargate',
   'bibwewadi',
   'katraj',
   'dhankawadi',
-  'sinhagad road',
   'warje',
-  'karve nagar',
   'erandwane',
   'deccan',
-  'deccan gymkhana',
-  'fc road',
-  'jm road',
   'yerawada',
-  'tingre nagar',
-  'loni kalbhor',
   'phursungi',
   'tathawade',
   'punawale',
@@ -171,6 +240,13 @@ export const KNOWN_PUNE_LOCALITIES = [
   'dighi',
   'charholi',
   'alandi',
+  'mundhwa',
+  'manjri',
+  'handewadi',
+  'pisoli',
+  'ambegaon',
+  'narhe',
+  'dhayari',
   'pcmc',
   'pune'
 ];
@@ -347,7 +423,15 @@ const STOP_NAME_WORDS = new Set([
   'jewellery', 'jewelry', 'gold', 'diamond', 'clothing', 'clothes', 'apparel', 'fashion', 'garment',
   'gym', 'fitness', 'crossfit', 'salon', 'spa', 'beauty', 'parlour', 'parlor',
   'supermarket', 'grocery', 'mart', 'bank', 'banking', 'atm', 'furniture', 'hardware', 'decor',
-  'interior', 'footwear', 'shoes', 'optical', 'eyewear', 'glasses', 'coaching', 'tuition', 'classes', 'institute'
+  'interior', 'footwear', 'shoes', 'optical', 'eyewear', 'glasses', 'coaching', 'tuition', 'classes', 'institute',
+
+  // Generic Geographic, Street & Directional Suffixes (Never treated as distinctive project name words)
+  'chowk', 'chowks', 'road', 'roads', 'rd', 'street', 'streets', 'st', 'lane', 'lanes',
+  'circle', 'square', 'corner', 'junction', 'cross', 'crossroad', 'crossroads',
+  'nagar', 'wadi', 'peth', 'pet', 'gali', 'marg', 'chowki', 'highway', 'bypass',
+  'station', 'camp', 'bridge', 'flyover', 'annexe', 'east', 'west', 'north', 'south', 'central',
+  'side', 'front', 'facing', 'touch', 'main', 'prime', 'near', 'nearby', 'opp', 'opposite', 'beside', 'behind',
+  'gate', 'sector', 'phase', 'block'
 ]);
 
 /**
@@ -482,6 +566,22 @@ export function parseQueryCriteria(queryText: string, conversationContext?: stri
     }
   }
 
+  // Natural language location extraction: matches "in <location>", "at <location>", "near <location>", etc.
+  const prepLocMatch = lowerQuery.match(/\b(?:in|at|near|around|opposite|opp|close\s*to|towards)\s+([a-z0-9\s.,–-]+?)(?:\s+(?:under|below|above|upto|within|budget|for|with|having|from|requiring|needing|wanted|sale|rent|buy|lease)|\s*$)/i);
+  if (prepLocMatch) {
+    const rawCandidate = prepLocMatch[1].trim();
+    const cleanedCandidate = rawCandidate
+      .replace(/\b(?:property|properties|flat|flats|office|shop|showroom|space|pune|area|location|commercial|residential|residence|unit|units|site)\b/gi, '')
+      .replace(/^[,\s–-]+|[,\s–-]+$/g, '')
+      .trim();
+    if (cleanedCandidate.length >= 3 && !['pune', 'pcmc', 'area', 'city'].includes(cleanedCandidate)) {
+      if (!matchedLocalities.includes(cleanedCandidate)) {
+        matchedLocalities.unshift(cleanedCandidate);
+        isExplicitLocality = true;
+      }
+    }
+  }
+
   let matchedLocality: string | null = matchedLocalities.length > 0 ? matchedLocalities[0] : null;
 
   if (!matchedLocality && conversationContext) {
@@ -567,6 +667,21 @@ export function parseQueryCriteria(queryText: string, conversationContext?: stri
     }
   }
 
+  // Descriptive property keywords: e.g. "terrace", "frontage", "ceiling height", "pillar free", "mezzanine", "basement", "restaurant", "cafe", "highway facing", "main road", "high footfall", "ready to move", "immediate possession"
+  const descriptionKeywords: string[] = [];
+  const descCandidates = [
+    'terrace', 'restaurant', 'cafe', 'frontage', 'ceiling', 'pillar', 'mezzanine', 'basement',
+    'power backup', 'backup', 'parking', 'footfall', 'furnished', 'unfurnished', 'bare shell',
+    'warm shell', 'glass facade', 'facade', 'high street', 'road facing', 'road touch', 'highway touch',
+    'highway facing', 'corner', 'ground floor', 'penthouse', 'garden', 'pool', 'gym', 'amenities',
+    'preleased', 'pre-leased', 'roi', 'rental yield', 'hospital', 'clinic', 'diagnostic', 'doctor'
+  ];
+  for (const dc of descCandidates) {
+    if (lowerQuery.includes(dc)) {
+      descriptionKeywords.push(dc);
+    }
+  }
+
   const isViewOrProvideRequest = /\b(?:prov(?:ide|iede)|show|view|see|give|send|share|details|dossier|walkthrough)\b/i.test(lowerQuery);
 
   const hasSpecificIntent =
@@ -577,6 +692,7 @@ export function parseQueryCriteria(queryText: string, conversationContext?: stri
     maxBudget !== null ||
     purposeSlugs.length > 0 ||
     nameWords.length > 0 ||
+    descriptionKeywords.length > 0 ||
     transactionType !== null ||
     minSqft !== null ||
     isViewOrProvideRequest;
@@ -603,6 +719,7 @@ export function parseQueryCriteria(queryText: string, conversationContext?: stri
     typologyIntents,
     purposeSlugs,
     nameWords,
+    descriptionKeywords,
     hasSpecificIntent,
     isMultiCategory,
     transactionType,
@@ -639,7 +756,18 @@ export function scorePropertyMatch(
   }
 
   const pTypology = detectPropertyTypology(prop);
-  const titleAndDesc = `${prop.title || ''} ${prop.name || ''} ${prop.configuration || ''} ${prop.bhk || ''} ${prop.type_name || ''} ${prop.locality || ''} ${prop.location || ''} ${prop.description || ''}`.toLowerCase();
+
+  // Construct comprehensive searchable text covering description, highlights, dossier, tags, landmarks
+  const pDossier = (prop as any).dossier || (prop as any).dossierData || {};
+  const dossierHighlights = Array.isArray(pDossier.highlights) ? pDossier.highlights.join(' ') : '';
+  const dossierSuitable = Array.isArray(pDossier.suitableFor) ? pDossier.suitableFor.join(' ') : (typeof pDossier.suitableFor === 'string' ? pDossier.suitableFor : '');
+  const tagsText = Array.isArray((prop as any).tags) ? (prop as any).tags.join(' ') : String((prop as any).tags || '');
+  const searchKeywordsText = String((prop as any).searchKeyword || (prop as any).SearchKeyword || '');
+  const landmarkText = String((prop as any).landmark || (prop as any).Landmark || '');
+  const bldgText = String((prop as any).buildingName || (prop as any).BuildingName || (prop as any).propertyName || '');
+  const addressText = String((prop as any).address || (prop as any).fullAddress || '');
+
+  const titleAndDesc = `${prop.title || ''} ${prop.name || ''} ${prop.configuration || ''} ${prop.bhk || ''} ${prop.type_name || ''} ${prop.locality || ''} ${prop.location || ''} ${prop.description || ''} ${dossierHighlights} ${dossierSuitable} ${tagsText} ${searchKeywordsText} ${landmarkText} ${bldgText} ${addressText}`.toLowerCase();
 
   // 0. STRICT TYPOLOGY BOUNDARY ENFORCEMENT (UNION / OR MATCHING ACROSS ALL INTENTS)
   const intentsToCheck = criteria.typologyIntents && criteria.typologyIntents.length > 0
@@ -740,18 +868,35 @@ export function scorePropertyMatch(
     }
   }
 
+  // 2b. DESCRIPTION & SPECIFICATION KEYWORDS MATCHING (+150 per matched keyword in description/dossier)
+  if (criteria.descriptionKeywords && criteria.descriptionKeywords.length > 0) {
+    for (const dk of criteria.descriptionKeywords) {
+      if (titleAndDesc.includes(dk)) {
+        score += 150;
+      }
+    }
+  }
+
   // 3. LOCALITY MATCHING (STRICT LOCALITY MATCHING)
   const locsToCheck = criteria.localities && criteria.localities.length > 0
     ? criteria.localities
     : (criteria.locality ? [criteria.locality] : []);
 
   if (locsToCheck.length > 0) {
-    const propLocalityText = `${prop.locality || ''} ${prop.location || ''} ${prop.title || ''} ${prop.name || ''}`.toLowerCase();
-    const matchesPrimaryLoc = locsToCheck.some((loc) => propLocalityText.includes(loc));
+    const propLocalityText = `${prop.locality || ''} ${prop.location || ''} ${prop.title || ''} ${prop.name || ''} ${addressText} ${landmarkText} ${bldgText}`.toLowerCase();
+    const matchesPrimaryLoc = locsToCheck.some((loc) => {
+      if (propLocalityText.includes(loc)) return true;
+      const coreWords = loc.split(/\s+/).filter((w) => !['chowk', 'road', 'rd', 'street', 'st', 'lane', 'corner', 'circle', 'nagar', 'wadi', 'camp'].includes(w));
+      if (coreWords.length > 0 && coreWords.every((w) => propLocalityText.includes(w))) {
+        return true;
+      }
+      return false;
+    });
+
     if (matchesPrimaryLoc) {
-      score += 200;
+      score += 400; // Major boost for matching exact location / chowk
     } else if (criteria.isExplicitLocality) {
-      return -999;
+      return -999; // Disqualify non-matching locations when user explicitly asked for this location
     } else {
       score -= 80;
     }

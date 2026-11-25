@@ -1390,9 +1390,16 @@ export function HomepageSearchablePortal({
           if (item.score <= 0) return false;
           // If criteria has specific name/project words, property MUST match at least one
           if (criteria.nameWords && criteria.nameWords.length > 0) {
-            const pText = `${item.p.name || ''} ${(item.p as any).title || ''} ${item.p.developer || ''} ${item.p.description || ''} ${item.p.configuration || ''} ${item.p.bhk || ''}`.toLowerCase();
+            const pDossier = (item.p as any).dossier || (item.p as any).dossierData || {};
+            const pText = `${item.p.name || ''} ${(item.p as any).title || ''} ${item.p.developer || ''} ${item.p.description || ''} ${item.p.configuration || ''} ${item.p.bhk || ''} ${(item.p as any).address || ''} ${(item.p as any).landmark || ''} ${(item.p as any).buildingName || ''} ${(item.p as any).searchKeyword || ''} ${Array.isArray(pDossier.highlights) ? pDossier.highlights.join(' ') : ''}`.toLowerCase();
             const matchesAnyNameWord = criteria.nameWords.some((w) => pText.includes(w));
             if (!matchesAnyNameWord) return false;
+          }
+          // If criteria has description keywords, boost properties that match them in description
+          if (criteria.descriptionKeywords && criteria.descriptionKeywords.length > 0) {
+            const descText = `${item.p.description || ''} ${item.p.name || ''} ${(item.p as any).title || ''}`.toLowerCase();
+            const matchesDesc = criteria.descriptionKeywords.some((w) => descText.includes(w));
+            if (matchesDesc) item.score += 150;
           }
           const price = getPropertyRawPrice(item.p);
           if (price > 0) {
