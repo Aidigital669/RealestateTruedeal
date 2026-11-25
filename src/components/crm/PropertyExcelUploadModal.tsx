@@ -38,6 +38,7 @@ import {
   format48ValueForTable,
   type Excel48ColumnDef
 } from '@/lib/excel-48-extractor';
+import { scrubPersonalInfo, parseDescriptionBulletPoints } from '@/lib/description-sanitizer';
 
 export interface ParsedPropertyRow {
   id: string;
@@ -1773,16 +1774,27 @@ export function PropertyExcelUploadModal({
                 </div>
               </div>
 
-              {/* 7. Full Description */}
-              <div className="p-3.5 bg-zinc-50 rounded-2xl border border-zinc-200 space-y-1.5">
-                <div className="flex items-center gap-1.5 font-bold text-zinc-900 text-xs">
-                  <FileText className="w-4 h-4 text-zinc-600" />
-                  <span>Formatted Description &amp; Specifications</span>
-                </div>
-                <p className="text-[11px] text-zinc-700 leading-relaxed whitespace-pre-line bg-white p-3 rounded-xl border border-zinc-200">
-                  {selectedRowDetail.description}
-                </p>
-              </div>
+              {/* 7. Property Description & Remarks in Point Format */}
+              {(() => {
+                const descPoints = parseDescriptionBulletPoints(selectedRowDetail.description || selectedRowDetail.extracted48?.Description || '');
+                if (descPoints.length === 0) return null;
+                return (
+                  <div className="p-3.5 bg-zinc-50 rounded-2xl border border-zinc-200 space-y-2">
+                    <div className="flex items-center gap-1.5 font-bold text-zinc-900 text-xs">
+                      <FileText className="w-4 h-4 text-zinc-600" />
+                      <span>Property Description &amp; Remarks</span>
+                    </div>
+                    <ul className="space-y-1.5 bg-white p-3 rounded-xl border border-zinc-200 text-[11px] text-zinc-700 divide-y divide-zinc-50">
+                      {descPoints.map((pt, idx) => (
+                        <li key={idx} className={`flex items-start gap-2 leading-relaxed ${idx > 0 ? 'pt-1.5' : ''}`}>
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0 mt-1"></span>
+                          <span className="break-words flex-1 font-medium">{pt}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Modal Footer */}

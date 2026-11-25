@@ -36,7 +36,8 @@ import { PublicHeader } from '@/components/public/PublicHeader';
 import { SharePropertyModal } from '@/components/public/SharePropertyModal';
 import { getClientSession } from '@/lib/user-auth';
 import { AuthInquiryModal } from '@/components/auth/AuthInquiryModal';
-import { formatPropertyDescription, parseDossierData, embedDossierData } from '@/lib/dossier-parser';
+import { parseDossierData, embedDossierData } from '@/lib/dossier-parser';
+import { scrubPersonalInfo, parseDescriptionBulletPoints } from '@/lib/description-sanitizer';
 import { parseAndNormalizeVideoUrl } from '@/lib/video-utils';
 
 interface PropertyDetailPageClientProps {
@@ -1386,8 +1387,6 @@ export function PropertyDetailPageClient({
                     items: [
                       { label: 'Branch Office', value: valBranchName },
                       { label: 'Relationship Manager', value: valEmployeeName },
-                      { label: 'Manager Contact', value: valEmployeeMobile },
-                      { label: 'Manager Email', value: valEmployeeEmail },
                       { label: 'Source Classification', value: valSourceName },
                     ]
                   }
@@ -1402,9 +1401,9 @@ export function PropertyDetailPageClient({
                   .filter(s => s.items.length > 0);
 
                 // Check narrative description
-                const narrativeDesc = cleanValue(d.Description || cleanDescription || property.description);
-                const isGenericDefault = narrativeDesc.startsWith('Grade-A corporate office space in') || narrativeDesc.startsWith('Spacious and luxurious');
-                const displayNarrative = narrativeDesc && !isGenericDefault ? narrativeDesc : '';
+                const rawNarrativeDesc = cleanValue(d.Description || cleanDescription || property.description);
+                const isGenericDefault = rawNarrativeDesc.startsWith('Grade-A corporate office space in') || rawNarrativeDesc.startsWith('Spacious and luxurious');
+                const descriptionPoints = rawNarrativeDesc && !isGenericDefault ? parseDescriptionBulletPoints(rawNarrativeDesc) : [];
 
                 // Tags from SearchKeywords or tags
                 const tagSource = valSearchKeyword || (property.tags && property.tags.length > 0 ? property.tags.join(' | ') : '');
@@ -1439,16 +1438,21 @@ export function PropertyDetailPageClient({
                       </div>
                     )}
 
-                    {/* Narrative Complete Description */}
-                    {displayNarrative && (
-                      <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-200 space-y-2">
+                    {/* Narrative Description in Clean Point Format */}
+                    {descriptionPoints.length > 0 && (
+                      <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-200 space-y-2.5">
                         <span className="text-xs font-bold text-zinc-950 uppercase tracking-wider flex items-center gap-1.5">
                           <FileText className="w-3.5 h-3.5 text-zinc-700" />
                           <span>Property Description &amp; Remarks</span>
                         </span>
-                        <div className="text-xs text-zinc-700 leading-relaxed whitespace-pre-line bg-white p-3.5 rounded-xl border border-zinc-100">
-                          {displayNarrative}
-                        </div>
+                        <ul className="space-y-2 bg-white p-4 rounded-xl border border-zinc-100 divide-y divide-zinc-50">
+                          {descriptionPoints.map((pt, idx) => (
+                            <li key={idx} className={`flex items-start gap-2.5 text-xs text-zinc-700 leading-relaxed ${idx > 0 ? 'pt-2' : ''}`}>
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0 mt-1.5"></span>
+                              <span className="break-words flex-1 font-medium">{pt}</span>
+                            </li>
+                          ))}
+                        </ul>
                       </div>
                     )}
 

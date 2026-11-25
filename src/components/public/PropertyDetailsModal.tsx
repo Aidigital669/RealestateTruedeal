@@ -28,6 +28,7 @@ import { InstantEnquiryModal } from '@/components/public/InstantEnquiryModal';
 import { getClientSession } from '@/lib/user-auth';
 import { AuthInquiryModal } from '@/components/auth/AuthInquiryModal';
 import { formatPropertyDescription, parseDossierData } from '@/lib/dossier-parser';
+import { parseDescriptionBulletPoints } from '@/lib/description-sanitizer';
 
 interface PropertyDetailsModalProps {
   isOpen: boolean;
@@ -498,12 +499,26 @@ export function PropertyDetailsModal({
                   </div>
                 )}
 
-                <div>
-                  <h4 className="font-bold text-sm text-zinc-900 mb-1.5">Property Narrative</h4>
-                  <p className="text-zinc-600 leading-relaxed text-sm whitespace-pre-line">
-                    {formatPropertyDescription(cleanDescription || property.description)}
-                  </p>
-                </div>
+                {(() => {
+                  const descPoints = parseDescriptionBulletPoints(cleanDescription || property.description || '');
+                  if (descPoints.length === 0) return null;
+                  return (
+                    <div className="space-y-2">
+                      <h4 className="font-bold text-sm text-zinc-900 flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                        <span>Property Description &amp; Remarks</span>
+                      </h4>
+                      <ul className="space-y-1.5 bg-zinc-50 p-3.5 rounded-2xl border border-zinc-200 text-xs text-zinc-700 divide-y divide-zinc-100">
+                        {descPoints.map((pt, idx) => (
+                          <li key={idx} className={`flex items-start gap-2 leading-relaxed ${idx > 0 ? 'pt-1.5' : ''}`}>
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0 mt-1.5"></span>
+                            <span className="break-words flex-1 font-medium">{pt}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })()}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                   <div className="p-3.5 bg-zinc-50 rounded-2xl border border-zinc-200">

@@ -37,6 +37,7 @@ import {
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { EXCEL_48_COLUMNS, extract48Fields, format48ValueForTable } from '@/lib/excel-48-extractor';
+import { scrubPersonalInfo, parseDescriptionBulletPoints } from '@/lib/description-sanitizer';
 import { EditPropertyModal } from '@/components/admin/Modals';
 import { formatPropertyDescription } from '@/lib/dossier-parser';
 
@@ -1278,8 +1279,6 @@ export function ScraperImporter({ onImportComplete, showToast }: ScraperImporter
             items: [
               { label: 'Branch Office', value: cleanVal(f.BranchName) },
               { label: 'Relationship Manager', value: cleanVal(f.EmployeeName) },
-              { label: 'Manager Contact', value: cleanVal(f.EmployeeMobile) },
-              { label: 'Manager Email', value: cleanVal(f.EmployeeEmail) },
               { label: 'Source Classification', value: cleanVal(f.SourceName) }
             ]
           }
@@ -1350,17 +1349,27 @@ export function ScraperImporter({ onImportComplete, showToast }: ScraperImporter
                   </div>
                 ))}
 
-                {/* Narrative Description if present */}
-                {narrativeDesc && (
-                  <div className="p-3.5 bg-zinc-50 rounded-xl border border-zinc-200 space-y-1.5">
-                    <span className="text-xs font-bold text-zinc-950 uppercase tracking-wider block">
-                      Complete Property Description &amp; Remarks
-                    </span>
-                    <p className="text-xs text-zinc-700 leading-relaxed whitespace-pre-line bg-white p-3 rounded-lg border border-zinc-100">
-                      {narrativeDesc}
-                    </p>
-                  </div>
-                )}
+                {/* Narrative Description in Clean Point Format (Privacy Protected) */}
+                {(() => {
+                  const descPoints = parseDescriptionBulletPoints(narrativeDesc);
+                  if (descPoints.length === 0) return null;
+                  return (
+                    <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-200 space-y-2.5">
+                      <span className="text-xs font-bold text-zinc-950 uppercase tracking-wider flex items-center gap-1.5">
+                        <FileText className="w-3.5 h-3.5 text-zinc-700" />
+                        <span>Property Description &amp; Remarks</span>
+                      </span>
+                      <ul className="space-y-2 bg-white p-4 rounded-xl border border-zinc-100 divide-y divide-zinc-50">
+                        {descPoints.map((pt, idx) => (
+                          <li key={idx} className={`flex items-start gap-2.5 text-xs text-zinc-700 leading-relaxed ${idx > 0 ? 'pt-2' : ''}`}>
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0 mt-1.5"></span>
+                            <span className="break-words flex-1 font-medium">{pt}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Modal Footer */}
