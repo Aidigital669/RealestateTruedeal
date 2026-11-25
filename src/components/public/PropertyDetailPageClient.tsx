@@ -1319,7 +1319,6 @@ export function PropertyDetailPageClient({
                     title: 'Property Overview & Identification',
                     items: [
                       { label: 'Property Title', value: valTitle },
-                      { label: 'Reference Number', value: valRefNumber },
                       { label: 'Transaction Type', value: valLeaseSale },
                       { label: 'Property Type', value: valPropertyType },
                       { label: 'Project / Property Name', value: valPropertyName },

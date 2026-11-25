@@ -1215,7 +1215,6 @@ export function ScraperImporter({ onImportComplete, showToast }: ScraperImporter
             title: 'Property Overview & Identification',
             items: [
               { label: 'Property Title', value: cleanVal(f.Title || r.title) },
-              { label: 'Reference Number', value: cleanVal(f.RefNumber || r.refNumber) },
               { label: 'Transaction Type', value: cleanVal(f.Lease_Sale || f.TransactionName || r.transactionType) },
               { label: 'Property Type', value: cleanVal(f.PropertyTypeName || r.propertyType) },
               { label: 'Project / Property Name', value: cleanVal(f.PropertyName || r.propertyName) },

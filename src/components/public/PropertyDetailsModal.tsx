@@ -128,7 +128,6 @@ export function PropertyDetailsModal({
       }
     };
 
-    add('Ref Number', d.RefNumber);
     add('Property Title', property?.name || d.Title);
     add('Unit No.', d.FlatNo);
     add('Building Name', d.BuildingName);
