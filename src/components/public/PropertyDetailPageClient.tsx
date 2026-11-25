@@ -602,7 +602,7 @@ export function PropertyDetailPageClient({
   }, [property?.businessPurposes, dossier?.suitableFor, cleanDescription, property?.description]);
 
   // Cost estimates
-  const priceRaw = property?.priceRaw || 0;
+  const priceRaw = property?.priceRaw || (dossier?.ExpectedPrice ? (parseFloat(String(dossier.ExpectedPrice).replace(/[^0-9.]/g, '')) || 0) : (dossier?.RentPM ? (parseFloat(String(dossier.RentPM).replace(/[^0-9.]/g, '')) || 0) : 0));
   const stampDuty = Math.round(priceRaw * 0.07);
   const registrationFee = 30000;
   const isReady = (property?.status || '').toLowerCase().includes('ready');
@@ -684,7 +684,15 @@ export function PropertyDetailPageClient({
       <div className="mt-4 pt-4 border-t border-zinc-100 flex items-center justify-between text-xs">
         <span className="text-zinc-500">Estimated Rate:</span>
         <span className="font-bold text-zinc-900">
-          {property.hidePrice || isZeroPrice(property.price) ? 'Rate on Request' : `₹${Math.round(priceRaw / (property.sqftNum || 1100)).toLocaleString('en-IN')} / sq.ft`}
+          {property.hidePrice || isZeroPrice(property.price)
+            ? 'Rate on Request'
+            : (property.ratePsf && Number(String(property.ratePsf).replace(/[^0-9.]/g, '')) > 0
+              ? `₹${Math.round(Number(String(property.ratePsf).replace(/[^0-9.]/g, ''))).toLocaleString('en-IN')} / sq.ft`
+              : (dossier?.PricePerUnitArea && Number(String(dossier.PricePerUnitArea).replace(/[^0-9.]/g, '')) > 0
+                ? `₹${Math.round(Number(String(dossier.PricePerUnitArea).replace(/[^0-9.]/g, ''))).toLocaleString('en-IN')} / sq.ft`
+                : (priceRaw > 0 && property.sqftNum && property.sqftNum > 0
+                  ? `₹${Math.round(priceRaw / property.sqftNum).toLocaleString('en-IN')} / sq.ft`
+                  : (priceRaw > 0 ? `₹${Math.round(priceRaw / 1100).toLocaleString('en-IN')} / sq.ft` : 'Rate on Request'))))}
         </span>
       </div>
 
@@ -1616,13 +1624,8 @@ export function PropertyDetailPageClient({
               )}
             </div>
 
-            {/* STICKY RIGHT COLUMN: PRICE & INSTANT ENQUIRY / VISIT BOOKING */}
+            {/* STICKY RIGHT COLUMN: SITE VISIT & INSTANT ENQUIRY / DESKTOP PRICE CARD */}
             <div className="lg:col-span-4 space-y-5">
-              {/* DESKTOP PRICE CARD */}
-              <div className="hidden lg:block">
-                {renderPriceCard()}
-              </div>
-
               {/* SITE VISIT & ENQUIRY FORM */}
               <div id="visit-booking-section" className="bg-zinc-950 text-white rounded-2xl sm:rounded-3xl p-4 sm:p-7 shadow-xl border border-zinc-800 scroll-mt-24">
                 <h3 className="text-lg sm:text-xl font-bold tracking-tight">Schedule Site Visit</h3>
@@ -1783,6 +1786,11 @@ export function PropertyDetailPageClient({
                     )}
                   </form>
                 )}
+              </div>
+
+              {/* DESKTOP PRICE CARD */}
+              <div className="hidden lg:block">
+                {renderPriceCard()}
               </div>
             </div>
           </div>

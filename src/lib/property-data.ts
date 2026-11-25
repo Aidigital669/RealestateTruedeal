@@ -5,6 +5,7 @@ import { PropertyItem, ALL_FALLBACK_PROPERTIES } from '@/lib/property-types';
 import { getPurposesForProperties } from '@/lib/business-purposes';
 import { parseDossierData, getDefaultHighlights, getDefaultConnectivity } from '@/lib/dossier-parser';
 import { saveImageIfBase64 } from '@/lib/image-storage';
+import { parseIndianPriceToNumber, parseAreaToSqft } from '@/lib/excel-import-engine';
 
 export type { PropertyItem };
 export { ALL_FALLBACK_PROPERTIES };
@@ -66,11 +67,35 @@ export async function fetchAllProperties(forceFresh = false): Promise<PropertyIt
       const purposesMap = await getPurposesForProperties(propIds);
 
       const mapped = dbProps.map((p: any) => {
-        const numPrice = Number(p.price) || 15000000;
+        // Parse structured dossier metadata if present in description or dedicated column
+        const { cleanDescription, dossier: parsedDossier } = parseDossierData(p.description || '', p.name);
+        const mergedDossier = {
+          ...(typeof p.dossierData === 'object' && p.dossierData !== null ? p.dossierData : {}),
+          ...parsedDossier
+        };
+        const dossier = mergedDossier;
+
+        // Pricing strictly adheres to Excel ExpectedPrice / DB price / rent
+        let numPrice = 0;
+        if (p.price !== null && p.price !== undefined && !isNaN(Number(p.price)) && Number(p.price) > 0) {
+          numPrice = Number(p.price);
+        } else if (dossier.ExpectedPrice) {
+          numPrice = parseIndianPriceToNumber(dossier.ExpectedPrice) || 0;
+        } else if (p.rent !== null && p.rent !== undefined && !isNaN(Number(p.rent)) && Number(p.rent) > 0) {
+          numPrice = Number(p.rent);
+        } else if (dossier.RentPM) {
+          numPrice = parseIndianPriceToNumber(dossier.RentPM) || 0;
+        } else if (dossier.Price) {
+          numPrice = parseIndianPriceToNumber(dossier.Price) || 0;
+        }
+
+        const isRent = String(p.listingType || dossier.Lease_Sale || '').toLowerCase().includes('rent') ||
+                       String(p.listingType || dossier.Lease_Sale || '').toLowerCase().includes('lease');
+
         const formattedPrice =
           numPrice >= 10000000
             ? `₹${(numPrice / 10000000).toFixed(2)} Cr`
-            : `₹${(numPrice / 100000).toFixed(1)} Lakh`;
+            : (numPrice > 0 ? `₹${(numPrice / 100000).toFixed(1)} Lakh` : 'Price on Request');
 
         const isCommercial =
           (p.type_name && p.type_name.toLowerCase().includes('commercial')) ||
@@ -89,13 +114,6 @@ export async function fetchAllProperties(forceFresh = false): Promise<PropertyIt
           ? `Grade-A corporate office space in ${p.locality}, Pune. Landmark business address with optimized workspace efficiency and airport corridor connectivity.`
           : `Spacious and luxurious ${bhkStr} residence in ${p.locality}. High floor inventory with scenic skyline views.`;
 
-        // Parse structured dossier metadata if present in description or dedicated column
-        const { cleanDescription, dossier: parsedDossier } = parseDossierData(p.description || '', p.name);
-        const mergedDossier = {
-          ...(typeof p.dossierData === 'object' && p.dossierData !== null ? p.dossierData : {}),
-          ...parsedDossier
-        };
-        const dossier = mergedDossier;
         const sqftStr = dossier.CarpetAreaName || dossier.SuperAreaName || (p.sqft_num ? `${Number(p.sqft_num).toLocaleString()} Sq.Ft.` : "");
 
         const highlights = dossier.highlights && dossier.highlights.length > 0
@@ -190,7 +208,7 @@ export async function fetchAllProperties(forceFresh = false): Promise<PropertyIt
           bhk: bhkStr,
           bhkNum: p.bhk_num || 0,
           sqft: sqftStr,
-          sqftNum: Number(p.sqft_num) || 0,
+          sqftNum: Number(p.sqft_num) || parseAreaToSqft(dossier.CarpetAreaName) || parseAreaToSqft(dossier.SuperAreaName) || parseAreaToSqft(dossier.BuiltAreaName) || 0,
           status: possession,
           possession,
           reraNumber,
