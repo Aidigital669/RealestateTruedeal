@@ -1273,14 +1273,6 @@ export function ScraperImporter({ onImportComplete, showToast }: ScraperImporter
               { label: 'Facing Direction', value: cleanVal(f.FacingText) },
               { label: 'Parking Details', value: cleanVal(f.ParkingDetails) }
             ]
-          },
-          {
-            title: 'Advisory & Branch Office',
-            items: [
-              { label: 'Branch Office', value: cleanVal(f.BranchName) },
-              { label: 'Relationship Manager', value: cleanVal(f.EmployeeName) },
-              { label: 'Source Classification', value: cleanVal(f.SourceName) }
-            ]
           }
         ];
 

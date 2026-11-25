@@ -1381,14 +1381,6 @@ export function PropertyDetailPageClient({
                       { label: 'Unique Feature', value: valUniqueFeature },
                       ...dynamicExtraItems
                     ]
-                  },
-                  {
-                    title: 'Advisory & Branch Office',
-                    items: [
-                      { label: 'Branch Office', value: valBranchName },
-                      { label: 'Relationship Manager', value: valEmployeeName },
-                      { label: 'Source Classification', value: valSourceName },
-                    ]
                   }
                 ];
 
