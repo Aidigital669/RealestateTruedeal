@@ -137,7 +137,7 @@ export function PropertyDetailsModal({
     add('Carpet Area', d.CarpetAreaName || (!d.SuperAreaName ? property?.sqft : undefined));
     add('Built-up Area', d.BuiltAreaName);
     add('Plot Size / Land Area', d.PlotSizeName);
-    add('Expected Price', d.ExpectedPrice ? (String(d.ExpectedPrice).startsWith('₹') ? d.ExpectedPrice : `₹${d.ExpectedPrice}`) : property?.price);
+    add('Expected Price', property?.price && !isZeroPrice(property?.price) ? formatPriceDisplay(property.price) : (d.ExpectedPrice ? (String(d.ExpectedPrice).startsWith('₹') ? d.ExpectedPrice : `₹${d.ExpectedPrice}`) : property?.price));
     if (d.PricePerUnitArea) {
       const num = Number(d.PricePerUnitArea);
       add('Price Per Sq.Ft.', !isNaN(num) && num > 0 ? `₹${num.toLocaleString('en-IN')}/Sq.Ft.` : String(d.PricePerUnitArea));

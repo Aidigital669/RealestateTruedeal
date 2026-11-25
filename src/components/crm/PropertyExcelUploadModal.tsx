@@ -280,6 +280,9 @@ function parseIndianPriceNumber(priceRaw: any): number {
   const lMatch = str.match(/([0-9]+(?:\.[0-9]+)?)\s*(?:lakh|lakhs|lac|lacs|l)\b/i);
   if (lMatch) return Math.round(parseFloat(lMatch[1]) * 100000);
 
+  const thMatch = str.match(/([0-9]+(?:\.[0-9]+)?)\s*(?:th|thousand|k)\b/i);
+  if (thMatch) return Math.round(parseFloat(thMatch[1]) * 1000);
+
   const cleanNum = parseFloat(str.replace(/[^0-9.]/g, ''));
   return !isNaN(cleanNum) ? cleanNum : 0;
 }
@@ -305,9 +308,18 @@ function formatPriceForDisplay(rawPrice: any): string {
 }
 
 function calculatePriceData(row: any, area: number, fields48?: Record<string, any>): { price: number; formatted: string } {
+  // 1. Direct total price columns (ExpectedPrice first)
+  const expectedVal = fields48?.ExpectedPrice || row.ExpectedPrice || row['Expected Price'] || row.expected_price;
+  if (expectedVal !== undefined && expectedVal !== null && String(expectedVal).trim() !== '') {
+    const p = parseIndianPriceNumber(expectedVal);
+    if (p > 0) {
+      return { price: p, formatted: formatPriceForDisplay(p) };
+    }
+  }
+
   const isRent = fields48?.Lease_Sale && /lease|rent/i.test(String(fields48.Lease_Sale));
 
-  // If Rent / Lease property, prioritize RentPM
+  // If Rent / Lease property, check RentPM
   if (isRent) {
     const rentVal = fields48?.RentPM || row.RentPM || row['Rent PM'] || row.rent_pm || row.Rent || row['Monthly Rent'];
     if (rentVal !== undefined && rentVal !== null && String(rentVal).trim() !== '') {
@@ -322,19 +334,10 @@ function calculatePriceData(row: any, area: number, fields48?: Record<string, an
           }
         }
         return {
-          price: r * 100,
+          price: r,
           formatted: `₹${r >= 100000 ? (r / 100000).toFixed(2) + ' Lakh' : r.toLocaleString('en-IN')}/mo${depSuffix}`
         };
       }
-    }
-  }
-
-  // 1. Direct total price columns (ExpectedPrice first)
-  const expectedVal = fields48?.ExpectedPrice || row.ExpectedPrice || row['Expected Price'] || row.expected_price;
-  if (expectedVal !== undefined && expectedVal !== null && String(expectedVal).trim() !== '') {
-    const p = parseIndianPriceNumber(expectedVal);
-    if (p > 10000) {
-      return { price: p, formatted: formatPriceForDisplay(p) };
     }
   }
 
@@ -369,7 +372,7 @@ function calculatePriceData(row: any, area: number, fields48?: Record<string, an
     }
     if (!isNaN(pua) && pua > 0 && pua < 500 && area > 0) {
       const monthlyRent = Math.round(area * pua);
-      return { price: monthlyRent * 100, formatted: `₹${(monthlyRent / 100000).toFixed(1)} Lakh/mo (Rent)` };
+      return { price: monthlyRent, formatted: `₹${(monthlyRent / 100000).toFixed(1)} Lakh/mo (Rent)` };
     }
   }
 
@@ -378,7 +381,7 @@ function calculatePriceData(row: any, area: number, fields48?: Record<string, an
   if (rentRaw) {
     const r = parseFloat(String(rentRaw).replace(/[^0-9.]/g, ''));
     if (!isNaN(r) && r > 0) {
-      return { price: r * 100, formatted: `₹${(r / 100000).toFixed(1)} Lakh/mo (Rent)` };
+      return { price: r, formatted: `₹${(r / 100000).toFixed(1)} Lakh/mo (Rent)` };
     }
   }
 

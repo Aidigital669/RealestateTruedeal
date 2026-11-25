@@ -77,10 +77,14 @@ export async function fetchAllProperties(forceFresh = false): Promise<PropertyIt
 
         // Pricing strictly adheres to Excel ExpectedPrice / DB price / rent
         let numPrice = 0;
-        if (p.price !== null && p.price !== undefined && !isNaN(Number(p.price)) && Number(p.price) > 0) {
+        const expPriceParsed = (dossier.ExpectedPrice !== undefined && dossier.ExpectedPrice !== null && String(dossier.ExpectedPrice).trim() !== '')
+          ? parseIndianPriceToNumber(dossier.ExpectedPrice)
+          : null;
+
+        if (expPriceParsed !== null) {
+          numPrice = expPriceParsed;
+        } else if (p.price !== null && p.price !== undefined && !isNaN(Number(p.price)) && Number(p.price) > 0) {
           numPrice = Number(p.price);
-        } else if (dossier.ExpectedPrice) {
-          numPrice = parseIndianPriceToNumber(dossier.ExpectedPrice) || 0;
         } else if (p.rent !== null && p.rent !== undefined && !isNaN(Number(p.rent)) && Number(p.rent) > 0) {
           numPrice = Number(p.rent);
         } else if (dossier.RentPM) {
@@ -95,7 +99,9 @@ export async function fetchAllProperties(forceFresh = false): Promise<PropertyIt
         const formattedPrice =
           numPrice >= 10000000
             ? `₹${(numPrice / 10000000).toFixed(2)} Cr`
-            : (numPrice > 0 ? `₹${(numPrice / 100000).toFixed(1)} Lakh` : 'Price on Request');
+            : (numPrice >= 100000
+                ? `₹${(numPrice / 100000).toFixed(1)} Lakh`
+                : (numPrice > 0 ? `₹${numPrice.toLocaleString('en-IN')}` : 'Price on Request'));
 
         const isCommercial =
           (p.type_name && p.type_name.toLowerCase().includes('commercial')) ||
@@ -204,7 +210,7 @@ export async function fetchAllProperties(forceFresh = false): Promise<PropertyIt
           location: p.location || `${p.locality}, Pune, Maharashtra`,
           price: displayPrice,
           priceRaw: numPrice,
-          priceSuffix: isPriceHidden ? "On Request" : "All Inclusive",
+          priceSuffix: isPriceHidden ? "On Request" : (isRent ? "/ month" : "All Inclusive"),
           bhk: bhkStr,
           bhkNum: p.bhk_num || 0,
           sqft: sqftStr,

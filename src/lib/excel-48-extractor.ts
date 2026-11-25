@@ -526,7 +526,20 @@ export function format48ValueForTable(key: string, val: any): string {
 
   // Price formatting
   if (['ExpectedPrice', 'DepositePrice'].includes(key)) {
-    const num = parseFloat(s.replace(/[^0-9.]/g, ''));
+    let num = 0;
+    if (/(?:cr|crore)/i.test(s)) {
+      const match = s.match(/[\d.]+/);
+      if (match) num = Math.round(parseFloat(match[0]) * 10000000);
+    } else if (/(?:lakh|lac)/i.test(s)) {
+      const match = s.match(/[\d.]+/);
+      if (match) num = Math.round(parseFloat(match[0]) * 100000);
+    } else if (/(?:th|thousand|k)\b/i.test(s)) {
+      const match = s.match(/[\d.]+/);
+      if (match) num = Math.round(parseFloat(match[0]) * 1000);
+    } else {
+      num = parseFloat(s.replace(/[^0-9.]/g, ''));
+    }
+
     if (!isNaN(num) && num > 0) {
       if (num >= 10000000) return `₹${(num / 10000000).toFixed(2)} Cr`;
       if (num >= 100000) return `₹${(num / 100000).toFixed(1)} Lakh`;

@@ -1242,6 +1242,9 @@ export function PropertyDetailPageClient({
                 })();
 
                 const valExpectedPrice = (() => {
+                  if (property.price && !isZeroPrice(property.price)) {
+                    return formatPriceDisplay(property.price);
+                  }
                   const raw = getFirst(d.ExpectedPrice, property.price);
                   if (!raw) return '';
                   return raw.startsWith('₹') ? raw : `₹${raw}`;
