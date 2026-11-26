@@ -47,6 +47,116 @@ import {
 } from '@/lib/dossier-parser';
 import { parseAndNormalizeVideoUrl } from '@/lib/video-utils';
 
+// ================= SHARED IMAGE UPLOAD HELPERS =================
+async function compressImageIfNeeded(file: File): Promise<File> {
+  // Compress raster images > 500 KB so uploads always stay comfortably below Nginx 1MB defaults
+  if (!file.type.startsWith('image/') || file.type === 'image/svg+xml' || file.size <= 500 * 1024) {
+    return file;
+  }
+
+  return new Promise((resolve) => {
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      const maxDim = 1600;
+      let { width, height } = img;
+      if (width > maxDim || height > maxDim) {
+        if (width >= height) {
+          height = Math.round((height * maxDim) / width);
+          width = maxDim;
+        } else {
+          width = Math.round((width * maxDim) / height);
+          height = maxDim;
+        }
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        resolve(file);
+        return;
+      }
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => {
+          if (blob && blob.size < file.size) {
+            const baseName = file.name ? file.name.replace(/\.[^.]+$/, '') : 'photo';
+            resolve(new File([blob], `${baseName}.jpg`, { type: 'image/jpeg' }));
+          } else {
+            resolve(file);
+          }
+        },
+        'image/jpeg',
+        0.85
+      );
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(file);
+    };
+    img.src = objectUrl;
+  });
+}
+
+function extractImageFromPasteOrDrop(e: React.ClipboardEvent | React.DragEvent): File | null {
+  if ('clipboardData' in e && e.clipboardData?.items) {
+    for (let i = 0; i < e.clipboardData.items.length; i++) {
+      const item = e.clipboardData.items[i];
+      if (item.type.startsWith('image/')) {
+        const f = item.getAsFile();
+        if (f) return f;
+      }
+    }
+  }
+  if ('dataTransfer' in e && e.dataTransfer?.files) {
+    for (let i = 0; i < e.dataTransfer.files.length; i++) {
+      const f = e.dataTransfer.files[i];
+      if (f.type.startsWith('image/')) return f;
+    }
+  }
+  return null;
+}
+
+async function uploadPropertyPhoto(
+  rawFile: File,
+  propertyId: string | number,
+  onPreview: (dataUrl: string) => void
+): Promise<string | null> {
+  const file = await compressImageIfNeeded(rawFile);
+  let finishedServerUpload = false;
+
+  const reader = new FileReader();
+  reader.onloadend = () => {
+    if (!finishedServerUpload && typeof reader.result === 'string') {
+      onPreview(reader.result);
+    }
+  };
+  reader.readAsDataURL(file);
+
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('propertyId', String(propertyId));
+    const res = await fetch('/api/admin/upload-image', {
+      method: 'POST',
+      body: formData,
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data?.success && data.url) {
+        finishedServerUpload = true;
+        return data.url as string;
+      }
+    }
+  } catch (err) {
+    console.warn('Direct multipart upload failed, keeping data URL fallback:', err);
+  }
+  return null;
+}
+
 // ================= EDIT SECTION MODAL =================
 export function EditSectionModal({
   section,
@@ -206,6 +316,7 @@ export function AddPropertyModal({
   const [reraNumber, setReraNumber] = useState('');
   const [rpsStatus, setRpsStatus] = useState('100% Clear Title • Zero Encumbrances');
   const [isAiStructuring, setIsAiStructuring] = useState(false);
+  const [uploadingSlots, setUploadingSlots] = useState<{ [key: number]: boolean }>({});
 
   const handleAiStandardize = async () => {
     if (!description.trim()) {
@@ -246,7 +357,7 @@ export function AddPropertyModal({
 
   if (!isOpen) return null;
 
-  const [uploadingSlots, setUploadingSlots] = useState<{ [key: number]: boolean }>({});
+  const isUploadingAny = Object.keys(uploadingSlots).length > 0;
 
   const handleAddImageSlot = () => setImages((prev) => [...prev, '']);
   const handleRemoveImageSlot = (index: number) => {
@@ -272,30 +383,13 @@ export function AddPropertyModal({
   };
   const handleFileUpload = async (index: number, file: File) => {
     setUploadingSlots((prev) => ({ ...prev, [index]: true }));
-
-    // Instant local preview
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      if (typeof reader.result === 'string') {
-        handleImageChange(index, reader.result);
-      }
-    };
-    reader.readAsDataURL(file);
-
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('propertyId', 'new');
-      const res = await fetch('/api/admin/upload-image', {
-        method: 'POST',
-        body: formData,
+      const uploadedUrl = await uploadPropertyPhoto(file, 'new', (previewUrl) => {
+        handleImageChange(index, previewUrl);
       });
-      const data = await res.json();
-      if (data?.success && data.url) {
-        handleImageChange(index, data.url);
+      if (uploadedUrl) {
+        handleImageChange(index, uploadedUrl);
       }
-    } catch {
-      // FileReader result remains as fallback
     } finally {
       setUploadingSlots((prev) => {
         const next = { ...prev };
@@ -305,40 +399,36 @@ export function AddPropertyModal({
     }
   };
 
-  const handleImagePasteOrDrop = (e: React.ClipboardEvent | React.DragEvent, targetIndex?: number) => {
-    let file: File | null = null;
-    if ('clipboardData' in e && e.clipboardData?.items) {
-      for (let i = 0; i < e.clipboardData.items.length; i++) {
-        const item = e.clipboardData.items[i];
-        if (item.type.startsWith('image/')) {
-          file = item.getAsFile();
-          break;
-        }
-      }
-    } else if ('dataTransfer' in e && e.dataTransfer?.files) {
-      for (let i = 0; i < e.dataTransfer.files.length; i++) {
-        const f = e.dataTransfer.files[i];
-        if (f.type.startsWith('image/')) {
-          file = f;
-          break;
-        }
+  const handleMultipleFileUpload = (files: File[]) => {
+    if (files.length === 0) return;
+    const targetIndices: number[] = [];
+    const nextImages = [...images];
+    for (const file of files) {
+      const emptyIdx = nextImages.findIndex((img) => !img);
+      if (emptyIdx >= 0) {
+        nextImages[emptyIdx] = '__pending__';
+        targetIndices.push(emptyIdx);
+      } else {
+        targetIndices.push(nextImages.length);
+        nextImages.push('__pending__');
       }
     }
+    setImages(nextImages.map((v) => (v === '__pending__' ? '' : v)));
+    files.forEach((file, idx) => {
+      handleFileUpload(targetIndices[idx], file);
+    });
+  };
 
+  const handleImagePasteOrDrop = (e: React.ClipboardEvent | React.DragEvent, targetIndex?: number) => {
+    const file = extractImageFromPasteOrDrop(e);
     if (file) {
       e.preventDefault();
       e.stopPropagation();
-      let idx = targetIndex;
-      if (idx === undefined) {
-        const emptyIdx = images.findIndex((img) => !img);
-        if (emptyIdx >= 0) {
-          idx = emptyIdx;
-        } else {
-          idx = images.length;
-          setImages((prev) => [...prev, '']);
-        }
+      if (targetIndex !== undefined) {
+        handleFileUpload(targetIndex, file);
+      } else {
+        handleMultipleFileUpload([file]);
       }
-      handleFileUpload(idx, file);
       return true;
     }
     return false;
@@ -751,15 +841,7 @@ export function AddPropertyModal({
                 className="hidden"
                 onChange={(e) => {
                   const files = Array.from(e.target.files || []);
-                  if (files.length === 0) return;
-                  files.forEach((file, fIdx) => {
-                    const emptyIdx = images.findIndex((img) => !img);
-                    const targetIdx = emptyIdx >= 0 ? emptyIdx : images.length + fIdx;
-                    if (targetIdx >= images.length) {
-                      setImages((prev) => [...prev, '']);
-                    }
-                    handleFileUpload(targetIdx, file);
-                  });
+                  handleMultipleFileUpload(files);
                   e.target.value = '';
                 }}
               />
@@ -1008,6 +1090,7 @@ export function AddPropertyModal({
             Cancel
           </button>
           <button
+            disabled={isUploadingAny}
             onClick={() => {
               if (!name.trim()) return alert('Please enter property name');
               const cleanImages = images.map((u) => u.trim()).filter(Boolean);
@@ -1062,9 +1145,9 @@ export function AddPropertyModal({
               });
               onClose();
             }}
-            className="px-4 py-2 text-xs font-semibold text-white bg-black hover:bg-zinc-800 rounded-lg transition shadow-xs cursor-pointer"
+            className="px-4 py-2 text-xs font-semibold text-white bg-black hover:bg-zinc-800 rounded-lg transition shadow-xs cursor-pointer disabled:opacity-50"
           >
-            {publishOnWebsite ? 'Publish Property' : 'Save as Draft'}
+            {isUploadingAny ? 'Uploading Photos...' : (publishOnWebsite ? 'Publish Property' : 'Save as Draft')}
           </button>
         </div>
       </div>
@@ -1140,6 +1223,7 @@ export function EditPropertyModal({
     totalLandedOutlay?: string;
   }>({});
   const [isAiStructuring, setIsAiStructuring] = useState(false);
+  const [uploadingSlots, setUploadingSlots] = useState<{ [key: number]: boolean }>({});
 
   const handleAiStandardize = async () => {
     if (!description.trim()) {
@@ -1325,12 +1409,13 @@ export function EditPropertyModal({
         }
       }
       setSelectedPurposes(existingPIds);
+      setUploadingSlots({});
     }
   }, [property]);
 
   if (!isOpen || !property) return null;
 
-  const [uploadingSlots, setUploadingSlots] = useState<{ [key: number]: boolean }>({});
+  const isUploadingAny = Object.keys(uploadingSlots).length > 0;
 
   const handleAddImageSlot = () => setImages((prev) => [...prev, '']);
   const handleRemoveImageSlot = (index: number) => {
@@ -1356,30 +1441,13 @@ export function EditPropertyModal({
   };
   const handleFileUpload = async (index: number, file: File) => {
     setUploadingSlots((prev) => ({ ...prev, [index]: true }));
-
-    // Instant local preview
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      if (typeof reader.result === 'string') {
-        handleImageChange(index, reader.result);
-      }
-    };
-    reader.readAsDataURL(file);
-
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('propertyId', String(property?.id || 'edit'));
-      const res = await fetch('/api/admin/upload-image', {
-        method: 'POST',
-        body: formData,
+      const uploadedUrl = await uploadPropertyPhoto(file, property?.id || 'edit', (previewUrl) => {
+        handleImageChange(index, previewUrl);
       });
-      const data = await res.json();
-      if (data?.success && data.url) {
-        handleImageChange(index, data.url);
+      if (uploadedUrl) {
+        handleImageChange(index, uploadedUrl);
       }
-    } catch {
-      // FileReader result remains as fallback
     } finally {
       setUploadingSlots((prev) => {
         const next = { ...prev };
@@ -1389,40 +1457,36 @@ export function EditPropertyModal({
     }
   };
 
-  const handleImagePasteOrDrop = (e: React.ClipboardEvent | React.DragEvent, targetIndex?: number) => {
-    let file: File | null = null;
-    if ('clipboardData' in e && e.clipboardData?.items) {
-      for (let i = 0; i < e.clipboardData.items.length; i++) {
-        const item = e.clipboardData.items[i];
-        if (item.type.startsWith('image/')) {
-          file = item.getAsFile();
-          break;
-        }
-      }
-    } else if ('dataTransfer' in e && e.dataTransfer?.files) {
-      for (let i = 0; i < e.dataTransfer.files.length; i++) {
-        const f = e.dataTransfer.files[i];
-        if (f.type.startsWith('image/')) {
-          file = f;
-          break;
-        }
+  const handleMultipleFileUpload = (files: File[]) => {
+    if (files.length === 0) return;
+    const targetIndices: number[] = [];
+    const nextImages = [...images];
+    for (const file of files) {
+      const emptyIdx = nextImages.findIndex((img) => !img);
+      if (emptyIdx >= 0) {
+        nextImages[emptyIdx] = '__pending__';
+        targetIndices.push(emptyIdx);
+      } else {
+        targetIndices.push(nextImages.length);
+        nextImages.push('__pending__');
       }
     }
+    setImages(nextImages.map((v) => (v === '__pending__' ? '' : v)));
+    files.forEach((file, idx) => {
+      handleFileUpload(targetIndices[idx], file);
+    });
+  };
 
+  const handleImagePasteOrDrop = (e: React.ClipboardEvent | React.DragEvent, targetIndex?: number) => {
+    const file = extractImageFromPasteOrDrop(e);
     if (file) {
       e.preventDefault();
       e.stopPropagation();
-      let idx = targetIndex;
-      if (idx === undefined) {
-        const emptyIdx = images.findIndex((img) => !img);
-        if (emptyIdx >= 0) {
-          idx = emptyIdx;
-        } else {
-          idx = images.length;
-          setImages((prev) => [...prev, '']);
-        }
+      if (targetIndex !== undefined) {
+        handleFileUpload(targetIndex, file);
+      } else {
+        handleMultipleFileUpload([file]);
       }
-      handleFileUpload(idx, file);
       return true;
     }
     return false;
@@ -2594,15 +2658,7 @@ export function EditPropertyModal({
                   className="hidden"
                   onChange={(e) => {
                     const files = Array.from(e.target.files || []);
-                    if (files.length === 0) return;
-                    files.forEach((file, fIdx) => {
-                      const emptyIdx = images.findIndex((img) => !img);
-                      const targetIdx = emptyIdx >= 0 ? emptyIdx : images.length + fIdx;
-                      if (targetIdx >= images.length) {
-                        setImages((prev) => [...prev, '']);
-                      }
-                      handleFileUpload(targetIdx, file);
-                    });
+                    handleMultipleFileUpload(files);
                     e.target.value = '';
                   }}
                 />
@@ -2809,13 +2865,18 @@ export function EditPropertyModal({
           </button>
           <button
             onClick={handleSave}
-            disabled={isSaving}
+            disabled={isSaving || isUploadingAny}
             className="px-5 py-2 text-xs font-bold text-white bg-black hover:bg-zinc-800 rounded-xl transition shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
           >
             {isSaving ? (
               <>
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 <span>Saving...</span>
+              </>
+            ) : isUploadingAny ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <span>Uploading Photos...</span>
               </>
             ) : (
               <span>Save Changes</span>
