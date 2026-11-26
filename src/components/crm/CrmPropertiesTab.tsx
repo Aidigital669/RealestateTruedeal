@@ -754,6 +754,7 @@ export function CrmPropertiesTab() {
                     src={prop.image}
                     alt={prop.name || 'Property'}
                     fill
+                    unoptimized
                     className="object-cover group-hover:scale-105 transition duration-500"
                   />
                 ) : (

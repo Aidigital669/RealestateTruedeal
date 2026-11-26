@@ -34,6 +34,8 @@ export function PropertyGalleryModal({
 }: PropertyGalleryModalProps) {
   const [activeMediaMode, setActiveMediaMode] = useState<'photos' | 'video'>('photos');
   const [activePhotoIdx, setActivePhotoIdx] = useState(0);
+  const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
+  const DEFAULT_FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80';
 
   // Extract all available photos for the property
   const mediaImages: string[] = useMemo(() => {
@@ -203,12 +205,16 @@ export function PropertyGalleryModal({
             {mediaImages.length > 0 && (
               <div className="relative w-full h-full">
                 <Image
-                  src={mediaImages[activePhotoIdx]}
+                  src={failedImages[mediaImages[activePhotoIdx]] ? DEFAULT_FALLBACK_IMAGE : mediaImages[activePhotoIdx]}
                   alt={`${property.name} - Photo ${activePhotoIdx + 1}`}
                   fill
                   className="object-contain"
                   priority
                   unoptimized
+                  onError={() => {
+                    const u = mediaImages[activePhotoIdx];
+                    if (u) setFailedImages((prev) => ({ ...prev, [u]: true }));
+                  }}
                 />
 
                 {/* Left Arrow */}
@@ -316,11 +322,14 @@ export function PropertyGalleryModal({
                   }`}
                 >
                   <Image
-                    src={imgUrl}
+                    src={failedImages[imgUrl] ? DEFAULT_FALLBACK_IMAGE : imgUrl}
                     alt={`Thumbnail ${idx + 1}`}
                     fill
                     unoptimized
                     className="object-cover"
+                    onError={() => {
+                      if (imgUrl) setFailedImages((prev) => ({ ...prev, [imgUrl]: true }));
+                    }}
                   />
                 </button>
               );

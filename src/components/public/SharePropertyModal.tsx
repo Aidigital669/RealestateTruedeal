@@ -153,6 +153,7 @@ export function SharePropertyModal({
                 src={property.image || '/LogoAnv-original.png'}
                 alt={property.name}
                 fill
+                unoptimized
                 className="object-cover"
                 sizes="64px"
               />

@@ -586,3 +586,17 @@ model PropertyBusinessPurpose {
   @@index([propertyId])
 }
 
+model UploadedFile {
+  id        Int      @id @default(autoincrement())
+  url       String   @unique
+  filename  String
+  mimeType  String
+  data      String
+  sizeBytes Int      @default(0)
+  createdAt temporal.createdAt()
+  updatedAt temporal.updatedAt()
+
+  @@index([url])
+  @@index([filename])
+}
+

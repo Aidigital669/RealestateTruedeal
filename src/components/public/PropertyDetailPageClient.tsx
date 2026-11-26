@@ -73,6 +73,8 @@ export function PropertyDetailPageClient({
   const [mediaMode, setMediaMode] = useState<'photos' | 'video'>('photos');
   const [activePhotoIdx, setActivePhotoIdx] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
+  const DEFAULT_FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1200&q=80';
 
   // Form State
   const [clientName, setClientName] = useState('');
@@ -896,12 +898,16 @@ export function PropertyDetailPageClient({
                   <>
                     {mediaImages.length > 0 ? (
                       <Image
-                        src={mediaImages[activePhotoIdx]}
+                        src={failedImages[mediaImages[activePhotoIdx]] ? DEFAULT_FALLBACK_IMAGE : mediaImages[activePhotoIdx]}
                         alt={`${property.name} - View ${activePhotoIdx + 1}`}
                         fill
                         className="object-cover group-hover:scale-102 transition duration-700 select-none cursor-pointer"
                         priority
                         unoptimized
+                        onError={() => {
+                          const u = mediaImages[activePhotoIdx];
+                          if (u) setFailedImages((prev) => ({ ...prev, [u]: true }));
+                        }}
                         onClick={() => setIsLightboxOpen(true)}
                       />
                     ) : (
@@ -1021,7 +1027,16 @@ export function PropertyDetailPageClient({
                         }`}
                       title={`View photo ${idx + 1}`}
                     >
-                      <Image src={imgUrl} alt={`Thumbnail ${idx + 1}`} fill className="object-cover" unoptimized />
+                      <Image 
+                        src={failedImages[imgUrl] ? DEFAULT_FALLBACK_IMAGE : imgUrl} 
+                        alt={`Thumbnail ${idx + 1}`} 
+                        fill 
+                        className="object-cover" 
+                        unoptimized 
+                        onError={() => {
+                          if (imgUrl) setFailedImages((prev) => ({ ...prev, [imgUrl]: true }));
+                        }}
+                      />
                       <span className="absolute bottom-1 right-1 bg-black/75 text-[9px] font-bold text-white px-1 rounded">
                         #{idx + 1}
                       </span>
@@ -1983,12 +1998,16 @@ export function PropertyDetailPageClient({
             ) : mediaImages.length > 0 ? (
               <div className="relative w-full h-full max-w-5xl max-h-[75vh]">
                 <Image
-                  src={mediaImages[activePhotoIdx]}
+                  src={failedImages[mediaImages[activePhotoIdx]] ? DEFAULT_FALLBACK_IMAGE : mediaImages[activePhotoIdx]}
                   alt={`Photo ${activePhotoIdx + 1}`}
                   fill
                   className="object-contain"
                   priority
                   unoptimized
+                  onError={() => {
+                    const u = mediaImages[activePhotoIdx];
+                    if (u) setFailedImages((prev) => ({ ...prev, [u]: true }));
+                  }}
                 />
 
                 {mediaImages.length > 1 && (

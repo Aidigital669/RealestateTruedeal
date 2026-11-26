@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
-import { saveImageIfBase64 } from '@/lib/image-storage';
+import { saveImageIfBase64Async, persistUploadedFile } from '@/lib/image-storage';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: false, error: 'No image data provided' }, { status: 400 });
       }
 
-      const fileUrl = saveImageIfBase64(base64Str, propertyId, index);
+      const fileUrl = await saveImageIfBase64Async(base64Str, propertyId, index);
       return NextResponse.json({ success: true, url: fileUrl });
     }
 
@@ -71,6 +71,11 @@ export async function POST(req: NextRequest) {
       }
 
       const fileUrl = `/uploads/properties/${filename}`;
+      const mimeType = file.type || (cleanExt === '.png' ? 'image/png' : cleanExt === '.webp' ? 'image/webp' : 'image/jpeg');
+
+      // Persist to Postgres database
+      await persistUploadedFile(fileUrl, filename, mimeType, buffer.toString('base64'), buffer.length);
+
       return NextResponse.json({ success: true, url: fileUrl });
     }
 

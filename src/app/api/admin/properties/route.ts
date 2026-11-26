@@ -4,7 +4,7 @@ import { getPurposesForProperties, setPropertyBusinessPurposes } from "@/lib/bus
 import { parseDossierData, embedDossierData } from "@/lib/dossier-parser";
 import { parseAndNormalizeVideoUrl } from "@/lib/video-utils";
 import { clearPropertyCache } from "@/lib/property-data";
-import { processImageList } from "@/lib/image-storage";
+import { processImageListAsync } from "@/lib/image-storage";
 
 export async function GET(req: NextRequest) {
   try {
@@ -320,7 +320,7 @@ export async function POST(req: NextRequest) {
       ? images.map((u: any) => String(u || '').trim()).filter((u: string) => u.length > 0)
       : (imageUrl && String(imageUrl).trim().length > 0 ? [String(imageUrl).trim()] : []);
 
-    const imagesToInsert = newProp ? processImageList(rawImagesToInsert, newProp.id) : rawImagesToInsert;
+    const imagesToInsert = newProp ? await processImageListAsync(rawImagesToInsert, newProp.id) : rawImagesToInsert;
 
     if (newProp && imagesToInsert.length > 0) {
       for (let i = 0; i < imagesToInsert.length; i++) {

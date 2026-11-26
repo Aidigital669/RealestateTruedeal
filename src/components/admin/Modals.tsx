@@ -246,6 +246,8 @@ export function AddPropertyModal({
 
   if (!isOpen) return null;
 
+  const [uploadingSlots, setUploadingSlots] = useState<{ [key: number]: boolean }>({});
+
   const handleAddImageSlot = () => setImages((prev) => [...prev, '']);
   const handleRemoveImageSlot = (index: number) => {
     setImages((prev) => {
@@ -269,6 +271,17 @@ export function AddPropertyModal({
     });
   };
   const handleFileUpload = async (index: number, file: File) => {
+    setUploadingSlots((prev) => ({ ...prev, [index]: true }));
+
+    // Instant local preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (typeof reader.result === 'string') {
+        handleImageChange(index, reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
+
     try {
       const formData = new FormData();
       formData.append('file', file);
@@ -280,16 +293,55 @@ export function AddPropertyModal({
       const data = await res.json();
       if (data?.success && data.url) {
         handleImageChange(index, data.url);
-        return;
       }
     } catch {
-      // Fallback to local FileReader
+      // FileReader result remains as fallback
+    } finally {
+      setUploadingSlots((prev) => {
+        const next = { ...prev };
+        delete next[index];
+        return next;
+      });
     }
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      handleImageChange(index, reader.result as string);
-    };
-    reader.readAsDataURL(file);
+  };
+
+  const handleImagePasteOrDrop = (e: React.ClipboardEvent | React.DragEvent, targetIndex?: number) => {
+    let file: File | null = null;
+    if ('clipboardData' in e && e.clipboardData?.items) {
+      for (let i = 0; i < e.clipboardData.items.length; i++) {
+        const item = e.clipboardData.items[i];
+        if (item.type.startsWith('image/')) {
+          file = item.getAsFile();
+          break;
+        }
+      }
+    } else if ('dataTransfer' in e && e.dataTransfer?.files) {
+      for (let i = 0; i < e.dataTransfer.files.length; i++) {
+        const f = e.dataTransfer.files[i];
+        if (f.type.startsWith('image/')) {
+          file = f;
+          break;
+        }
+      }
+    }
+
+    if (file) {
+      e.preventDefault();
+      e.stopPropagation();
+      let idx = targetIndex;
+      if (idx === undefined) {
+        const emptyIdx = images.findIndex((img) => !img);
+        if (emptyIdx >= 0) {
+          idx = emptyIdx;
+        } else {
+          idx = images.length;
+          setImages((prev) => [...prev, '']);
+        }
+      }
+      handleFileUpload(idx, file);
+      return true;
+    }
+    return false;
   };
 
   return (
@@ -673,6 +725,46 @@ export function AddPropertyModal({
               Add multiple photos (Photo #1 is the primary cover image). Only uploaded photos will be displayed on the property page.
             </p>
 
+            {/* Interactive Drag, Drop & Paste Zone */}
+            <div
+              onPaste={(e) => handleImagePasteOrDrop(e)}
+              onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+              onDrop={(e) => handleImagePasteOrDrop(e)}
+              onClick={() => {
+                document.getElementById('hidden-bulk-file-input-add')?.click();
+              }}
+              className="border-2 border-dashed border-amber-300 bg-amber-50/60 hover:bg-amber-100/60 rounded-xl p-3 text-center transition flex flex-col items-center justify-center gap-1 cursor-pointer group"
+              title="Click to choose files or press Ctrl+V anywhere to paste screenshot"
+            >
+              <div className="flex items-center gap-2 text-amber-900 font-bold text-xs">
+                <Upload className="w-4 h-4 text-amber-700" />
+                <span>Upload Photos, Drag &amp; Drop, or Paste Screenshot (Ctrl + V)</span>
+              </div>
+              <p className="text-[11px] text-zinc-500">
+                Supports multiple JPG, PNG, WEBP. Click here to select photos or press Ctrl+V to paste directly.
+              </p>
+              <input
+                id="hidden-bulk-file-input-add"
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(e) => {
+                  const files = Array.from(e.target.files || []);
+                  if (files.length === 0) return;
+                  files.forEach((file, fIdx) => {
+                    const emptyIdx = images.findIndex((img) => !img);
+                    const targetIdx = emptyIdx >= 0 ? emptyIdx : images.length + fIdx;
+                    if (targetIdx >= images.length) {
+                      setImages((prev) => [...prev, '']);
+                    }
+                    handleFileUpload(targetIdx, file);
+                  });
+                  e.target.value = '';
+                }}
+              />
+            </div>
+
             {/* Thumbnail Preview Strip */}
             {images.filter(Boolean).length > 0 && (
               <div className="flex items-center gap-2 overflow-x-auto py-1 px-1 bg-zinc-50 rounded-xl border border-zinc-200">
@@ -681,6 +773,11 @@ export function AddPropertyModal({
                   return (
                     <div key={idx} className="relative shrink-0 w-16 h-12 rounded-lg overflow-hidden border border-zinc-200 bg-zinc-100">
                       <img src={url} alt={`Photo #${idx + 1}`} className="w-full h-full object-cover" />
+                      {uploadingSlots[idx] && (
+                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                          <Loader2 className="w-4 h-4 text-amber-400 animate-spin" />
+                        </div>
+                      )}
                       <span className="absolute bottom-0.5 right-0.5 bg-black/80 text-[8px] font-bold text-white px-1 py-0.2 rounded">
                         {idx === 0 ? 'Cover' : `#${idx + 1}`}
                       </span>
@@ -693,9 +790,17 @@ export function AddPropertyModal({
             {/* Image Inputs */}
             <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
               {images.map((url, index) => (
-                <div key={index} className="flex items-center gap-2 p-2 rounded-xl bg-zinc-50 border border-zinc-200">
+                <div 
+                  key={index} 
+                  onPaste={(e) => handleImagePasteOrDrop(e, index)}
+                  onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                  onDrop={(e) => handleImagePasteOrDrop(e, index)}
+                  className="flex items-center gap-2 p-2 rounded-xl bg-zinc-50 border border-zinc-200"
+                >
                   <div className="w-12 h-10 rounded-lg overflow-hidden border border-zinc-200 bg-zinc-200 shrink-0 flex items-center justify-center relative">
-                    {url ? (
+                    {uploadingSlots[index] ? (
+                      <Loader2 className="w-4 h-4 text-amber-600 animate-spin" />
+                    ) : url ? (
                       <img src={url} alt={`#${index + 1}`} className="w-full h-full object-cover" />
                     ) : (
                       <ImageIcon className="w-4 h-4 text-zinc-400" />
@@ -710,7 +815,8 @@ export function AddPropertyModal({
                       type="text"
                       value={url}
                       onChange={(e) => handleImageChange(index, e.target.value)}
-                      placeholder={index === 0 ? "Cover Photo URL / Upload (https://...)" : `Photo #${index + 1} URL / Upload (https://...)`}
+                      onPaste={(e) => handleImagePasteOrDrop(e, index)}
+                      placeholder={index === 0 ? "Cover Photo URL / Paste (Ctrl+V) / Upload" : `Photo #${index + 1} URL / Paste (Ctrl+V) / Upload`}
                       className="w-full pl-3 pr-8 py-1.5 text-xs border border-zinc-200 bg-white rounded-lg focus:outline-hidden focus:ring-1 focus:ring-amber-500"
                     />
                     <label className="absolute right-1 cursor-pointer p-1 text-zinc-400 hover:text-amber-600 rounded" title="Upload Local Photo">
@@ -1224,6 +1330,8 @@ export function EditPropertyModal({
 
   if (!isOpen || !property) return null;
 
+  const [uploadingSlots, setUploadingSlots] = useState<{ [key: number]: boolean }>({});
+
   const handleAddImageSlot = () => setImages((prev) => [...prev, '']);
   const handleRemoveImageSlot = (index: number) => {
     setImages((prev) => {
@@ -1247,6 +1355,17 @@ export function EditPropertyModal({
     });
   };
   const handleFileUpload = async (index: number, file: File) => {
+    setUploadingSlots((prev) => ({ ...prev, [index]: true }));
+
+    // Instant local preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (typeof reader.result === 'string') {
+        handleImageChange(index, reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
+
     try {
       const formData = new FormData();
       formData.append('file', file);
@@ -1258,16 +1377,55 @@ export function EditPropertyModal({
       const data = await res.json();
       if (data?.success && data.url) {
         handleImageChange(index, data.url);
-        return;
       }
     } catch {
-      // Fallback to local FileReader
+      // FileReader result remains as fallback
+    } finally {
+      setUploadingSlots((prev) => {
+        const next = { ...prev };
+        delete next[index];
+        return next;
+      });
     }
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      handleImageChange(index, reader.result as string);
-    };
-    reader.readAsDataURL(file);
+  };
+
+  const handleImagePasteOrDrop = (e: React.ClipboardEvent | React.DragEvent, targetIndex?: number) => {
+    let file: File | null = null;
+    if ('clipboardData' in e && e.clipboardData?.items) {
+      for (let i = 0; i < e.clipboardData.items.length; i++) {
+        const item = e.clipboardData.items[i];
+        if (item.type.startsWith('image/')) {
+          file = item.getAsFile();
+          break;
+        }
+      }
+    } else if ('dataTransfer' in e && e.dataTransfer?.files) {
+      for (let i = 0; i < e.dataTransfer.files.length; i++) {
+        const f = e.dataTransfer.files[i];
+        if (f.type.startsWith('image/')) {
+          file = f;
+          break;
+        }
+      }
+    }
+
+    if (file) {
+      e.preventDefault();
+      e.stopPropagation();
+      let idx = targetIndex;
+      if (idx === undefined) {
+        const emptyIdx = images.findIndex((img) => !img);
+        if (emptyIdx >= 0) {
+          idx = emptyIdx;
+        } else {
+          idx = images.length;
+          setImages((prev) => [...prev, '']);
+        }
+      }
+      handleFileUpload(idx, file);
+      return true;
+    }
+    return false;
   };
 
   const handleAddHighlight = () => {
@@ -2407,8 +2565,48 @@ export function EditPropertyModal({
                 </button>
               </div>
               <p className="text-[11px] text-zinc-500">
-                Upload local photos or paste URLs. Photo #1 is the primary cover image. You can reorder or add more than 1 photo.
+                Upload local photos, drag and drop, or press Ctrl+V to paste screenshots directly. Photo #1 is the primary cover image.
               </p>
+
+              {/* Interactive Drag, Drop & Paste Zone */}
+              <div
+                onPaste={(e) => handleImagePasteOrDrop(e)}
+                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                onDrop={(e) => handleImagePasteOrDrop(e)}
+                onClick={() => {
+                  document.getElementById('hidden-bulk-file-input-edit')?.click();
+                }}
+                className="border-2 border-dashed border-amber-300 bg-amber-50/60 hover:bg-amber-100/60 rounded-xl p-3 text-center transition flex flex-col items-center justify-center gap-1 cursor-pointer group"
+                title="Click to choose files or press Ctrl+V anywhere to paste screenshot"
+              >
+                <div className="flex items-center gap-2 text-amber-900 font-bold text-xs">
+                  <Upload className="w-4 h-4 text-amber-700" />
+                  <span>Upload Photos, Drag &amp; Drop, or Paste Screenshot (Ctrl + V)</span>
+                </div>
+                <p className="text-[11px] text-zinc-500">
+                  Supports multiple JPG, PNG, WEBP. Copied clipboard images (Ctrl+V) automatically upload and save.
+                </p>
+                <input
+                  id="hidden-bulk-file-input-edit"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files || []);
+                    if (files.length === 0) return;
+                    files.forEach((file, fIdx) => {
+                      const emptyIdx = images.findIndex((img) => !img);
+                      const targetIdx = emptyIdx >= 0 ? emptyIdx : images.length + fIdx;
+                      if (targetIdx >= images.length) {
+                        setImages((prev) => [...prev, '']);
+                      }
+                      handleFileUpload(targetIdx, file);
+                    });
+                    e.target.value = '';
+                  }}
+                />
+              </div>
 
               {/* Thumbnail Preview Strip */}
               {images.filter(Boolean).length > 0 && (
@@ -2418,6 +2616,11 @@ export function EditPropertyModal({
                     return (
                       <div key={idx} className="relative shrink-0 w-16 h-12 rounded-lg overflow-hidden border border-zinc-200 bg-zinc-100">
                         <img src={url} alt={`Photo #${idx + 1}`} className="w-full h-full object-cover" />
+                        {uploadingSlots[idx] && (
+                          <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                            <Loader2 className="w-4 h-4 text-amber-400 animate-spin" />
+                          </div>
+                        )}
                         <span className="absolute bottom-0.5 right-0.5 bg-black/80 text-[8px] font-bold text-white px-1 py-0.2 rounded">
                           {idx === 0 ? 'Cover' : `#${idx + 1}`}
                         </span>
@@ -2430,9 +2633,17 @@ export function EditPropertyModal({
               {/* Image Inputs List */}
               <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
                 {images.map((url, index) => (
-                  <div key={index} className="flex items-center gap-2 p-2 rounded-xl bg-white border border-zinc-200">
+                  <div 
+                    key={index} 
+                    onPaste={(e) => handleImagePasteOrDrop(e, index)}
+                    onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                    onDrop={(e) => handleImagePasteOrDrop(e, index)}
+                    className="flex items-center gap-2 p-2 rounded-xl bg-white border border-zinc-200"
+                  >
                     <div className="w-12 h-10 rounded-lg overflow-hidden border border-zinc-200 bg-zinc-200 shrink-0 flex items-center justify-center relative">
-                      {url ? (
+                      {uploadingSlots[index] ? (
+                        <Loader2 className="w-4 h-4 text-amber-600 animate-spin" />
+                      ) : url ? (
                         <img src={url} alt={`#${index + 1}`} className="w-full h-full object-cover" />
                       ) : (
                         <ImageIcon className="w-4 h-4 text-zinc-400" />
@@ -2447,7 +2658,8 @@ export function EditPropertyModal({
                         type="text"
                         value={url}
                         onChange={(e) => handleImageChange(index, e.target.value)}
-                        placeholder={index === 0 ? "Cover Photo URL / Upload (https://...)" : `Photo #${index + 1} URL / Upload (https://...)`}
+                        onPaste={(e) => handleImagePasteOrDrop(e, index)}
+                        placeholder={index === 0 ? "Cover Photo URL / Paste (Ctrl+V) / Upload" : `Photo #${index + 1} URL / Paste (Ctrl+V) / Upload`}
                         className="w-full pl-3 pr-8 py-1.5 text-xs border border-zinc-200 bg-white rounded-lg focus:outline-hidden focus:ring-1 focus:ring-amber-500"
                       />
                       <label className="absolute right-1 cursor-pointer p-1 text-zinc-400 hover:text-amber-600 rounded" title="Upload Local Photo">
