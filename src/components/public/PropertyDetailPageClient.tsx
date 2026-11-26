@@ -647,85 +647,18 @@ export function PropertyDetailPageClient({
 
   const isCompared = isInCompare(property.id);
 
-  const renderPriceCard = () => (
-    <div className="bg-white rounded-2xl sm:rounded-3xl border border-zinc-200 p-5 sm:p-6 shadow-sm">
-      <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">
-        All-Inclusive Quoted Valuation
-      </span>
-      {property.hidePrice || isZeroPrice(property.price) ? (
-        <div className="mt-2 space-y-2.5">
-          <div className="text-xl sm:text-2xl font-black text-zinc-900 flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-amber-600" />
-            <span>Price on Request</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              const target = document.getElementById('visit-booking-section') || document.getElementById('enquiry-form-section');
-              if (target) {
-                target.scrollIntoView({ behavior: 'smooth' });
-              }
-            }}
-            className="w-full py-2.5 px-4 bg-[#b9974f] hover:bg-[#a4823d] text-zinc-950 font-black text-xs rounded-xl flex items-center justify-center gap-2 transition shadow-xs cursor-pointer"
-          >
-            <span>Request Official Price &amp; Brochure</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
-        </div>
-      ) : (
-        <>
-          <div className="text-2xl sm:text-4xl font-black text-zinc-950 mt-1">
-            {formatPriceDisplay(property.price)}
-          </div>
-          <div className="text-xs text-zinc-500 font-semibold mt-1 flex items-center">
-            <span>{property.priceSuffix || 'All Inclusive'}</span>
-          </div>
-        </>
-      )}
-
-      <div className="mt-4 pt-4 border-t border-zinc-100 flex items-center justify-between text-xs">
-        <span className="text-zinc-500">Estimated Rate:</span>
-        <span className="font-bold text-zinc-900">
-          {property.hidePrice || isZeroPrice(property.price)
-            ? 'Rate on Request'
-            : (property.ratePsf && Number(String(property.ratePsf).replace(/[^0-9.]/g, '')) > 0
-              ? `₹${Math.round(Number(String(property.ratePsf).replace(/[^0-9.]/g, ''))).toLocaleString('en-IN')} / sq.ft`
-              : (dossier?.PricePerUnitArea && Number(String(dossier.PricePerUnitArea).replace(/[^0-9.]/g, '')) > 0
-                ? `₹${Math.round(Number(String(dossier.PricePerUnitArea).replace(/[^0-9.]/g, ''))).toLocaleString('en-IN')} / sq.ft`
-                : (priceRaw > 0 && property.sqftNum && property.sqftNum > 0
-                  ? `₹${Math.round(priceRaw / property.sqftNum).toLocaleString('en-IN')} / sq.ft`
-                  : (priceRaw > 0 ? `₹${Math.round(priceRaw / 1100).toLocaleString('en-IN')} / sq.ft` : 'Rate on Request'))))}
-        </span>
-      </div>
-
-      {/* Quick Save & Compare Actions inside Price Card */}
-      <div className="mt-4 pt-4 border-t border-zinc-100 flex items-center gap-2">
-        <button
-          type="button"
-          onClick={handleToggleSave}
-          className={`flex-1 py-2.5 px-3 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${saved
-            ? 'bg-rose-50 border-rose-300 text-rose-600 shadow-xs'
-            : 'bg-zinc-50 hover:bg-zinc-100 border-zinc-200 text-zinc-700 hover:text-rose-600'
-            }`}
-        >
-          <Heart className={`w-4 h-4 ${saved ? 'fill-rose-500 text-rose-500' : ''}`} />
-          <span>{saved ? 'Shortlisted ✓' : 'Save'}</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => toggleCompare(property)}
-          className={`flex-1 py-2.5 px-3 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${isCompared
-            ? 'bg-amber-400 border-amber-400 text-black font-extrabold shadow-xs'
-            : 'bg-zinc-50 hover:bg-zinc-100 border-zinc-200 text-zinc-700'
-            }`}
-        >
-          <Scale className="w-4 h-4 text-zinc-500" />
-          <span>{isCompared ? 'Compared ✓' : 'Compare'}</span>
-        </button>
-      </div>
-    </div>
-  );
+  const estimatedRateText =
+    hidePrice || isZeroPrice(property.price)
+      ? 'Rate on Request'
+      : property.ratePsf && Number(String(property.ratePsf).replace(/[^0-9.]/g, '')) > 0
+        ? `₹${Math.round(Number(String(property.ratePsf).replace(/[^0-9.]/g, ''))).toLocaleString('en-IN')} / sq.ft`
+        : dossier?.PricePerUnitArea && Number(String(dossier.PricePerUnitArea).replace(/[^0-9.]/g, '')) > 0
+          ? `₹${Math.round(Number(String(dossier.PricePerUnitArea).replace(/[^0-9.]/g, ''))).toLocaleString('en-IN')} / sq.ft`
+          : priceRaw > 0 && property.sqftNum && property.sqftNum > 0
+            ? `₹${Math.round(priceRaw / property.sqftNum).toLocaleString('en-IN')} / sq.ft`
+            : priceRaw > 0
+              ? `₹${Math.round(priceRaw / 1100).toLocaleString('en-IN')} / sq.ft`
+              : 'Rate on Request';
 
   return (
     <>
@@ -842,48 +775,84 @@ export function PropertyDetailPageClient({
                 </p>
               </div>
 
-              {/* Media View & Fullscreen Controls - OUTSIDE the photo */}
-              <div className="flex items-center gap-2 w-full md:w-auto shrink-0">
-                <div className="flex items-center bg-zinc-100 p-0.5 sm:p-1 rounded-lg sm:rounded-xl border border-zinc-200 shadow-xs w-full sm:w-auto">
-                  {mediaImages.length > 0 && (
+              {/* Upper Pricing + Media View & Fullscreen Controls */}
+              <div className="flex flex-col items-start md:items-end gap-2.5 w-full md:w-auto shrink-0">
+                {/* Inline Upper Pricing Display */}
+                <div className="flex flex-wrap items-baseline md:justify-end gap-x-2.5 gap-y-1">
+                  {hidePrice || isZeroPrice(property.price) ? (
                     <button
                       type="button"
-                      onClick={() => setMediaMode('photos')}
-                      className={`flex-1 sm:flex-initial justify-center px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md sm:rounded-xl text-[11px] sm:text-xs font-bold transition flex items-center gap-1 sm:gap-1.5 cursor-pointer ${mediaMode === 'photos'
-                        ? 'bg-amber-400 text-black font-extrabold shadow-xs hover:bg-amber-300'
-                        : 'text-zinc-700 hover:text-black hover:bg-white'
-                        }`}
-                      title="Switch to Photos"
+                      onClick={() => {
+                        const target = document.getElementById('visit-booking-section') || document.getElementById('enquiry-form-section');
+                        if (target) target.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                      className="inline-flex items-center gap-1.5 text-sm sm:text-base font-black text-zinc-900 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-3 py-1 rounded-xl transition cursor-pointer"
                     >
-                      <ImageIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                      <span>Photos ({mediaImages.length})</span>
+                      <ShieldCheck className="w-4 h-4 text-amber-600" />
+                      <span>Price on Request</span>
                     </button>
+                  ) : (
+                    <>
+                      <div className="flex items-baseline gap-1.5">
+                        <span className="text-xl sm:text-2xl md:text-[28px] font-black text-zinc-950 tracking-tight leading-none">
+                          {formatPriceDisplay(property.price)}
+                        </span>
+                        <span className="text-xs font-semibold text-zinc-500">
+                          {property.priceSuffix || 'All Inclusive'}
+                        </span>
+                      </div>
+                      {estimatedRateText !== 'Rate on Request' && (
+                        <span className="text-[11px] font-semibold text-zinc-600 bg-white border border-zinc-200 px-2 py-0.5 rounded-lg shadow-2xs">
+                          {estimatedRateText}
+                        </span>
+                      )}
+                    </>
                   )}
+                </div>
 
-                  {hasVideo && (
+                {/* Media View & Fullscreen Controls - OUTSIDE the photo */}
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <div className="flex items-center bg-zinc-100 p-0.5 sm:p-1 rounded-lg sm:rounded-xl border border-zinc-200 shadow-xs w-full sm:w-auto">
+                    {mediaImages.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setMediaMode('photos')}
+                        className={`flex-1 sm:flex-initial justify-center px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md sm:rounded-xl text-[11px] sm:text-xs font-bold transition flex items-center gap-1 sm:gap-1.5 cursor-pointer ${mediaMode === 'photos'
+                          ? 'bg-amber-400 text-black font-extrabold shadow-xs hover:bg-amber-300'
+                          : 'text-zinc-700 hover:text-black hover:bg-white'
+                          }`}
+                        title="Switch to Photos"
+                      >
+                        <ImageIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                        <span>Photos ({mediaImages.length})</span>
+                      </button>
+                    )}
+
+                    {hasVideo && (
+                      <button
+                        type="button"
+                        onClick={() => setMediaMode('video')}
+                        className={`flex-1 sm:flex-initial justify-center px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md sm:rounded-xl text-[11px] sm:text-xs font-bold transition flex items-center gap-1 sm:gap-1.5 cursor-pointer ${mediaMode === 'video'
+                          ? 'bg-amber-400 text-black font-extrabold shadow-xs hover:bg-amber-300'
+                          : 'text-zinc-700 hover:text-black hover:bg-white'
+                          }`}
+                        title="Switch to Video Tour"
+                      >
+                        <Video className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                        <span>Video Tour</span>
+                      </button>
+                    )}
+
                     <button
                       type="button"
-                      onClick={() => setMediaMode('video')}
-                      className={`flex-1 sm:flex-initial justify-center px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md sm:rounded-xl text-[11px] sm:text-xs font-bold transition flex items-center gap-1 sm:gap-1.5 cursor-pointer ${mediaMode === 'video'
-                        ? 'bg-amber-400 text-black font-extrabold shadow-xs hover:bg-amber-300'
-                        : 'text-zinc-700 hover:text-black hover:bg-white'
-                        }`}
-                      title="Switch to Video Tour"
+                      onClick={() => setIsLightboxOpen(true)}
+                      className="p-1 sm:p-1.5 rounded-md sm:rounded-xl text-zinc-600 hover:text-black hover:bg-white transition cursor-pointer flex items-center justify-center shrink-0 ml-0.5"
+                      title="Open Fullscreen"
+                      aria-label="Open Fullscreen"
                     >
-                      <Video className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                      <span>Video Tour</span>
+                      <Maximize2 className="w-3.5 h-3.5" />
                     </button>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={() => setIsLightboxOpen(true)}
-                    className="p-1 sm:p-1.5 rounded-md sm:rounded-xl text-zinc-600 hover:text-black hover:bg-white transition cursor-pointer flex items-center justify-center shrink-0 ml-0.5"
-                    title="Open Fullscreen"
-                    aria-label="Open Fullscreen"
-                  >
-                    <Maximize2 className="w-3.5 h-3.5" />
-                  </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1110,13 +1079,6 @@ export function PropertyDetailPageClient({
                   </div>
                 );
               })()}
-
-              {/* MOBILE & TABLET PRICING CARD (Directly after Core Stats on < lg screens) */}
-              <div className="block lg:hidden">
-                {renderPriceCard()}
-              </div>
-
-
 
               {/* TABS NAVIGATION */}
               <div className="bg-white rounded-2xl border border-zinc-200 p-1 sm:p-2 flex items-center gap-1 sm:gap-2 overflow-x-auto scrollbar-none shadow-xs">
@@ -1804,11 +1766,6 @@ export function PropertyDetailPageClient({
                     )}
                   </form>
                 )}
-              </div>
-
-              {/* DESKTOP PRICE CARD */}
-              <div className="hidden lg:block">
-                {renderPriceCard()}
               </div>
             </div>
           </div>
