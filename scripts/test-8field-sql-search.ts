@@ -111,20 +111,180 @@ async function main() {
   }
   console.log(`   ✓ Verified /api/unified-search (${uJson.properties.length} rows) & /api/properties Dubai query (${pJson.properties.length} rows)`);
 
-  console.log('5. Testing all Pre-lease / Prelease / Pre leased / Pre lease variants produce consistent DB results...');
-  const preVariants = ['prelease', 'pre leased', 'Prelease', 'Pre lease', 'pre-lease', 'pre-leased'];
-  let baselineCount: number | null = null;
+  console.log('5. Testing all Pre-lease / Prelease / PreLease / Pre lease variants match identical 62 DB rows across SQL & HTTP routes...');
+  const preVariants = [
+    'prelease',
+    'pre lease',
+    'PreLease',
+    'Pre Lease',
+    'Pre lease',
+    'Prelease',
+    'pre leased',
+    'pre-lease',
+    'pre-leased',
+    'Pre Lease/Pre Rented'
+  ];
+  let baselineIds: string[] | null = null;
   for (const pv of preVariants) {
     const parsedPv = parseEightFieldRequirements(pv);
     assert.equal(parsedPv.transactionClassification, 'Pre Lease/Pre Rented', `Failed classification for "${pv}"`);
     assert.equal(parsedPv.keywords.length, 0, `Unexpected leftover keywords for "${pv}": ${parsedPv.keywords}`);
     const builtPv = buildEightFieldWhereClause(parsedPv);
-    const pvRows = await executeEightFieldSqlRows(builtPv.whereSql, builtPv.params, 200);
-    assert.ok(pvRows.length >= 60, `Expected >=60 preleased rows for "${pv}", got ${pvRows.length}`);
-    if (baselineCount === null) baselineCount = pvRows.length;
-    else assert.equal(pvRows.length, baselineCount, `Count mismatch for variant "${pv}"`);
+    const pvRows = await executeEightFieldSqlRows(builtPv.whereSql, builtPv.params, 300);
+    assert.equal(pvRows.length, 62, `Expected exact 62 Pre Lease/Pre Rented rows for "${pv}", got ${pvRows.length}`);
+    for (const r of pvRows) {
+      const tcVal = String(r.transactionClassification || r.dossierData?.TransactionName || '');
+      assert.equal(tcVal, 'Pre Lease/Pre Rented', `Wrong Transaction Classification returned for prelease search: id=${r.id} tc="${tcVal}"`);
+    }
+    const uVariantRes = await unifiedSearchRoute.GET(
+      new NextRequest('http://localhost:3000/api/unified-search?search=' + encodeURIComponent(pv))
+    );
+    const uVariantJson = await uVariantRes.json();
+    assert.equal(uVariantJson.success, true);
+    assert.equal(uVariantJson.properties.length, 62, `HTTP /api/unified-search mismatch for "${pv}": ${uVariantJson.properties.length}`);
+
+    const pVariantRes = await publicPropertiesRoute.GET(
+      new NextRequest('http://localhost:3000/api/properties?search=' + encodeURIComponent(pv))
+    );
+    const pVariantJson = await pVariantRes.json();
+    assert.equal(pVariantJson.success, true);
+    assert.equal(pVariantJson.properties.length, 62, `HTTP /api/properties mismatch for "${pv}": ${pVariantJson.properties.length}`);
+
+    const sortedSqlIds = pvRows.map((r: any) => String(r.id)).sort();
+    const sortedUnifiedIds = uVariantJson.properties.map((p: any) => String(p.id)).sort();
+    const sortedPropsIds = pVariantJson.properties.map((p: any) => String(p.id)).sort();
+    assert.deepEqual(sortedUnifiedIds, sortedSqlIds, `Unified search ID set mismatch for "${pv}"`);
+    assert.deepEqual(sortedPropsIds, sortedSqlIds, `/api/properties ID set mismatch for "${pv}"`);
+    if (baselineIds === null) baselineIds = sortedSqlIds;
+    else assert.deepEqual(sortedSqlIds, baselineIds, `SQL ID set mismatch for variant "${pv}"`);
   }
-  console.log(`   ✓ All 6 pre-lease spelling variants matched identical ${baselineCount} DB rows cleanly!`);
+  console.log(`   ✓ All ${preVariants.length} pre-lease variants matched exact ${baselineIds?.length} identical IDs across SQL, /api/unified-search, and /api/properties!`);
+
+  console.log('5b. Testing all other TransactionName classifications match DB schema strictly...');
+  const txChecks: Array<{ query: string; expectedMin: number; verify: (tc: string) => boolean }> = [
+    { query: 'New', expectedMin: 1750, verify: (tc) => tc === 'New' },
+    { query: 'New project', expectedMin: 1750, verify: (tc) => tc === 'New' },
+    { query: 'Resale', expectedMin: 500, verify: (tc) => tc === 'Resale' },
+    { query: 'Pre Launch', expectedMin: 85, verify: (tc) => tc === 'Pre Launch' },
+    { query: 'Individual/Company', expectedMin: 85, verify: (tc) => tc === 'Individual/Company' },
+    { query: 'Group Booking', expectedMin: 5, verify: (tc) => tc === 'Group Booking' },
+    { query: 'Individual', expectedMin: 95, verify: (tc) => tc.startsWith('Individual') }
+  ];
+  for (const txc of txChecks) {
+    const critTx = parseEightFieldRequirements(txc.query);
+    const builtTx = buildEightFieldWhereClause(critTx);
+    const txFacets = await fetchEightFieldGroupByFacets(builtTx.whereSql, builtTx.params);
+    const txTotal = txFacets.transactionTypes.reduce((s, x) => s + x.count, 0);
+    const txSample = await executeEightFieldSqlRows(builtTx.whereSql, builtTx.params, 100);
+    assert.ok(txTotal >= txc.expectedMin, `Expected >=${txc.expectedMin} rows for "${txc.query}", got ${txTotal}`);
+    for (const r of txSample) {
+      const tcVal = String(r.transactionClassification || r.dossierData?.TransactionName || '');
+      assert.ok(txc.verify(tcVal), `Classification "${tcVal}" invalid for query "${txc.query}" on id=${r.id}`);
+    }
+    console.log(`   ✓ TransactionName "${txc.query}" -> ${txTotal} exact matching rows`);
+  }
+
+  console.log('6. Testing strict WHERE ... AND ... invariants & DB anomaly guards...');
+  // 6a. "3 BHK apartment in Kharadi" -> MUST be 3 BHK AND apartment AND Kharadi (not 2BHK/4BHK apartments)
+  const bhkCrit = parseEightFieldRequirements('3 BHK apartment in Kharadi');
+  assert.deepEqual(bhkCrit.bhkNums, [3]);
+  assert.ok(bhkCrit.propertyTypes.includes('Residential Apartment'));
+  const bhkBuilt = buildEightFieldWhereClause(bhkCrit);
+  const bhkRows = await executeEightFieldSqlRows(bhkBuilt.whereSql, bhkBuilt.params, 100);
+  assert.ok(bhkRows.length > 0, 'Expected >0 3 BHK apartments in Kharadi');
+  for (const r of bhkRows) {
+    const combined = `${r.bhk_num || ''} ${r.configuration || ''} ${r.name || ''} ${r.description || ''}`.toLowerCase();
+    assert.ok(
+      Number(r.bhk_num) === 3 || /(?:^|[^0-9.])3\s*[- ]*\s*(?:bhk|bed|bedroom)/i.test(combined),
+      `Non-3BHK row leaked into 3 BHK query: id=${r.id} title="${r.name}"`
+    );
+  }
+  console.log(`   ✓ 3 BHK apartment in Kharadi -> ${bhkRows.length} exact 3 BHK rows (0 wrong-BHK leaks)`);
+
+  // 6b. Decimal BHK support ("4.5 BHK")
+  const halfBhkCrit = parseEightFieldRequirements('4.5 BHK');
+  assert.deepEqual(halfBhkCrit.bhkNums, [4.5]);
+  const halfBhkBuilt = buildEightFieldWhereClause(halfBhkCrit);
+  const halfBhkRows = await executeEightFieldSqlRows(halfBhkBuilt.whereSql, halfBhkBuilt.params, 50);
+  assert.ok(halfBhkRows.length > 0, 'Expected >0 4.5 BHK properties');
+  for (const r of halfBhkRows) {
+    const combined = `${r.configuration || ''} ${r.name || ''} ${r.description || ''}`.toLowerCase();
+    assert.match(combined, /4\.5\s*[- ]*\s*(?:bhk|bed|bedroom)/i, `Non-4.5 BHK leaked: id=${r.id}`);
+  }
+  console.log(`   ✓ 4.5 BHK query -> ${halfBhkRows.length} exact 4.5 BHK rows`);
+
+  // 6c. "Hospital" MUST NOT return Office (New) / Showroom (New) / Restaurant (New) rows with polluted pt.name='Hospital'
+  const hospCrit = parseEightFieldRequirements('Hospital');
+  assert.equal(hospCrit.keywords.length, 0);
+  const hospBuilt = buildEightFieldWhereClause(hospCrit);
+  const hospRows = await executeEightFieldSqlRows(hospBuilt.whereSql, hospBuilt.params, 200);
+  assert.ok(hospRows.length > 0 && hospRows.length <= 45, `Expected ~34-36 true hospital rows, got ${hospRows.length}`);
+  for (const r of hospRows) {
+    const isGenuineTitleHospital = /\b(?:hospital|medical|clinic)\b/i.test(String(r.name || ''));
+    assert.ok(
+      isGenuineTitleHospital || !/^(office|showroom|restaurant|sky villa)\b/i.test(String(r.configuration || '')),
+      `Polluted non-hospital row (${r.configuration}: "${r.name}") leaked into Hospital search: id=${r.id}`
+    );
+  }
+  console.log(`   ✓ Hospital query -> ${hospRows.length} true hospital rows (0 Office/Showroom/Restaurant leaks)`);
+
+  // 6d. Plurals ("shops for sale" and "villas in kharadi") strip stop words cleanly & return exact rows
+  const shopsCrit = parseEightFieldRequirements('shops for sale');
+  assert.equal(shopsCrit.transactionType, 'Sale');
+  assert.ok(shopsCrit.propertyTypes.includes('Shop/Showroom'));
+  assert.equal(shopsCrit.keywords.length, 0, `Unexpected keywords for "shops for sale": ${shopsCrit.keywords}`);
+  const shopsRows = await executeEightFieldSqlRows(...Object.values(buildEightFieldWhereClause(shopsCrit)).slice(0, 2) as [string, any[]], 50);
+  assert.ok(shopsRows.length > 0, 'Expected >0 shops for sale');
+
+  const villasCrit = parseEightFieldRequirements('villas in kharadi');
+  assert.ok(villasCrit.propertyTypes.includes('Residential Bunglow'));
+  assert.equal(villasCrit.keywords.length, 0, `Unexpected keywords for "villas in kharadi": ${villasCrit.keywords}`);
+  const villasBuilt = buildEightFieldWhereClause(villasCrit);
+  const villasRows = await executeEightFieldSqlRows(villasBuilt.whereSql, villasBuilt.params, 50);
+  assert.ok(villasRows.length > 0, 'Expected >0 villas in kharadi');
+  console.log(`   ✓ Plural typologies verified: "shops for sale" (${shopsRows.length}+), "villas in kharadi" (${villasRows.length})`);
+
+  // 6e. City isolation: "Pune" MUST NOT leak Dubai/Goa/Mumbai rows even when loc.city='Pune'
+  const puneCrit = parseEightFieldRequirements('Pune');
+  const puneBuilt = buildEightFieldWhereClause(puneCrit);
+  const puneRows = await executeEightFieldSqlRows(puneBuilt.whereSql, puneBuilt.params, 3000);
+  for (const r of puneRows) {
+    assert.ok(
+      !/(dubai|goa|margao|bhusawal|mumbai)/i.test(String(r.city_name || '')),
+      `Non-Pune city leaked into Pune query: id=${r.id} city_name=${r.city_name}`
+    );
+  }
+  console.log(`   ✓ City isolation verified: Pune query (${puneRows.length} rows) has 0 Dubai/Goa/Mumbai leaks`);
+
+  // 6f. Word boundary Locality: "Camp Pune" must NOT match unrelated "IT Campus" rows
+  const campCrit = parseEightFieldRequirements('Camp Pune');
+  const campBuilt = buildEightFieldWhereClause(campCrit);
+  const campRows = await executeEightFieldSqlRows(campBuilt.whereSql, campBuilt.params, 100);
+  for (const r of campRows) {
+    const locTxt = `${r.locality || ''} ${r.location || ''} ${r.name || ''}`.toLowerCase();
+    assert.match(locTxt, /\bcamp\b/i, `Campus false-match in Camp search: id=${r.id} loc="${locTxt}"`);
+  }
+  console.log(`   ✓ Locality boundary verified: "Camp Pune" -> ${campRows.length} exact Camp rows`);
+
+  // 6g. "prelease office in viman nagar" -> Sale prelease OR preleased office in Viman Nagar
+  const preOfficeRes = await unifiedSearchRoute.GET(
+    new NextRequest('http://localhost:3000/api/unified-search?search=' + encodeURIComponent('prelease office in viman nagar'))
+  );
+  const preOfficeJson = await preOfficeRes.json();
+  assert.equal(preOfficeJson.success, true);
+  assert.ok(preOfficeJson.properties.length > 0, 'Expected >0 prelease offices in Viman Nagar');
+  for (const p of preOfficeJson.properties) {
+    assert.ok(
+      `${p.locality} ${p.location} ${p.name}`.toLowerCase().includes('viman nagar'),
+      `Expected Viman Nagar on prelease office id=${p.id}`
+    );
+    assert.equal(
+      p.transactionClassification,
+      'Pre Lease/Pre Rented',
+      `Expected Transaction Classification "Pre Lease/Pre Rented" on id=${p.id}, got ${p.transactionClassification}`
+    );
+  }
+  console.log(`   ✓ "prelease office in viman nagar" -> ${preOfficeJson.properties.length} verified pre-leased office rows`);
 
   console.log('\nALL 8-FIELD SQL SEARCH TESTS PASSED!');
   process.exit(0);

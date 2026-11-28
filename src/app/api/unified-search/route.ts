@@ -81,6 +81,7 @@ function hydrateSqlRow(r: any, purposes: any[]) {
     tags: ["Verified Property", "Vastu Compliant"],
     reraNumber: r.rera_number,
     featured: Boolean(r.featured),
+    isPreleased: Boolean(r.is_preleased),
     listingType: r.listing_type || (isRent ? "Rent" : "Sale"),
     businessPurposes: purposes || [],
     isCommercial: detected !== "residential" && detected !== "land_plot",
@@ -253,8 +254,19 @@ export async function GET(req: NextRequest) {
     let finalRows = strictRows;
     let finalFacets = strictFacets;
 
-    // Graceful relaxed SQL fallback if strict 8-field AND intersection returned 0 rows
-    if (finalRows.length === 0 && eightField.hasAnyConstraint) {
+    // Graceful relaxed SQL fallback ONLY when relaxable constraints (area, price, keywords) caused 0 exact rows
+    const hasRelaxableConstraint = Boolean(
+      eightField.builtupArea.min !== null ||
+      eightField.builtupArea.max !== null ||
+      eightField.carpetArea.min !== null ||
+      eightField.carpetArea.max !== null ||
+      eightField.genericArea.min !== null ||
+      eightField.genericArea.max !== null ||
+      eightField.expectedPrice.min !== null ||
+      eightField.expectedPrice.max !== null ||
+      eightField.keywords.length > 0
+    );
+    if (finalRows.length === 0 && eightField.hasAnyConstraint && hasRelaxableConstraint) {
       const relaxedCriteria = {
         ...eightField,
         builtupArea: { min: null, max: null },
@@ -331,6 +343,9 @@ export async function GET(req: NextRequest) {
       ).catch(() => {});
     }
 
+    const totalMatchedCount =
+      finalFacets.transactionTypes.reduce((sum, r) => sum + Number(r.count || 0), 0) || properties.length;
+
     return NextResponse.json({
       success: true,
       ai: {
@@ -350,9 +365,9 @@ export async function GET(req: NextRequest) {
       phase2: {
         isFallbackActivated,
         fallbackBanner,
-        strictCount: isFallbackActivated ? 0 : properties.length,
-        expandedCount: isFallbackActivated ? properties.length : 0,
-        totalCount: properties.length,
+        strictCount: isFallbackActivated ? 0 : totalMatchedCount,
+        expandedCount: isFallbackActivated ? totalMatchedCount : 0,
+        totalCount: totalMatchedCount,
         appliedFilters: {
           ...eightField,
           radiusKm: 5

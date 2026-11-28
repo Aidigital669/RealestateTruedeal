@@ -179,10 +179,14 @@ export async function GET(req: NextRequest) {
         featured: !!p.featured,
         label: isCommercial ? "Commercial Landmark" : p.featured ? "Top Choice" : "New Launch",
         isCommercial,
+        isPreleased: Boolean(p.is_preleased),
         listingType: d.TransactionName ? (p.listing_type || "Sale") : p.listing_type || "Sale",
         businessPurposes: purposesMap[String(p.id)] || []
       });
     });
+
+    const totalMatchedCount =
+      facets.transactionTypes.reduce((sum, r) => sum + Number(r.count || 0), 0) || hydrated.length;
 
     if (cleanSearch.length > 2) {
       query(
@@ -192,7 +196,7 @@ export async function GET(req: NextRequest) {
           cleanSearch,
           eightField.localities[0] || eightField.cities[0] || "All",
           eightField.propertyTypes[0] || "All",
-          hydrated.length,
+          totalMatchedCount,
           eightField.transactionType || "buyer"
         ]
       ).catch(() => {});
@@ -200,9 +204,10 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      count: hydrated.length,
+      count: totalMatchedCount,
+      returnedCount: hydrated.length,
       aiParsed: false,
-      aiSummary: `SQL 8-field search matched ${hydrated.length} verified listings`,
+      aiSummary: `SQL 8-field search matched ${totalMatchedCount} verified listings`,
       eightFieldCriteria: eightField,
       groupByFacets: facets,
       similarAlternatives: [],

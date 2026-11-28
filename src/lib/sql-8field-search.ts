@@ -22,9 +22,9 @@ const DEFAULT_IMG =
 export const SQL_BUILTUP_EXPR = `
   COALESCE(
     NULLIF(p."builtupArea", 0),
-    NULLIF(substring(REPLACE(COALESCE(p."dossierData"->>'BuiltAreaName', ''), ',', '') FROM '([0-9]+(?:\\.[0-9]+)?)'), '')::numeric,
+    NULLIF(NULLIF(substring(REPLACE(COALESCE(p."dossierData"->>'BuiltAreaName', ''), ',', '') FROM '([0-9]+(?:\\.[0-9]+)?)'), '')::numeric, 0),
     NULLIF(p."saleableArea", 0),
-    NULLIF(substring(REPLACE(COALESCE(p."dossierData"->>'SuperAreaName', ''), ',', '') FROM '([0-9]+(?:\\.[0-9]+)?)'), '')::numeric,
+    NULLIF(NULLIF(substring(REPLACE(COALESCE(p."dossierData"->>'SuperAreaName', ''), ',', '') FROM '([0-9]+(?:\\.[0-9]+)?)'), '')::numeric, 0),
     0
   )
 `;
@@ -32,13 +32,18 @@ export const SQL_BUILTUP_EXPR = `
 export const SQL_CARPET_EXPR = `
   COALESCE(
     NULLIF(p."carpetArea", 0),
-    NULLIF(substring(REPLACE(COALESCE(p."dossierData"->>'CarpetAreaName', ''), ',', '') FROM '([0-9]+(?:\\.[0-9]+)?)'), '')::numeric,
+    NULLIF(NULLIF(substring(REPLACE(COALESCE(p."dossierData"->>'CarpetAreaName', ''), ',', '') FROM '([0-9]+(?:\\.[0-9]+)?)'), '')::numeric, 0),
     0
   )
 `;
 
 export const SQL_PRICE_EXPR = `
-  COALESCE(NULLIF(p.price, 0), NULLIF(p.rent, 0), NULLIF(p."monthlyRent", 0), 0)
+  COALESCE(
+    NULLIF(p.price, 0),
+    CASE WHEN p.rent >= 100 THEN p.rent ELSE NULL END,
+    CASE WHEN p."monthlyRent" >= 100 THEN p."monthlyRent" ELSE NULL END,
+    0
+  )
 `;
 
 export const SQL_CITY_EXPR = `
@@ -49,12 +54,31 @@ export const SQL_CLASS_EXPR = `
   COALESCE(NULLIF(TRIM(p."transactionClassification"), ''), NULLIF(TRIM(p."dossierData"->>'TransactionName'), ''), 'Not Specified')
 `;
 
+// Canonical typology that strips status tags like "(New)"/"(Preleased)" and overrides polluted pt.name (e.g., pt.name='Hospital' when cfg='Office (New)')
+export const SQL_EFFECTIVE_TYPOLOGY_EXPR = `
+  CASE
+    WHEN NULLIF(TRIM(p.configuration), '') IS NOT NULL
+      AND LOWER(TRIM(p.configuration)) != LOWER(COALESCE(TRIM(pt.name), ''))
+      AND (
+        LOWER(COALESCE(pt.name, '')) = 'hospital'
+        OR LOWER(p.configuration) ~ '\\((new|preleased|prelaunch|resale)\\)'
+        OR LOWER(p.configuration) ~ 'bhk'
+      )
+    THEN TRIM(REGEXP_REPLACE(p.configuration, '\\s*\\((New|Preleased|PreLaunch|Resale)\\)\\s*$', '', 'i'))
+    ELSE COALESCE(NULLIF(TRIM(pt.name), ''), NULLIF(TRIM(p.configuration), ''), 'Commercial')
+  END
+`;
+
+function escapePgRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 function expandCityPattern(city: string): string[] {
   const c = city.toLowerCase().trim();
-  if (c === 'pune east' || c === 'pune(east)') return ['%pune(east)%', '%pune east%'];
-  if (c === 'pune west' || c === 'pune(west)') return ['%pune(west)%', '%pune west%'];
-  if (c === 'pune north' || c === 'pune(north)') return ['%pune(north)%', '%pune north%'];
-  if (c === 'pune south' || c === 'pune(south)') return ['%pune(south)%', '%pune south%'];
+  if (c === 'pune east' || c === 'pune(east)' || c === 'east pune') return ['%pune(east)%', '%pune east%'];
+  if (c === 'pune west' || c === 'pune(west)' || c === 'west pune') return ['%pune(west)%', '%pune west%'];
+  if (c === 'pune north' || c === 'pune(north)' || c === 'north pune') return ['%pune(north)%', '%pune north%'];
+  if (c === 'pune south' || c === 'pune(south)' || c === 'south pune') return ['%pune(south)%', '%pune south%'];
   if (c === 'pune' || c === 'pune(all)') return ['%pune%'];
   if (c === 'goa' || c === 'north goa') return ['%goa%', '%margao%'];
   return [`%${c}%`];
@@ -100,69 +124,85 @@ export function buildEightFieldWhereClause(
     }
   }
 
-  // 2. Property Type (WHERE ... AND ...)
-  if (criteria.propertyTypes.length > 0 || criteria.bhkNums.length > 0) {
+  // 2. Property Type & BHK (separate AND clauses so "3 BHK apartment" does NOT match 1/2/4 BHK apartments)
+  if (criteria.propertyTypes.length > 0) {
     activeFieldCount++;
-    const typeOrs: string[] = [];
+    const ptGroupOrs: string[] = [];
 
     for (const ptLabel of criteria.propertyTypes) {
       const terms = getPropertyTypeMatchTerms(ptLabel);
       const termOrs: string[] = [];
       for (const term of terms) {
-        params.push(`%${term.toLowerCase()}%`);
+        const cleanTerm = term.toLowerCase().trim();
+        if (!cleanTerm) continue;
+        // Use Postgres word boundaries (\m...\M) so "land" doesn't match "woodland" & "shop" doesn't match "workshop"
+        const boundaryPattern = `\\m${escapePgRegex(cleanTerm).replace(/\\ /g, '\\s+')}\\M`;
+        params.push(boundaryPattern);
+        const rIdx = idx++;
         termOrs.push(
-          `(LOWER(COALESCE(pt.name, '')) LIKE $${idx} OR LOWER(COALESCE(p.configuration, '')) LIKE $${idx} OR LOWER(COALESCE(p."dossierData"->>'PropertyTypeName', '')) LIKE $${idx} OR LOWER(COALESCE(p.title, '')) LIKE $${idx})`
+          `(${SQL_EFFECTIVE_TYPOLOGY_EXPR} ~* $${rIdx} OR COALESCE(p.configuration, '') ~* $${rIdx} OR COALESCE(p."dossierData"->>'PropertyTypeName', '') ~* $${rIdx} OR COALESCE(p.title, '') ~* $${rIdx})`
         );
-        idx++;
       }
-      if (termOrs.length > 0) typeOrs.push(`(${termOrs.join(' OR ')})`);
+      if (termOrs.length > 0) ptGroupOrs.push(`(${termOrs.join(' OR ')})`);
     }
 
-    for (const bhkNum of criteria.bhkNums) {
-      params.push(bhkNum);
-      const bIdx = idx++;
-      params.push(`%${bhkNum} bhk%`);
-      const strIdx = idx++;
-      typeOrs.push(
-        `(p.bedrooms = $${bIdx} OR LOWER(COALESCE(p.configuration, '')) LIKE $${strIdx} OR LOWER(COALESCE(p.title, '')) LIKE $${strIdx} OR LOWER(COALESCE(p.description, '')) LIKE $${strIdx})`
-      );
-    }
-
-    if (typeOrs.length > 0) {
-      clauses.push(`(${typeOrs.join(' OR ')})`);
+    if (ptGroupOrs.length > 0) {
+      clauses.push(`(${ptGroupOrs.join(' OR ')})`);
     }
   }
 
-  // 3. Transaction Classification (WHERE ... AND ...)
+  if (criteria.bhkNums.length > 0) {
+    if (criteria.propertyTypes.length === 0) activeFieldCount++;
+    const bhkOrs: string[] = [];
+    for (const bhkNum of criteria.bhkNums) {
+      params.push(bhkNum);
+      const bIdx = idx++;
+      const escBhk = escapePgRegex(String(bhkNum));
+      params.push(`(?:^|[^0-9.])${escBhk}\\s*[- ]*\\s*(?:bhk|bed|bedroom)`);
+      const strIdx = idx++;
+      bhkOrs.push(
+        `(p.bedrooms::numeric = $${bIdx} OR COALESCE(p.configuration, '') ~* $${strIdx} OR COALESCE(p.title, '') ~* $${strIdx} OR (COALESCE(p.title, '') !~* '(?:^|[^0-9.])[1-9](?:\\.5)?\\s*[- ]*\\s*bhk' AND (COALESCE(p.description, '') ~* $${strIdx} OR COALESCE(p."dossierData"::text, '') ~* $${strIdx})))`
+      );
+    }
+    if (bhkOrs.length > 0) {
+      clauses.push(`(${bhkOrs.join(' OR ')})`);
+    }
+  }
+
+  // 3. Transaction Classification (Strict match against Property.transactionClassification / dossierData.TransactionName)
   if (criteria.transactionClassification) {
     activeFieldCount++;
     const tc = criteria.transactionClassification.toLowerCase().trim();
+    const normExpr = (col: string) => `LOWER(regexp_replace(COALESCE(${col}, ''), '[-_\\s/]+', '', 'g'))`;
     if (tc.includes('pre lease') || tc.includes('pre-lease') || tc.includes('prelease') || tc.includes('pre rent') || tc.includes('prerented')) {
-      const normExpr = (col: string) => `LOWER(regexp_replace(COALESCE(${col}, ''), '[-_\\s/]+', '', 'g'))`;
       const preleaseMatch = (col: string) =>
-        `(${normExpr(col)} LIKE '%prelease%' OR ${normExpr(col)} LIKE '%prerented%' OR ${normExpr(col)} LIKE '%prerent%')`;
+        `(${normExpr(col)} LIKE '%prelease%' OR ${normExpr(col)} LIKE '%prerent%')`;
       clauses.push(
-        `(${[
-          preleaseMatch('p."transactionClassification"'),
-          preleaseMatch(`p."dossierData"->>'TransactionName'`),
-          preleaseMatch('pt.name'),
-          preleaseMatch('p.configuration'),
-          preleaseMatch(`p."dossierData"->>'PropertyTypeName'`),
-          preleaseMatch('p.title'),
-          preleaseMatch('p.description')
-        ].join(' OR ')})`
+        `(${preleaseMatch('p."transactionClassification"')} OR ${preleaseMatch(`p."dossierData"->>'TransactionName'`)})`
       );
     } else if (tc.includes('pre launch') || tc.includes('prelaunch')) {
       clauses.push(
-        `(LOWER(COALESCE(p."transactionClassification", '')) LIKE '%pre launch%' OR LOWER(COALESCE(p."dossierData"->>'TransactionName', '')) LIKE '%pre launch%' OR LOWER(COALESCE(p.status, '')) LIKE '%pre launch%')`
+        `(${normExpr('p."transactionClassification"')} LIKE '%prelaunch%' OR ${normExpr(`p."dossierData"->>'TransactionName'`)} LIKE '%prelaunch%')`
       );
     } else if (tc === 'new') {
       clauses.push(
-        `(LOWER(COALESCE(p."transactionClassification", '')) = 'new' OR LOWER(COALESCE(p."dossierData"->>'TransactionName', '')) = 'new')`
+        `(LOWER(TRIM(COALESCE(p."transactionClassification", ''))) = 'new' OR LOWER(TRIM(COALESCE(p."dossierData"->>'TransactionName', ''))) = 'new')`
+      );
+    } else if (tc.includes('individual') && tc.includes('company')) {
+      clauses.push(
+        `(LOWER(TRIM(COALESCE(p."transactionClassification", ''))) LIKE 'individual%company%' OR LOWER(TRIM(COALESCE(p."dossierData"->>'TransactionName', ''))) LIKE 'individual%company%')`
       );
     } else if (tc === 'individual') {
       clauses.push(
-        `(LOWER(COALESCE(p."transactionClassification", '')) LIKE 'individual%' OR LOWER(COALESCE(p."dossierData"->>'TransactionName', '')) LIKE 'individual%')`
+        `(LOWER(TRIM(COALESCE(p."transactionClassification", ''))) LIKE 'individual%' OR LOWER(TRIM(COALESCE(p."dossierData"->>'TransactionName', ''))) LIKE 'individual%')`
+      );
+    } else if (tc.includes('group')) {
+      clauses.push(
+        `(LOWER(TRIM(COALESCE(p."transactionClassification", ''))) LIKE '%group%booking%' OR LOWER(TRIM(COALESCE(p."dossierData"->>'TransactionName', ''))) LIKE '%group%booking%')`
+      );
+    } else if (tc === 'resale') {
+      clauses.push(
+        `(LOWER(TRIM(COALESCE(p."transactionClassification", ''))) = 'resale' OR LOWER(TRIM(COALESCE(p."dossierData"->>'TransactionName', ''))) = 'resale')`
       );
     } else {
       params.push(`%${tc}%`);
@@ -173,21 +213,30 @@ export function buildEightFieldWhereClause(
     }
   }
 
-  // 4. Locality (WHERE ... AND ...)
+  // 4. Locality (WHERE ... AND ...) - word-boundary safe so "camp" does not match "IT campus"
   if (criteria.localities.length > 0) {
     activeFieldCount++;
     const locOrs: string[] = [];
     for (const loc of criteria.localities) {
-      params.push(`%${loc.toLowerCase()}%`);
-      locOrs.push(
-        `(LOWER(COALESCE(loc.name, '')) LIKE $${idx} OR LOWER(COALESCE(p."dossierData"->>'LocationName', '')) LIKE $${idx} OR LOWER(COALESCE(p.address, '')) LIKE $${idx} OR LOWER(COALESCE(p.title, '')) LIKE $${idx})`
-      );
+      const cleanLoc = loc.toLowerCase().trim();
+      if (!cleanLoc) continue;
+      if (/^[a-z0-9\s]+$/.test(cleanLoc)) {
+        params.push(`\\m${escapePgRegex(cleanLoc).replace(/\\ /g, '\\s+')}\\M`);
+        locOrs.push(
+          `(COALESCE(loc.name, '') ~* $${idx} OR COALESCE(p."dossierData"->>'LocationName', '') ~* $${idx} OR COALESCE(p.address, '') ~* $${idx} OR COALESCE(p.title, '') ~* $${idx})`
+        );
+      } else {
+        params.push(`%${cleanLoc}%`);
+        locOrs.push(
+          `(LOWER(COALESCE(loc.name, '')) LIKE $${idx} OR LOWER(COALESCE(p."dossierData"->>'LocationName', '')) LIKE $${idx} OR LOWER(COALESCE(p.address, '')) LIKE $${idx} OR LOWER(COALESCE(p.title, '')) LIKE $${idx})`
+        );
+      }
       idx++;
     }
-    clauses.push(`(${locOrs.join(' OR ')})`);
+    if (locOrs.length > 0) clauses.push(`(${locOrs.join(' OR ')})`);
   }
 
-  // 5. City (WHERE ... AND ...)
+  // 5. City (WHERE ... AND ...) - use authoritative CityName first so Dubai/Goa rows with loc.city='Pune' don't leak into Pune search
   if (criteria.cities.length > 0) {
     activeFieldCount++;
     const cityOrs: string[] = [];
@@ -195,7 +244,7 @@ export function buildEightFieldWhereClause(
       for (const pattern of expandCityPattern(city)) {
         params.push(pattern);
         cityOrs.push(
-          `(LOWER(COALESCE(p."dossierData"->>'CityName', '')) LIKE $${idx} OR LOWER(COALESCE(loc.city, '')) LIKE $${idx} OR LOWER(COALESCE(p.address, '')) LIKE $${idx})`
+          `(LOWER(${SQL_CITY_EXPR}) LIKE $${idx} OR (NULLIF(TRIM(p."dossierData"->>'CityName'), '') IS NULL AND LOWER(COALESCE(p.address, '')) LIKE $${idx}))`
         );
         idx++;
       }
@@ -310,7 +359,7 @@ export function buildEightFieldWhereClause(
         LOWER(COALESCE(p."searchKeywords", '')) LIKE $${kIdx} OR
         LOWER(COALESCE(proj.developer, '')) LIKE $${kIdx} OR
         LOWER(COALESCE(loc.name, '')) LIKE $${kIdx} OR
-        LOWER(COALESCE(pt.name, '')) LIKE $${kIdx}
+        LOWER(COALESCE(${SQL_EFFECTIVE_TYPOLOGY_EXPR}, '')) LIKE $${kIdx}
       )`);
     }
   }
@@ -362,7 +411,7 @@ export async function fetchEightFieldGroupByFacets(
       params
     ),
     query<{ value: string; count: number }>(
-      `SELECT COALESCE(NULLIF(TRIM(pt.name), ''), NULLIF(TRIM(p.configuration), ''), 'Commercial') AS value, COUNT(*)::int AS count
+      `SELECT ${SQL_EFFECTIVE_TYPOLOGY_EXPR} AS value, COUNT(*)::int AS count
        ${FROM_JOIN_SQL}
        WHERE ${whereSql}
        GROUP BY 1
@@ -461,7 +510,11 @@ export async function executeEightFieldSqlRows(
       COALESCE(proj."reraNumber", 'PRM/PUN/RERA/2026/0491') AS rera_number,
       COALESCE(loc.name, 'Koregaon Park') AS locality,
       COALESCE(loc.city, 'Pune') AS loc_city,
-      COALESCE(pt.name, 'Apartment') AS type_name,
+      COALESCE(${SQL_EFFECTIVE_TYPOLOGY_EXPR}, pt.name, 'Apartment') AS type_name,
+      (
+        LOWER(regexp_replace(COALESCE(p."transactionClassification", p."dossierData"->>'TransactionName', ''), '[-_\\s/]+', '', 'g')) LIKE '%prelease%'
+        OR LOWER(regexp_replace(COALESCE(p."transactionClassification", p."dossierData"->>'TransactionName', ''), '[-_\\s/]+', '', 'g')) LIKE '%prerent%'
+      ) AS is_preleased,
       COALESCE(img.url, '${DEFAULT_IMG}') AS image,
       imgs.urls AS all_images
     FROM "Property" p

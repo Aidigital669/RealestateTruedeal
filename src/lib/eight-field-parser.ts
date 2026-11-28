@@ -50,6 +50,10 @@ export const KNOWN_CITIES = [
   'pune north',
   'pune(south)',
   'pune south',
+  'east pune',
+  'west pune',
+  'north pune',
+  'south pune',
   'pune(all)',
   'pune',
   'north goa',
@@ -89,7 +93,7 @@ const EXTRA_DB_LOCALITIES = [
 export const CLASSIFICATION_RULES: { value: string; patterns: RegExp[] }[] = [
   {
     value: 'Pre Lease/Pre Rented',
-    patterns: [/\b(?:pre[-_\s]*leased?|pre[-_\s]*leases?|pre[-_\s]*rented?|roi\s*property|rental\s*yield|tenanted)\b/i]
+    patterns: [/\b(?:pre[-_\s]*leased?|pre[-_\s]*leases?|pre[-_\s]*rent(?:ed)?|roi\s*property|rental\s*yield|tenanted)\b/i]
   },
   {
     value: 'Pre Launch',
@@ -113,7 +117,10 @@ export const CLASSIFICATION_RULES: { value: string; patterns: RegExp[] }[] = [
   },
   {
     value: 'New',
-    patterns: [/\b(?:new\s*(?:project|booking|launch|property|office|shop|flat)|fresh\s*booking|brand\s*new|primary\s*sale)\b/i]
+    patterns: [
+      /^\s*new\s*$/i,
+      /\b(?:new\s*(?:project|projects|booking|launch|property|office|shop|showroom|flat|apartment|villa|space|unit|listing)|fresh\s*booking|brand\s*new|primary\s*sale)\b/i
+    ]
   }
 ];
 
@@ -199,20 +206,31 @@ const EXTRA_STOP_WORDS = new Set([
   'i', 'me', 'my', 'we', 'our', 'you', 'your', 'a', 'an', 'the', 'in', 'at', 'on', 'by', 'for',
   'of', 'to', 'from', 'with', 'and', 'or', 'is', 'are', 'was', 'have', 'want', 'need', 'looking',
   'look', 'search', 'find', 'show', 'give', 'get', 'please', 'required', 'requirement', 'requirements',
-  'person', 'his', 'her', 'their', 'property', 'properties', 'listing', 'listings', 'space', 'unit',
+  'person', 'his', 'her', 'their', 'property', 'properties', 'project', 'projects', 'listing', 'listings', 'space', 'unit',
   'units', 'available', 'area', 'areas', 'size', 'built', 'builtup', 'buildup', 'build', 'up', 'carpet',
   'super', 'sqft', 'sq', 'ft', 'feet', 'price', 'expected', 'budget', 'cost', 'under', 'below',
-  'above', 'over', 'between', 'upto', 'within', 'min', 'max', 'more', 'less', 'than', 'approx',
+  'above', 'over', 'between', 'from', 'upto', 'within', 'min', 'max', 'more', 'less', 'than', 'approx',
   'around', 'transaction', 'type', 'classification', 'class', 'locality', 'city', 'location',
-  'buy', 'buying', 'purchase', 'sale', 'sell', 'selling', 'rent', 'rental', 'renting', 'lease',
-  'leasing', 'leased', 'joint', 'development', 'new', 'resale', 'pre', 'launch', 'prelaunch',
-  'preleased', 'prelease', 'rerented', 'prerented', 'individual', 'company', 'group', 'booking',
+  'buy', 'buying', 'purchase', 'sale', 'sell', 'selling', 'rent', 'rental', 'renting', 'rented', 'lease', 'leases',
+  'leasing', 'leased', 'joint', 'development', 'jv', 'new', 'resale', 'pre', 'launch', 'launched', 'prelaunch',
+  'preleased', 'prelease', 'preleases', 'prerent', 'prerented', 'rerented', 'tenanted', 'yield', 'roi',
+  'eoi', 'early', 'bird', 'fresh', 'brand', 'secondary', 'market', 'second', 'hand',
+  'individual', 'company', 'corporate', 'owned', 'group', 'booking', 'bulk',
   'cr', 'crore', 'crores', 'lakh', 'lakhs', 'lac', 'lacs', 'th', 'thousand', 'k', 'rs', 'inr',
-  'month', 'monthly', 'per', 'office', 'commercial', 'residential', 'shop', 'showroom', 'retail',
-  'apartment', 'flat', 'flats', 'apartments', 'villa', 'bungalow', 'bunglow', 'duplex', 'penthouse',
-  'warehouse', 'godown', 'factory', 'industrial', 'shed', 'gala', 'manufacturing', 'hospital',
-  'clinic', 'restaurant', 'cafe', 'hotel', 'resort', 'plot', 'land', 'bhk', 'bedroom', 'bedrooms',
-  'pune', 'mumbai', 'dubai', 'goa', 'nashik', 'nagpur', 'navi', 'east', 'west', 'north', 'south', 'all'
+  'month', 'monthly', 'per', 'office', 'offices', 'commercial', 'commercials', 'residential',
+  'shop', 'shops', 'showroom', 'showrooms', 'retail', 'boutique', 'store',
+  'apartment', 'apartments', 'flat', 'flats', 'residences', 'residence',
+  'villa', 'villas', 'bungalow', 'bungalows', 'bunglow', 'bunglows', 'row', 'house',
+  'duplex', 'duplexes', 'penthouse', 'penthouses', 'sky', 'suite', 'suites',
+  'warehouse', 'warehouses', 'godown', 'godowns', 'storage', 'logistics',
+  'factory', 'factories', 'industrial', 'shed', 'sheds', 'gala', 'galas', 'manufacturing',
+  'hospital', 'hospitals', 'clinic', 'clinics', 'medical', 'healthcare', 'diagnostic',
+  'restaurant', 'restaurants', 'cafe', 'cafes', 'dining', 'hotel', 'hotels', 'resort', 'resorts',
+  'plot', 'plots', 'land', 'lands', 'built', 'suit', 'bts', 'coworking', 'tech', 'park',
+  'saleable', 'superarea', 'builtuparea', 'carpetarea', 'bhk', 'bed', 'bedroom', 'bedrooms',
+  'pune', 'mumbai', 'dubai', 'goa', 'nashik', 'nagpur', 'navi', 'pcmc', 'bhusawal', 'margao',
+  'delhi', 'thane', 'satara', 'karjat', 'aurangabad', 'raipur', 'ratnagiri',
+  'east', 'west', 'north', 'south', 'all'
 ]);
 
 function escapeRegex(s: string): string {
@@ -346,9 +364,9 @@ export function parseEightFieldRequirements(
 
   const bhkNums: number[] = [];
   const bhkText = `${expPt} ${lower}`;
-  for (const m of bhkText.matchAll(/\b([1-5])\s*(?:bhk|bed|bedroom)s?\b/gi)) {
-    const n = parseInt(m[1], 10);
-    if (!bhkNums.includes(n)) bhkNums.push(n);
+  for (const m of bhkText.matchAll(/\b([1-9](?:\.5)?)\s*(?:bhk|bed|bedroom)s?\b/gi)) {
+    const n = parseFloat(m[1]);
+    if (!isNaN(n) && !bhkNums.includes(n)) bhkNums.push(n);
   }
 
   // 3. TRANSACTION CLASSIFICATION
@@ -475,8 +493,8 @@ export function parseEightFieldRequirements(
   if (q && expectedPrice.min === null && expectedPrice.max === null) {
     // Strip explicit area segments first so "2000 sqft" isn't confused as a raw rupee price
     const priceProbe = q
-      .replace(/\d[\d,]*(?:\.\d+)?\s*(?:to|-|–)\s*\d[\d,]*(?:\.\d+)?\s*(?:sq\.?\s*ft|sqft|sq\s*ft|carpet|built[-\\s]*up)/gi, ' ')
-      .replace(/\d[\d,]*(?:\.\d+)?\s*(?:sq\.?\s*ft|sqft|sq\s*ft|carpet|built[-\\s]*up)/gi, ' ');
+      .replace(/\d[\d,]*(?:\.\d+)?\s*(?:to|-|–)\s*\d[\d,]*(?:\.\d+)?\s*(?:sq\.?\s*ft|sqft|sq\s*ft|carpet|super\s*built[-\s]*up|built[-\s]*up)/gi, ' ')
+      .replace(/\d[\d,]*(?:\.\d+)?\s*(?:sq\.?\s*ft|sqft|sq\s*ft|carpet|super\s*built[-\s]*up|built[-\s]*up)/gi, ' ');
     const parsedBudget = parseBudgetAmounts(priceProbe);
     expectedPrice = { min: parsedBudget.minBudget, max: parsedBudget.maxBudget };
   }
@@ -499,7 +517,7 @@ export function parseEightFieldRequirements(
       if (EXTRA_STOP_WORDS.has(w)) return false;
       if (localityTokens.has(w)) return false;
       if (cityTokens.has(w)) return false;
-      if (/^\d+(?:cr|crore|crores|lakh|lakhs|lac|l|th|thousand|k|bhk|sqft)?$/.test(w)) return false;
+      if (/^\d+(?:sq|sqft|sq\.?ft|bhk|cr|crore|crores|lakh|lakhs|lac|lacs|l|th|thousand|k)?$/.test(w)) return false;
       return true;
     });
 

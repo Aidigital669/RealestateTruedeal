@@ -162,6 +162,10 @@ function mapDbPropertyRow(p: any, purposes: BusinessPurpose[], includeFullDossie
   const resolvedCity = String(dossier.CityName || p.loc_city || 'Pune').trim();
   const resolvedTxClass = String(p.transactionClassification || dossier.TransactionName || '').trim() || null;
 
+  const isPreleasedAsset = Boolean(
+    resolvedTxClass && /prelease|prerent/i.test(resolvedTxClass.replace(/[-_\s/]+/g, ''))
+  );
+
   const baseItem: PropertyItem = {
     id: String(p.id),
     slug: finalSlug,
@@ -208,6 +212,7 @@ function mapDbPropertyRow(p: any, purposes: BusinessPurpose[], includeFullDossie
     featured: !!p.featured,
     label,
     isCommercial,
+    isPreleased: isPreleasedAsset || undefined,
     listingType: p.listing_type || 'Sale',
     refNumber: p.refNumber || dossier.RefNumber || '',
     propertyName: p.propertyName || dossier.PropertyName || '',
@@ -337,6 +342,7 @@ export function toHomepageSummary(p: PropertyItem): PropertyItem {
     featured: p.featured || undefined,
     label: p.label,
     isCommercial: p.isCommercial || undefined,
+    isPreleased: p.isPreleased || undefined,
     listingType: p.listingType,
     searchKeywords: p.searchKeywords || undefined,
     businessPurposes: p.businessPurposes && p.businessPurposes.length > 0 ? p.businessPurposes : undefined,

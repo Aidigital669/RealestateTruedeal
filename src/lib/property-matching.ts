@@ -823,6 +823,7 @@ export function scorePropertyMatch(
       if (intent === 'preleased') {
         const compactText = titleAndDesc.replace(/[-_\s/]+/g, '');
         return (
+          Boolean((prop as any).isPreleased) ||
           pTypology === 'preleased' ||
           compactText.includes('prelease') ||
           compactText.includes('prerented') ||

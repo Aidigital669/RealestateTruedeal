@@ -33,6 +33,7 @@ export interface PropertyItem {
   label?: string;
   score?: string;
   isCommercial?: boolean;
+  isPreleased?: boolean;
   listingType?: 'Sale' | 'Rent' | 'Buy' | string;
   businessPurposes?: { id: number; name: string; slug: string }[];
   highlights?: string[];

@@ -1495,50 +1495,38 @@ export function HomepageSearchablePortal({
       const lower = qBhk.toLowerCase().trim();
       if (lower.includes('it park') || lower.includes('tech park')) {
         list = list.filter((p) => {
-          const full = `${p.configuration || ''} ${p.bhk || ''} ${p.name || ''} ${p.description || ''}`.toLowerCase();
+          const full = `${p.configuration || ''} ${p.dossier?.PropertyTypeName || ''} ${p.bhk || ''} ${p.name || ''}`.toLowerCase();
           return full.includes('it park') || full.includes('tech park');
         });
       } else if (lower.includes('hospital') || lower.includes('medical') || lower.includes('healthcare') || lower.includes('clinic')) {
         list = list.filter((p) => {
-          const full = `${p.configuration || ''} ${p.bhk || ''} ${p.name || ''} ${p.description || ''}`.toLowerCase();
-          return full.includes('hospital') || full.includes('medical') || full.includes('clinic') || full.includes('healthcare');
+          const full = `${p.configuration || ''} ${p.dossier?.PropertyTypeName || ''} ${p.bhk || ''} ${p.name || ''}`.toLowerCase();
+          return /\b(?:hospital|medical|clinic|healthcare)\b/i.test(full);
         });
       } else if (lower.includes('shop') || lower.includes('showroom') || lower.includes('retail') || lower.includes('store') || lower.includes('boutique')) {
         list = list.filter((p) => {
-          const full = `${p.configuration || ''} ${p.bhk || ''} ${p.name || ''} ${p.description || ''}`.toLowerCase();
+          const full = `${p.configuration || ''} ${p.dossier?.PropertyTypeName || ''} ${p.bhk || ''} ${p.name || ''}`.toLowerCase();
           return (
-            full.includes('shop') ||
-            full.includes('showroom') ||
-            full.includes('retail') ||
-            full.includes('store') ||
-            full.includes('boutique') ||
+            /\b(?:shop|showroom|retail|store|boutique)\b/i.test(full) ||
             (p.isCommercial && (p.configuration?.toLowerCase().includes('shop') || p.bhk?.toLowerCase().includes('shop')))
           );
         });
       } else if (lower.includes('restaurant') || lower.includes('cafe')) {
         list = list.filter((p) => {
-          const full = `${p.configuration || ''} ${p.bhk || ''} ${p.name || ''} ${p.description || ''}`.toLowerCase();
-          return full.includes('restaurant') || full.includes('cafe') || full.includes('dining') || full.includes('food');
+          const full = `${p.configuration || ''} ${p.dossier?.PropertyTypeName || ''} ${p.bhk || ''} ${p.name || ''}`.toLowerCase();
+          return /\b(?:restaurant|cafe|dining|food\s*court|bistro)\b/i.test(full);
         });
       } else if (lower.includes('industrial') || lower.includes('factory') || lower.includes('warehouse') || lower.includes('godown') || lower.includes('shed') || lower.includes('manufacturing')) {
         list = list.filter((p) => {
-          const full = `${p.configuration || ''} ${p.bhk || ''} ${p.name || ''} ${p.description || ''}`.toLowerCase();
-          return (
-            full.includes('industrial') ||
-            full.includes('factory') ||
-            full.includes('warehouse') ||
-            full.includes('godown') ||
-            full.includes('shed') ||
-            full.includes('manufacturing')
-          );
+          const full = `${p.configuration || ''} ${p.dossier?.PropertyTypeName || ''} ${p.bhk || ''} ${p.name || ''}`.toLowerCase();
+          return /\b(?:industrial|factory|warehouse|godown|shed|manufacturing|gala)\b/i.test(full);
         });
       } else if (lower.includes('office') || lower.includes('commercial office') || lower.includes('coworking')) {
         list = list.filter((p) => {
-          const full = `${p.configuration || ''} ${p.bhk || ''} ${p.name || ''} ${p.description || ''}`.toLowerCase();
+          const full = `${p.configuration || ''} ${p.dossier?.PropertyTypeName || ''} ${p.bhk || ''} ${p.name || ''}`.toLowerCase();
           return (
-            full.includes('office') ||
+            /\b(?:office|coworking)\b/i.test(full) ||
             full.includes('commercial office') ||
-            full.includes('coworking') ||
             (p.isCommercial &&
               !full.includes('shop') &&
               !full.includes('showroom') &&
@@ -1551,7 +1539,7 @@ export function HomepageSearchablePortal({
       } else if (lower.includes('penthouse')) {
         list = list.filter((p) => {
           const full = `${p.configuration || ''} ${p.bhk || ''} ${p.name || ''}`.toLowerCase();
-          return full.includes('penthouse') || full.includes('sky suite');
+          return full.includes('penthouse') || full.includes('sky suite') || full.includes('sky villa');
         });
       } else if (lower.includes('villa') || lower.includes('bungalow') || lower.includes('bunglow') || lower.includes('row house')) {
         list = list.filter((p) => {
@@ -1561,20 +1549,23 @@ export function HomepageSearchablePortal({
       } else if (lower.includes('plot') || lower.includes('land')) {
         list = list.filter((p) => {
           const full = `${p.configuration || ''} ${p.bhk || ''} ${p.name || ''}`.toLowerCase();
-          return full.includes('plot') || full.includes('land');
+          return /\b(?:plot|land)\b/i.test(full);
         });
       } else if (lower.includes('prelease') || lower.includes('pre-lease') || lower.includes('preleased') || lower.includes('pre-rented')) {
         list = list.filter((p) => {
-          const full = `${p.configuration || ''} ${p.bhk || ''} ${p.name || ''} ${p.description || ''}`.toLowerCase();
-          return full.includes('prelease') || full.includes('pre-lease') || full.includes('preleased') || full.includes('pre-rented') || full.includes('yield');
+          if ((p as any).isPreleased) return true;
+          const full = `${p.transactionClassification || p.dossier?.TransactionName || ''}`.toLowerCase().replace(/[-_\s/]+/g, '');
+          return full.includes('prelease') || full.includes('prerent');
         });
       } else {
         const num = lower.match(/\d+(?:\.5)?/)?.[0];
         if (num) {
           const parsed = parseFloat(num);
+          const esc = num.replace('.', '\\.');
+          const rx = new RegExp(`(?:^|[^0-9.])${esc}\\s*[- ]*\\s*(?:bhk|bed|bedroom)`, 'i');
           list = list.filter((p) => {
-            const full = `${p.configuration || ''} ${p.bhk || ''}`.toLowerCase();
-            return p.bhkNum === parsed || full.includes(`${num} bhk`) || full.includes(`${num}bhk`);
+            const full = `${p.configuration || ''} ${p.bhk || ''} ${p.name || ''} ${p.description || ''}`.toLowerCase();
+            return p.bhkNum === parsed || rx.test(full);
           });
         } else {
           // Robust token match for any other custom category
@@ -1666,26 +1657,48 @@ export function HomepageSearchablePortal({
       }
     }
 
-    // 3. Transaction Classification (New / Resale / Pre Launch / Pre Lease / Individual / Group Booking)
+    // 3. Transaction Classification (Strict match against transactionClassification / TransactionName)
     if (eightField.transactionClassification) {
-      const tcLower = eightField.transactionClassification.toLowerCase();
+      const tcLower = eightField.transactionClassification.toLowerCase().trim();
       list = list.filter((p) => {
-        const val = `${p.transactionClassification || ''} ${p.dossier?.TransactionName || ''} ${p.dossier?.PropertyTypeName || ''} ${p.configuration || ''} ${p.bhk || ''} ${p.name || ''} ${p.description || ''}`.toLowerCase();
+        const structuredTc = String(p.transactionClassification || p.dossier?.TransactionName || '').toLowerCase().trim();
+        const compactTc = structuredTc.replace(/[-_\s/]+/g, '');
         if (tcLower.includes('pre lease')) {
-          const compact = val.replace(/[-_\s/]+/g, '');
-          return compact.includes('prelease') || compact.includes('prerented') || compact.includes('prerent');
+          return Boolean((p as any).isPreleased) || compactTc.includes('prelease') || compactTc.includes('prerent');
         }
-        return val.includes(tcLower);
+        if (tcLower.includes('pre launch')) {
+          return compactTc.includes('prelaunch');
+        }
+        if (tcLower === 'new') {
+          return structuredTc === 'new';
+        }
+        if (tcLower.includes('individual') && tcLower.includes('company')) {
+          return structuredTc.includes('individual') && structuredTc.includes('company');
+        }
+        if (tcLower === 'individual') {
+          return structuredTc.startsWith('individual');
+        }
+        if (tcLower.includes('group')) {
+          return structuredTc.includes('group');
+        }
+        if (tcLower === 'resale') {
+          return structuredTc === 'resale';
+        }
+        return structuredTc.includes(tcLower);
       });
     }
 
     // 5. City Filtering (Dubai, Mumbai, Goa, Nashik, Pune(East), etc.)
     if (eightField.cities.length > 0) {
       list = list.filter((p) => {
-        const cityStr = `${p.city || ''} ${p.dossier?.CityName || ''} ${p.location || ''}`.toLowerCase();
+        const primaryCity = String(p.dossier?.CityName || p.city || p.location || '').toLowerCase();
+        const normalizedCity = primaryCity.replace(/[()]/g, ' ').replace(/\s+/g, ' ');
         return eightField.cities.some((c) => {
-          const clean = c.toLowerCase().replace(/[()]/g, ' ').replace(/\s+/g, ' ').trim();
-          const normalizedCity = cityStr.replace(/[()]/g, ' ').replace(/\s+/g, ' ');
+          let clean = c.toLowerCase().replace(/[()]/g, ' ').replace(/\s+/g, ' ').trim();
+          if (clean === 'east pune') clean = 'pune east';
+          if (clean === 'west pune') clean = 'pune west';
+          if (clean === 'north pune') clean = 'pune north';
+          if (clean === 'south pune') clean = 'pune south';
           return normalizedCity.includes(clean);
         });
       });
@@ -1693,7 +1706,7 @@ export function HomepageSearchablePortal({
 
     // 6. Built-up Area Filtering (checks Built-up & Super Built-up Area)
     if (eightField.builtupArea.min !== null || eightField.builtupArea.max !== null) {
-      const bMatched = list.filter((p) => {
+      list = list.filter((p) => {
         const bArea =
           p.builtupAreaNum ||
           parseFloat(String(p.dossier?.BuiltAreaName || p.dossier?.SuperAreaName || '').replace(/,/g, '')) ||
@@ -1702,25 +1715,23 @@ export function HomepageSearchablePortal({
         if (eightField.builtupArea.max !== null && (bArea <= 0 || bArea > eightField.builtupArea.max)) return false;
         return true;
       });
-      if (bMatched.length > 0 || !qSearch.trim()) list = bMatched;
     }
 
     // 7. Carpet Area Filtering
     if (eightField.carpetArea.min !== null || eightField.carpetArea.max !== null) {
-      const cMatched = list.filter((p) => {
+      list = list.filter((p) => {
         const cArea = p.carpetAreaNum || p.sqftNum || parseFloat(String(p.sqft || '').replace(/,/g, '')) || 0;
         if (eightField.carpetArea.min !== null && cArea < eightField.carpetArea.min) return false;
         if (eightField.carpetArea.max !== null && (cArea <= 0 || cArea > eightField.carpetArea.max)) return false;
         return true;
       });
-      if (cMatched.length > 0 || !qSearch.trim()) list = cMatched;
     }
 
     // Generic SqFt range (when neither explicit Built-up nor Carpet label was specified)
     const minAreaVal = eightField.genericArea.min ?? (criteria.minSqft ? criteria.minSqft * 0.8 : null);
     const maxAreaVal = eightField.genericArea.max ?? (criteria.maxSqft ? criteria.maxSqft * 1.2 : null);
     if (minAreaVal !== null || maxAreaVal !== null) {
-      const sizeFiltered = list.filter((p) => {
+      list = list.filter((p) => {
         const cArea = p.carpetAreaNum || p.sqftNum || parseFloat(String(p.sqft || '').replace(/,/g, '')) || 0;
         const bArea =
           p.builtupAreaNum ||
@@ -1732,20 +1743,34 @@ export function HomepageSearchablePortal({
           (maxAreaVal === null || val <= maxAreaVal);
         return fits(cArea) || fits(bArea);
       });
-      if (sizeFiltered.length > 0) {
-        list = sizeFiltered;
-      }
     }
 
-    // Filter by 8-field Property Type labels when parsed from natural language
+    // Filter by 8-field Property Type labels with word boundary checks (never false-match "hospital"/"shop" in random description text)
     if (eightField.propertyTypes.length > 0 && (!qBhk || qBhk === 'All')) {
-      const typedList = list.filter((p) => {
-        const text = `${p.configuration || ''} ${p.bhk || ''} ${p.name || ''} ${p.description || ''}`.toLowerCase();
+      list = list.filter((p) => {
+        const text = `${p.configuration || ''} ${p.dossier?.PropertyTypeName || ''} ${p.bhk || ''} ${p.name || ''}`.toLowerCase();
         return eightField.propertyTypes.some((lbl) =>
-          getPropertyTypeMatchTerms(lbl).some((t) => text.includes(t))
+          getPropertyTypeMatchTerms(lbl).some((t) => {
+            const esc = t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+');
+            return new RegExp(`\\b${esc}\\b`, 'i').test(text);
+          })
         );
       });
-      if (typedList.length > 0) list = typedList;
+    }
+
+    // Explicit BHK AND constraint (supports integer & decimal e.g. 3 BHK, 3.5 BHK, 4.5 BHK)
+    if (eightField.bhkNums.length > 0 && (!qBhk || qBhk === 'All')) {
+      const hasAnyTitleBhk = (title: string) => /(?:^|[^0-9.])[1-9](?:\.5)?\s*[- ]*\s*bhk/i.test(title);
+      list = list.filter((p) => {
+        const primaryBhkText = `${p.configuration || ''} ${p.bhk || ''} ${p.name || ''}`.toLowerCase();
+        const fallbackDesc = hasAnyTitleBhk(String(p.name || '')) ? '' : String(p.description || '').toLowerCase();
+        return eightField.bhkNums.some((b) => {
+          if (p.bhkNum === b) return true;
+          const esc = String(b).replace('.', '\\.');
+          const rx = new RegExp(`(?:^|[^0-9.])${esc}\\s*[- ]*\\s*(?:bhk|bed|bedroom)`, 'i');
+          return rx.test(primaryBhkText) || (fallbackDesc ? rx.test(fallbackDesc) : false);
+        });
+      });
     }
 
     // Intelligent Typo Autocorrect Fallback: If query returned 0 matches, test if it has a known typo
