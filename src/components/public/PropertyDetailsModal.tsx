@@ -130,6 +130,7 @@ export function PropertyDetailsModal({
 
     add('Property Title', property?.name || d.Title);
     add('Unit No.', d.FlatNo);
+    add('Available Units', d.availableUnits || d.AvailableUnits || property?.availableUnits);
     add('Building Name', d.BuildingName);
     add('Transaction', d.TransactionName || d.Lease_Sale || property?.listingType);
     add('Property Type', d.PropertyTypeName || property?.bhk);

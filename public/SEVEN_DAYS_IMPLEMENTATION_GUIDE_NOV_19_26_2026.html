@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>7-Day Implementation &amp; Replication Guide (Nov 19 – Nov 26, 2026)</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 16mm 13mm 16mm 13mm;
+    }
+    * {
+      box-sizing: border-box;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: #18181b;
+      background: #ffffff;
+      line-height: 1.5;
+      font-size: 9.8pt;
+      margin: 0;
+      padding: 0;
+    }
+    .header {
+      border-bottom: 2.5px solid #b9974f;
+      padding-bottom: 12px;
+      margin-bottom: 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+    .header-title h1 {
+      margin: 0;
+      font-size: 18.5pt;
+      font-weight: 800;
+      color: #09090b;
+      letter-spacing: -0.4px;
+    }
+    .header-title p {
+      margin: 4px 0 0 0;
+      font-size: 9.5pt;
+      color: #52525b;
+    }
+    .header-badge {
+      text-align: right;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      font-size: 8pt;
+      font-weight: 800;
+      border-radius: 9999px;
+      background: #b9974f;
+      color: #09090b;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .date-meta {
+      font-size: 8pt;
+      color: #71717a;
+      margin-top: 4px;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+    .stat-box {
+      background: #faf8f5;
+      border: 1px solid #e7dec8;
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+    .stat-label {
+      font-size: 7.5pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #78716c;
+    }
+    .stat-val {
+      font-size: 14pt;
+      font-weight: 800;
+      color: #09090b;
+      margin-top: 2px;
+    }
+    h2 {
+      font-size: 12.5pt;
+      font-weight: 800;
+      color: #09090b;
+      border-left: 4px solid #b9974f;
+      padding-left: 9px;
+      margin: 20px 0 10px 0;
+      page-break-after: avoid;
+    }
+    h3 {
+      font-size: 10.5pt;
+      font-weight: 700;
+      color: #18181b;
+      margin: 12px 0 5px 0;
+      page-break-after: avoid;
+    }
+    p, li {
+      font-size: 9.2pt;
+      color: #3f3f46;
+      margin: 4px 0;
+    }
+    ul, ol {
+      margin: 5px 0 10px 18px;
+      padding: 0;
+    }
+    li {
+      margin-bottom: 4px;
+    }
+    .card {
+      background: #ffffff;
+      border: 1px solid #e4e4e7;
+      border-radius: 8px;
+      padding: 11px 13px;
+      margin-bottom: 11px;
+      page-break-inside: avoid;
+    }
+    .card-gold {
+      border-left: 4px solid #b9974f;
+      background: #faf8f5;
+    }
+    .card-dark {
+      background: #18181b;
+      color: #f4f4f5;
+      border: 1px solid #27272a;
+    }
+    .card-dark h3, .card-dark p, .card-dark li {
+      color: #e4e4e7;
+    }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 8.3pt;
+      background: #f4f4f5;
+      color: #18181b;
+      padding: 1px 4px;
+      border-radius: 4px;
+      border: 1px solid #e4e4e7;
+    }
+    pre {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 8pt;
+      background: #09090b;
+      color: #f4f4f5;
+      padding: 10px 12px;
+      border-radius: 6px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      margin: 6px 0;
+      line-height: 1.45;
+    }
+    .pill {
+      display: inline-block;
+      padding: 1px 6px;
+      font-size: 7.5pt;
+      font-weight: 700;
+      border-radius: 4px;
+      background: #fef3c7;
+      color: #78350f;
+      border: 1px solid #fde68a;
+      margin-right: 4px;
+    }
+    .commit-list {
+      border: 1px solid #e4e4e7;
+      border-radius: 8px;
+      padding: 6px 12px;
+      background: #fafafa;
+    }
+    .commit-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      border-bottom: 1px dashed #e4e4e7;
+      padding: 4.5px 0;
+      font-size: 8.3pt;
+      page-break-inside: avoid;
+    }
+    .commit-row:last-child {
+      border-bottom: none;
+    }
+    .commit-left {
+      flex: 1;
+      min-width: 0;
+    }
+    .commit-hash {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-weight: 700;
+      color: #92400e;
+      background: #fef3c7;
+      padding: 1px 5px;
+      border-radius: 4px;
+      margin-right: 6px;
+      font-size: 7.8pt;
+    }
+    .commit-msg {
+      color: #18181b;
+    }
+    .commit-date {
+      color: #71717a;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 7.6pt;
+      white-space: nowrap;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 8px 0 12px 0;
+      font-size: 8.5pt;
+      page-break-inside: avoid;
+    }
+    th, td {
+      border: 1px solid #e4e4e7;
+      padding: 6px 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: #f4f4f5;
+      font-weight: 700;
+      color: #18181b;
+    }
+    .page-break {
+      page-break-before: always;
+    }
+    .footer {
+      margin-top: 22px;
+      padding-top: 8px;
+      border-top: 1px solid #e4e4e7;
+      font-size: 8pt;
+      color: #71717a;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="header-title">
+      <h1>7-Day Engineering &amp; Replication Guide</h1>
+      <p>Complete Architecture, Database Schema, UI/UX, Search, Media &amp; Performance Changelog (Nov 19 – Nov 26, 2026)</p>
+    </div>
+    <div class="header-badge">
+      <span class="badge">RealityTruedeal &rarr; Sibling Projects</span>
+      <div class="date-meta">Window: Nov 19 – Nov 26, 2026 &bull; Generated Nov 26, 2026</div>
+    </div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-box">
+      <div class="stat-label">Window Covered</div>
+      <div class="stat-val">7 Days + Today</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">Git Commits</div>
+      <div class="stat-val">42 Commits</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">Today&apos;s Perf Patch</div>
+      <div class="stat-val">6 Core Files</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">TypeScript Check</div>
+      <div class="stat-val">0 Errors</div>
+    </div>
+  </div>
+
+  <div class="card card-gold">
+    <h3>Purpose of This Document</h3>
+    <p>
+      This technical guide consolidates every verified feature, bug fix, SQL schema migration, UI layout update, media upload fix, and speed optimization implemented in <strong>RealityTruedeal</strong> (and mirrored to <strong>AnvReality</strong>) between <strong>November 19, 2026</strong> and <strong>November 26, 2026</strong> (including today&apos;s uncommitted performance optimization pass). Use this document as a direct engineering blueprint to prepare identical capabilities in your other projects.
+    </p>
+  </div>
+
+  <h2>1. Phase-by-Phase Technical Summary (Nov 19 – Nov 26, 2026)</h2>
+
+  <div class="card">
+    <h3><span class="pill">Nov 19 – Nov 20</span> Branding, Media Migration, Page Headings CMS &amp; Core Search</h3>
+    <ul>
+      <li><strong>Luxury Gold Palette &amp; Ads Badges:</strong> Applied signature <code>#b9974f</code> gold theme across public components (<code>globals.css</code>, <code>FeaturedAdsBar.tsx</code>, <code>PropertyDetailPageClient.tsx</code>, <code>PropertyDetailsModal.tsx</code>), aligned crown logo badge in <code>PremiumAdsManager.tsx</code>, and fixed YouTube Shorts walkthrough embedding in <code>src/lib/video-utils.ts</code>.</li>
+      <li><strong>Base64 Image Extraction:</strong> Added <code>scripts/convert_base64_images.js</code>, <code>src/lib/image-storage.ts</code>, and <code>src/app/api/admin/upload-image/route.ts</code> to extract inline base64 photos to <code>public/uploads/properties/</code>.</li>
+      <li><strong>Admin Page Headings CMS:</strong> Created <code>src/lib/page-headings-config.ts</code> (shared browser-safe defaults without importing server <code>pg</code>), <code>src/hooks/usePageHeadings.ts</code>, <code>src/components/admin/PageHeadingsEditor.tsx</code>, and API routes <code>/api/admin/page-headings</code> + <code>/api/page-headings</code>.</li>
+      <li><strong>Navigation &amp; Section Cleanup:</strong> Replaced PublicHeader Back button with compact circular arrow (<code>PublicHeader.tsx</code>), removed Location Connectivity Advantage card clutter where configured, and added Buyer Demands caching in <code>src/lib/buyer-demands-service.ts</code>.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3><span class="pill">Nov 21 – Nov 24</span> 48-Column Excel Schema, Preview-Before-Import &amp; Admin Separation</h3>
+    <ul>
+      <li><strong>Database &amp; Type Schema Upgrade:</strong> Extended PostgreSQL <code>"Property"</code> table with 31 structured columns + <code>"dossierData" JSONB</code> + 4 indexes via <code>scripts/upgrade-property-schema.mjs</code> and declared all 48 Excel columns in <code>prisma/schema.prisma</code>, <code>prisma/schema.d.ts</code>, and <code>src/lib/property-types.ts</code>.</li>
+      <li><strong>Excel Dropzone &amp; Table Preview Before Import:</strong> Built <code>src/lib/excel-48-extractor.ts</code> and <code>src/lib/excel-import-engine.ts</code>, wiring drag-and-drop Excel extraction, interactive table preview prior to DB commit, and live description page preview into <code>ScraperImporter.tsx</code>, <code>PropertyExcelUploadModal.tsx</code>, and <code>/api/admin/properties/bulk/route.ts</code>.</li>
+      <li><strong>Bulk Import Integrity Fixes:</strong> Eliminated duplicate <code>Property_slug_key</code> collisions, removed accidental <code>isSafe</code> auto-marking on bulk imports, decoupled <code>CarpetArea</code> from <code>SuperAreaName</code>, preserved authentic <code>BuildingName</code> without cross-aliasing, and wrapped <code>cleanSqft</code> / numeric <code>sqft</code> calls in defensive guards across portal &amp; saved views.</li>
+      <li><strong>Admin &amp; Sales Separation:</strong> Removed the public <strong>Edit / Paste Details</strong> button from <code>PropertyDetailPageClient.tsx</code> and placed it exclusively inside <code>src/app/admin/page.tsx</code> and <code>src/components/crm/CrmPropertiesTab.tsx</code>.</li>
+      <li><strong>Phase 2 Search Engine Config:</strong> Added <code>phase2-search-engine.ts</code>, <code>search-engine-core.ts</code>, <code>search-config.ts</code>, <code>search-training-corpus.ts</code>, <code>/api/admin/search-config</code>, and <code>/api/unified-search</code>.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3><span class="pill">Nov 25</span> Privacy Scrubbing, Description Formatting, Exact Search &amp; ExpectedPrice Parity</h3>
+    <ul>
+      <li><strong>Description Point Format &amp; PII Masking:</strong> Created <code>src/lib/description-sanitizer.ts</code> (<code>scrubPersonalInfo</code>, <code>parseDescriptionBulletPoints</code>) to strip all email addresses, phone numbers (mobile/landline), and contact prompts, splitting inline <code>#</code> / <code>*</code> / <code>•</code> markers into clean bullet points in <code>PropertyDetailPageClient.tsx</code>, <code>PropertyDetailsModal.tsx</code>, and import previews.</li>
+      <li><strong>Hidden Metadata Sections:</strong> Removed the public <em>Advisory &amp; Branch Office</em> box and <em>Reference Number</em> row from property detail/modal views.</li>
+      <li><strong>Exact Location &amp; Description Keyword Search:</strong> Enhanced <code>src/lib/property-matching.ts</code>, <code>search-autocorrect.ts</code>, and <code>HomepageSearchablePortal.tsx</code> to recognize chowk/landmark names, match keywords inside property descriptions, and eliminate false-positive results.</li>
+      <li><strong>Strict <code>ExpectedPrice</code> &amp; Rent Parser Parity:</strong> Updated <code>excel-48-extractor.ts</code>, <code>property-data.ts</code>, <code>PropertyDetailPageClient.tsx</code>, and <code>PropertyDetailsModal.tsx</code> to bind valuations strictly to Excel <code>ExpectedPrice</code>, correctly parse <code>Th</code>/<code>Thousand</code> (&times; 1,000), and eliminate artificial <code>monthlyRent * 100</code> inflation.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3><span class="pill">Nov 26 (Today)</span> Standalone Image Serving, Modal Upload Fix, Header Pricing &amp; Speed Pass</h3>
+    <ul>
+      <li><strong>Dynamic <code>/uploads/[...path]</code> Route + DB Fallback:</strong> Because Next.js uses <code>output: "standalone"</code> in <code>next.config.ts</code>, runtime files written into <code>public/uploads/</code> returned 404. Added <code>src/app/uploads/[...path]/route.ts</code> to stream files from disk (checking root and standalone paths) with automatic PostgreSQL <code>UploadedFile</code> table fallback + disk cache re-hydration.</li>
+      <li><strong>Persistent <code>UploadedFile</code> Table &amp; Async Storage:</strong> Added <code>UploadedFile</code> model to <code>prisma/schema.prisma</code> and implemented <code>ensureUploadedFileTable()</code>, <code>persistUploadedFile()</code>, <code>saveImageIfBase64Async()</code>, and <code>processImageListAsync()</code> in <code>src/lib/image-storage.ts</code>, wired into <code>upload-image/route.ts</code>, <code>properties/route.ts</code>, and <code>properties/[id]/route.ts</code>.</li>
+      <li><strong>Fixed Modal Crash &amp; Upload UX (<code>Modals.tsx</code>):</strong> Resolved the React Rules of Hooks crash (<em>"Something went wrong"</em>) caused by calling <code>useState</code> for <code>uploadingSlots</code> after early <code>if (!isOpen) return null;</code> checks in both <code>AddPropertyModal</code> and <code>EditPropertyModal</code>. Added client-side canvas image compression (&gt; 500 KB resized to max 1600px JPEG 0.85 to stay under Nginx&apos;s 1 MB limit), <code>Ctrl+V</code> clipboard image paste, drag-and-drop, sequential multi-file indexing, upload spinner lock, and card image fallbacks (<code>CrmPropertiesTab.tsx</code>, <code>PropertyDetailPageClient.tsx</code>, <code>PropertyGalleryModal.tsx</code>, <code>SharePropertyModal.tsx</code>).</li>
+      <li><strong>Upper Header Pricing Redesign:</strong> Removed the standalone white Valuation Box (<code>renderPriceCard</code>) from sidebar &amp; mobile stats in <code>PropertyDetailPageClient.tsx</code> and moved pricing (<code>formatPriceDisplay</code>, <code>priceSuffix</code>, <code>estimatedRateText</code>, or <code>Price on Request</code>) cleanly into the upper title header bar above the media switcher.</li>
+      <li><strong>Website Speed &amp; Payload Overhaul (Uncommitted Today):</strong> Diagnosed live homepage at <strong>19.87 MB / 9.90s</strong> and <code>/api/properties</code> at <strong>10.00 MB / 9.13s</strong> due to serializing full 5 MB Excel dossiers, redundant spread keys, PII fields, 5,692 correlated <code>LATERAL</code> joins across 2,846 properties, and 27 sequential cold-start DDL queries in <code>business-purposes.ts</code>. Fixed all four (details in Section 3).</li>
+    </ul>
+  </div>
+
+  <h2>2. Database Migrations &amp; Schema Additions Required</h2>
+
+  <div class="card">
+    <h3>A. Extended <code>"Property"</code> Columns &amp; Indexes (Run once on target DB)</h3>
+    <pre>ALTER TABLE "Property"
+  ADD COLUMN IF NOT EXISTS "refNumber" TEXT,
+  ADD COLUMN IF NOT EXISTS "propertyName" TEXT,
+  ADD COLUMN IF NOT EXISTS "buildingName" TEXT,
+  ADD COLUMN IF NOT EXISTS "plotArea" NUMERIC,
+  ADD COLUMN IF NOT EXISTS "minArea" NUMERIC,
+  ADD COLUMN IF NOT EXISTS "maxArea" NUMERIC,
+  ADD COLUMN IF NOT EXISTS "ratePsf" NUMERIC,
+  ADD COLUMN IF NOT EXISTS "securityDeposit" NUMERIC,
+  ADD COLUMN IF NOT EXISTS "maintenanceCharges" TEXT,
+  ADD COLUMN IF NOT EXISTS "propertyTax" TEXT,
+  ADD COLUMN IF NOT EXISTS "facing" TEXT,
+  ADD COLUMN IF NOT EXISTS "propertyAge" TEXT,
+  ADD COLUMN IF NOT EXISTS "transactionClassification" TEXT,
+  ADD COLUMN IF NOT EXISTS "possessionName" TEXT,
+  ADD COLUMN IF NOT EXISTS "availabilityStatus" TEXT,
+  ADD COLUMN IF NOT EXISTS "roi" TEXT,
+  ADD COLUMN IF NOT EXISTS "monthlyRent" NUMERIC,
+  ADD COLUMN IF NOT EXISTS "rentStartDate" TEXT,
+  ADD COLUMN IF NOT EXISTS "lockinPeriod" TEXT,
+  ADD COLUMN IF NOT EXISTS "leasePeriod" TEXT,
+  ADD COLUMN IF NOT EXISTS "searchKeywords" TEXT,
+  ADD COLUMN IF NOT EXISTS "branchName" TEXT,
+  ADD COLUMN IF NOT EXISTS "sourceName" TEXT,
+  ADD COLUMN IF NOT EXISTS "customerName" TEXT,
+  ADD COLUMN IF NOT EXISTS "customerMobile" TEXT,
+  ADD COLUMN IF NOT EXISTS "customerEmail" TEXT,
+  ADD COLUMN IF NOT EXISTS "employeeName" TEXT,
+  ADD COLUMN IF NOT EXISTS "employeeMobile" TEXT,
+  ADD COLUMN IF NOT EXISTS "employeeEmail" TEXT,
+  ADD COLUMN IF NOT EXISTS "dossierData" JSONB,
+  ADD COLUMN IF NOT EXISTS "rawExcelId" INT;
+
+CREATE INDEX IF NOT EXISTS "idx_property_refnumber" ON "Property"("refNumber");
+CREATE INDEX IF NOT EXISTS "idx_property_buildingname" ON "Property"("buildingName");
+CREATE INDEX IF NOT EXISTS "idx_property_propertyname" ON "Property"("propertyName");
+CREATE INDEX IF NOT EXISTS "idx_property_rawexcelid" ON "Property"("rawExcelId");</pre>
+
+    <h3>B. Persistent Media Table <code>"UploadedFile"</code> (Auto-ensured + Prisma Model)</h3>
+    <pre>CREATE TABLE IF NOT EXISTS "UploadedFile" (
+  id SERIAL PRIMARY KEY,
+  url TEXT UNIQUE NOT NULL,
+  filename TEXT NOT NULL,
+  "mimeType" TEXT NOT NULL,
+  data TEXT NOT NULL,
+  "sizeBytes" INT NOT NULL DEFAULT 0,
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS "idx_uploaded_file_url" ON "UploadedFile"(url);
+CREATE INDEX IF NOT EXISTS "idx_uploaded_file_filename" ON "UploadedFile"(filename);</pre>
+  </div>
+
+  <h2>3. Speed Optimization Architecture (Today&apos;s Uncommitted Performance Patch)</h2>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width:24%;">Bottleneck Measured</th>
+        <th style="width:26%;">Root Cause Found</th>
+        <th style="width:28%;">Fix Implemented</th>
+        <th style="width:22%;">Files Modified</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Homepage Payload: 19.87 MB / 9.90s</strong><br>(<code>fetchAllProperties</code> = 16.52 MB across 2,846 rows)</td>
+        <td>Every <code>PropertyItem</code> carried 5.26 MB <code>dossier</code> JSON, 5 MB duplicated spread Excel columns, full highlights/connectivity, boilerplate legal text, and CRM PII serialized into Next.js SSR <code>__next_f</code>.</td>
+        <td>Added <code>fetchHomepageProperties()</code> + <code>toHomepageSummary()</code> keeping search/card fields while stripping dossier bloat (~76% smaller: 4.00 MB raw; cached reads in <strong>0ms</strong>). Added 5-min synced cache via <code>getPropertyCacheVersion()</code>.</td>
+        <td><code>src/lib/property-data.ts</code><br><code>src/lib/property-types.ts</code><br><code>src/app/page.tsx</code></td>
+      </tr>
+      <tr>
+        <td><strong><code>/api/properties</code>: 10.00 MB / 9.13s</strong></td>
+        <td>Re-ran uncached raw SQL + regexes on every GET and returned bloated <code>dossier</code> objects for all 2,846 rows.</td>
+        <td>Added fast cached path returning <code>fetchHomepageProperties()</code> when unfiltered, and <code>toHomepageSummary()</code> projection for filtered queries.</td>
+        <td><code>src/app/api/properties/route.ts</code></td>
+      </tr>
+      <tr>
+        <td><strong>5,692 Correlated Subqueries</strong></td>
+        <td>Public &amp; Admin SQL queries ran two <code>LEFT JOIN LATERAL</code> loops per property row on <code>"PropertyImage"</code>.</td>
+        <td>Replaced both LATERAL joins with a single grouped aggregate join (<code>GROUP BY "propertyId"</code>, using <code>imgs.urls[1]</code> for cover).</td>
+        <td><code>src/lib/property-data.ts</code><br><code>src/app/api/properties/route.ts</code><br><code>src/app/api/admin/properties/route.ts</code></td>
+      </tr>
+      <tr>
+        <td><strong>Slow Detail Page Cold Lookup</strong></td>
+        <td><code>getPropertyBySlugOrId</code> scanned all 2,846 rows if memory cache wasn&apos;t warm.</td>
+        <td>Added direct single-row indexed lookup (<code>p.id = $1::int</code> or <code>p.slug = $1</code>) before full-catalog fallback.</td>
+        <td><code>src/lib/property-data.ts</code></td>
+      </tr>
+      <tr>
+        <td><strong>27 Cold-Start Seed Queries</strong></td>
+        <td><code>ensureBusinessPurposesTables()</code> executed 27 sequential DDL/UPSERT queries per cold start.</td>
+        <td>Replaced with 1 lightweight <code>SELECT 1</code> existence check, concurrent promise deduping, and single-query <code>UNNEST</code> batch seed.</td>
+        <td><code>src/lib/business-purposes.ts</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="page-break"></div>
+
+  <h2>4. Complete Git Commit History (Nov 19 – Nov 26, 2026)</h2>
+  <p>Exact commits recorded in <code>RealityTruedeal</code> across the past 7 days including today (sorted newest first):</p>
+  <div class="commit-list">
+    <div class="commit-row">
+      <div class="commit-left">
+        <span class="commit-hash">UNCOMMITTED</span>
+        <span class="commit-msg"><strong>perf:</strong> homepage/API payload reduction (toHomepageSummary, fetchHomepageProperties), grouped PropertyImage join, single-row indexed detail lookup, single-check business-purposes init</span>
+      </div>
+      <span class="commit-date">2026-11-26 Now</span>
+    </div>
+    
+    <div class="commit-row">
+      <div class="commit-left">
+        <span class="commit-hash">33fb801</span>
+        <span class="commit-msg">Update project</span>
+      </div>
+      <span class="commit-date">2026-11-26 11:25</span>
+    </div>
+
+    <div class="commit-row">
+      <div class="commit-left">
+        <span class="commit-hash">44cf252</span>
+        <span class="commit-msg">Update project</span>
+      </div>
+      <span class="commit-date">2026-11-26 11:12</span>
+    </div>
+
+    <div class="commit-row">
+      <div class="commit-left">
+        <span class="commit-hash">b8eb5dc</span>
+        <span class="commit-msg">Update project</span>
+      </div>
+      <span class="commit-date">2026-11-26 10:46</span>
+    </div>
+
+    <div class="commit-row">
+      <div class="commit-left">
+        <span class="commit-hash">094fe20</span>
+        <span class="commit-msg">fix: unify ExpectedPrice across all website views and fix thousand/rent parser</span>
+      </div>
+      <span class="commit-date">2026-11-25 15:21</span>
+    </div>
+
+    <div class="commit-row">
+      <div class="commit-left">
+        <span class="commit-hash">ede5add</span>
+        <span class="commit-msg">feat: reverse layout of price card and site visit form, and bind pricing strictly to ExpectedPrice</span>
+      </div>
+      <span class="commit-date">2026-11-25 14:30</span>
+    </div>
+
+    <div class="commit-row">
+      <div class="commit-left">
+        <span class="commit-hash">28fd7fc</span>
+        <span class="commit-msg">feat: hide Reference Number from property overview and detail views</span>
+      </div>
+      <span class="commit-date">2026-11-25 13:03</span>
+    </div>
+
+    <div class="commit-row">
+      <div class="commit-left">
+        <span class="commit-hash">c986171</span>
+        <span class="commit-msg">Update reviews widget to Elfsight All-in-One Reviews</span>
+      </div>
+      <span class="commit-date">2026-11-25 12:38</span>
+    </div>
+
+    <div class="commit-row">
+      <div class="commit-left">
+        <span class="commit-hash">60d1c42</span>
+        <span class="commit-msg">feat: improve search bar with exact chowk/location extraction, description keyword ranking, and false-positive elimination</span>
+      </div>
+      <span class="commit-date">2026-11-25 12:15</span>
+    </div>
+
+    <div class="commit-row">
+      <div class="commit-left">
+        <span class="commit-hash">ae894ac</span>
+        <span class="commit-msg">feat: hide Advisory &amp; Branch Office section and render sanitized description in point format</span>
+      </div>
+      <span class="commit-date">2026-11-25 11:10</span>
+    </div>
+
+    <div class="commit-row">
+      <div class="commit-left">
+        <span class="commit-hash">3ddeace</span>
+        <span class="commit-msg">Update project</span>
+      </div>
+      <span class="commit-date">2026-11-25 10:53</span>
+    </div>
+
+    <div class="commit-row">
+      <div class="commit-left">
+        <span class="commit-hash">d9635dc</span>
+        <span class="commit-msg">feat: add Excel dropzone, 48-field schema extractor, table preview before import, and live description page preview</span>
+      </div>
+      <span class="commit-date">2026-11-24 17:33</span>
+    </div>
+
+    <div class="commit-row">
+      <div class="commit-left">
+        <span class="commit-hash">5737198</span>
+        <span class="commit-msg">feat: declare exact Excel header fields in readonly Property schema and PropertyItem type</span>
+      </div>
+      <span class="commit-date">2026-11-24 17:16</span>
+    </div>
+
+    <div class="commit-row">
+      <div class="commit-left">
+        <span class="commit-hash">d4f2b03</span>
+        <span class="commit-msg">feat: complete 48-field Excel import, database schema, and dynamic property description page with strict conditional visibility</span>
+      </div>
+      <span class="commit-date">2026-11-24 17:11</span>
+    </div>
+
+    <div class="commit-row">
+      <div class="commit-left">
+        <span class="commit-hash">81aa0d7</span>
+        <span class="commit-msg">Update reviews widget to Elfsight All-in-One Reviews</span>
+      </div>
+      <span class="commit-date">2026-11-24 16:50</span>
+    </div>
+
+    <div class="commit-row">
+      <div class="commit-left">
+        <span class="commit-hash">e53ea2a</span>
+        <span class="commit-msg">Update reviews widget to Elfsight All-in-One Reviews</span>
+      </div>
+      <span class="commit-date">2026-11-24 16:01</span>
+    </div>
+
+    <div class="commit-row">
+      <div class="commit-left">
+        <span class="commit-hash">cc3ffbe</span>
+        <span class="commit-msg">fix(sqft): wrap cleanSqft and getPropertySqftNumber in try-catch and handle any input type</span>
+      </div>
+      <span class="commit-date">2026-11-24 13:54</span>
+    </div>
+
+    <div class="commit-row">
+      <div class="commit-left">
+        <span class="commit-hash">2fccc1f</span>
+        <span class="commit-msg">fix(sqft): safeguard cleanSqft and all sqft string replace operations against numeric inputs</span>
+      </div>
+      <span class="commit-date">2026-11-24 13:49</span>
+    </div>
+
+    <div class="commit-row">
+      <div class="commit-left">
+        <span class="commit-hash">e6ef14c</span>
+        <span class="commit-msg">fix(building-name): preserve authentic BuildingName without cross-aliasing or mutations</span>
+      </div>
+      <span class="commit-date">2026-11-24 13:06</span>
+    </div>
+
+    <div class="commit-row">
+      <div class="commit-left">
+        <span class="commit-hash">067ed6c</span>
+        <span class="commit-msg">fix(excel-upload): decouple CarpetArea from SuperAreaName and fix area displays</span>
+      </div>
+      <span class="commit-date">2026-11-24 12:30</span>
+    </div>
+
+    <div class="commit-row">
+      <div class="commit-left">
+        <span class="commit-hash">17ecdfe</span>
+        <span class="commit-msg">feat(admin): move Edit / Paste Details button exclusively to admin and sales/CRM dashboard</span>
+      </div>
+      <span class="commit-date">2026-11-24 11:32</span>
+    </div>
+
+    <div class="commit-row">
+      <div class="commit-left">
+        <span class="commit-hash">0035e9c</span>
+        <span class="commit-msg">style(header): replace Back button with clean circular arrow button</span>
+      </div>
+      <span class="commit-date">2026-11-24 11:08</span>
+    </div>
+
+    <div class="commit-row">
+      <div class="commit-left">
+        <span class="commit-hash">0801459</span>
+        <span class="commit-msg">Update reviews widget to Elfsight All-in-One Reviews</span>
+      </div>
+      <span class="commit-date">2026-11-23 18:26</span>
+    </div>
+
+    <div class="commit-row">
+      <div class="commit-left">
+        <span class="commit-hash">0eafdc3</span>
+        <span class="commit-msg">Update project</span>
+      </div>
+      <span class="commit-date">2026-11-23 17:32</span>
+    </div>
+
+    <div class="commit-row">
+      <div class="commit-left">
+        <span class="commit-hash">6757c12</span>
+        <span class="commit-msg">feat(public): wire all 48 custom excel fields and dynamic specifications into PropertyDetailsModal and /api/properties</span>
+      </div>
+      <span class="commit-date">2026-11-23 15:04</span>
+    </div>
+
+    <div class="commit-row">
+      <div class="commit-left">
+        <span class="commit-hash">167b1c4</span>
+        <span class="commit-msg">fix(public): fix Area hyphen splitting, display all 48 custom fields in Property Details table, and generate authentic highlights</span>
+      </div>
+      <span class="commit-date">2026-11-23 14:40</span>
+    </div>
+
+    <div class="commit-row">
+      <div class="commit-left">
+        <span class="commit-hash">ec8d4cb</span>
+        <span class="commit-msg">fix(bulk): remove accidental isSafe auto-mark on bulk import and fix delete button responsiveness</span>
+      </div>
+      <span class="commit-date">2026-11-23 13:45</span>
+    </div>
+
+    <div class="commit-row">
+      <div class="commit-left">
+        <span class="commit-hash">249dc67</span>
+        <span class="commit-msg">feat(crm): end-to-end 48-field excel extractor and full-table data view</span>
+      </div>
+      <span class="commit-date">2026-11-23 11:56</span>
+    </div>
+
+    <div class="commit-row">
+      <div class="commit-left">
+        <span class="commit-hash">b1d9de3</span>
+        <span class="commit-msg">feat(crm): map all 48 custom excel columns and make batch commit fail-safe</span>
+      </div>
+      <span class="commit-date">2026-11-21 15:59</span>
+    </div>
+
+    <div class="commit-row">
+      <div class="commit-left">
+        <span class="commit-hash">8530e22</span>
+        <span class="commit-msg">Update project</span>
+      </div>
+      <span class="commit-date">2026-11-21 12:20</span>
+    </div>
+
+    <div class="commit-row">
+      <div class="commit-left">
+        <span class="commit-hash">ca3b3f5</span>
+        <span class="commit-msg">fix(crm): eliminate duplicate Property_slug_key collisions during excel bulk upload</span>
+      </div>
+      <span class="commit-date">2026-11-21 12:19</span>
+    </div>
+
+    <div class="commit-row">
+      <div class="commit-left">
+        <span class="commit-hash">542ae22</span>
+        <span class="commit-msg">fix(search): support natural budget &amp; range queries and enforce strict project name matching</span>
+      </div>
+      <span class="commit-date">2026-11-20 18:30</span>
+    </div>
+
+    <div class="commit-row">
+      <div class="commit-left">
+        <span class="commit-hash">c1a6627</span>
+        <span class="commit-msg">fix(build): move page headings config to shared lib to avoid server-only pg bundle in browser</span>
+      </div>
+      <span class="commit-date">2026-11-20 15:54</span>
+    </div>
+
+    <div class="commit-row">
+      <div class="commit-left">
+        <span class="commit-hash">a3ff6c3</span>
+        <span class="commit-msg">feat(admin): page headings editor + remove Location Connectivity Advantage section</span>
+      </div>
+      <span class="commit-date">2026-11-20 14:39</span>
+    </div>
+
+    <div class="commit-row">
+      <div class="commit-left">
+        <span class="commit-hash">882b7af</span>
+        <span class="commit-msg">Update project</span>
+      </div>
+      <span class="commit-date">2026-11-20 13:54</span>
+    </div>
+
+    <div class="commit-row">
+      <div class="commit-left">
+        <span class="commit-hash">d7357ad</span>
+        <span class="commit-msg">Update project</span>
+      </div>
+      <span class="commit-date">2026-11-20 13:03</span>
+    </div>
+
+    <div class="commit-row">
+      <div class="commit-left">
+        <span class="commit-hash">1b257ef</span>
+        <span class="commit-msg">docs: refresh implementation guide PDF</span>
+      </div>
+      <span class="commit-date">2026-11-19 16:04</span>
+    </div>
+
+    <div class="commit-row">
+      <div class="commit-left">
+        <span class="commit-hash">5944f21</span>
+        <span class="commit-msg">style(buyers): remove Register Property to Match Buyers button from active buyers header</span>
+      </div>
+      <span class="commit-date">2026-11-19 16:02</span>
+    </div>
+
+    <div class="commit-row">
+      <div class="commit-left">
+        <span class="commit-hash">f7c7869</span>
+        <span class="commit-msg">docs: add comprehensive deployment and implementation guide PDF for November 19 2026 changes</span>
+      </div>
+      <span class="commit-date">2026-11-19 15:17</span>
+    </div>
+
+    <div class="commit-row">
+      <div class="commit-left">
+        <span class="commit-hash">4d0aa29</span>
+        <span class="commit-msg">style(ads): align crown logo badge to top-left corner with self-start and remove vertical divider</span>
+      </div>
+      <span class="commit-date">2026-11-19 14:53</span>
+    </div>
+
+    <div class="commit-row">
+      <div class="commit-left">
+        <span class="commit-hash">170fa1a</span>
+        <span class="commit-msg">style: reduce crown badge to small logo scale with smooth rounded-full alignment and fix YouTube shorts walkthrough playback</span>
+      </div>
+      <span class="commit-date">2026-11-19 14:35</span>
+    </div>
+
+    <div class="commit-row">
+      <div class="commit-left">
+        <span class="commit-hash">7637e7b</span>
+        <span class="commit-msg">Update project</span>
+      </div>
+      <span class="commit-date">2026-11-19 14:02</span>
+    </div>
+
+    <div class="commit-row">
+      <div class="commit-left">
+        <span class="commit-hash">5a01190</span>
+        <span class="commit-msg">feat(perf &amp; design): migrate base64 images to static files, resolve 0 buyers delay, clean architectural highlights and apply gold #b9974f</span>
+      </div>
+      <span class="commit-date">2026-11-19 13:27</span>
+    </div>
+  </div>
+
+  <h2>5. Complete Replication Checklist for Sibling Projects</h2>
+  <div class="card card-dark">
+    <h3>Apply Identical Changes to Other Projects in 7 Steps</h3>
+    <ol>
+      <li><strong>Run Schema &amp; Index SQL:</strong> Execute both <code>ALTER TABLE "Property" ...</code> (Section 2A) and <code>CREATE TABLE IF NOT EXISTS "UploadedFile" ...</code> (Section 2B), and sync <code>prisma/schema.prisma</code> + <code>prisma/schema.d.ts</code>.</li>
+      <li><strong>Port Core Library Engines:</strong> Copy <code>src/lib/description-sanitizer.ts</code>, <code>src/lib/excel-48-extractor.ts</code>, <code>src/lib/excel-import-engine.ts</code>, <code>src/lib/image-storage.ts</code>, <code>src/lib/property-data.ts</code>, <code>src/lib/property-types.ts</code>, <code>src/lib/property-matching.ts</code>, <code>src/lib/business-purposes.ts</code>, <code>src/lib/page-headings-config.ts</code>, and search core modules (<code>phase2-search-engine.ts</code>, <code>search-engine-core.ts</code>, <code>search-config.ts</code>, <code>search-training-corpus.ts</code>, <code>search-autocorrect.ts</code>).</li>
+      <li><strong>Port API &amp; Runtime Serving Routes:</strong> Add <code>src/app/uploads/[...path]/route.ts</code> (critical for <code>output: "standalone"</code>!), and update <code>src/app/api/admin/upload-image/route.ts</code>, <code>src/app/api/admin/properties/route.ts</code>, <code>src/app/api/admin/properties/[id]/route.ts</code>, <code>src/app/api/admin/properties/bulk/route.ts</code>, <code>src/app/api/properties/route.ts</code>, <code>src/app/api/unified-search/route.ts</code>, and <code>src/app/api/admin/page-headings/route.ts</code>.</li>
+      <li><strong>Port Admin / CRM UI Updates:</strong> Sync <code>src/components/admin/Modals.tsx</code> (hoisted <code>uploadingSlots</code> hook before early returns + client compression + paste/drop), <code>src/components/admin/ScraperImporter.tsx</code>, <code>src/components/crm/PropertyExcelUploadModal.tsx</code>, <code>src/components/crm/CrmPropertiesTab.tsx</code> (<code>unoptimized</code> + card image <code>onError</code> fallback), <code>src/components/admin/PageHeadingsEditor.tsx</code>, and <code>src/app/admin/page.tsx</code>.</li>
+      <li><strong>Port Public UI Updates:</strong> Sync <code>src/app/page.tsx</code>, <code>src/components/public/HomepageSearchablePortal.tsx</code>, <code>src/components/public/PropertyDetailPageClient.tsx</code> (upper header pricing + point-format scrubbed description + hidden Reference/Advisory sections + image error fallback), <code>src/components/public/PropertyDetailsModal.tsx</code>, <code>src/components/public/PropertyGalleryModal.tsx</code>, <code>src/components/public/SharePropertyModal.tsx</code>, and <code>src/components/public/PublicHeader.tsx</code>.</li>
+      <li><strong>Verify Nginx Body Limit (Production Server):</strong> Keep <code>client_max_body_size 10M;</code> in Nginx config as belt-and-suspenders alongside client-side compression.</li>
+      <li><strong>Compile, Build &amp; Restart Production Process:</strong>
+        <pre>npx tsc --noEmit &amp;&amp; npm run build &amp;&amp; pm2 restart all</pre>
+      </li>
+    </ol>
+  </div>
+
+  <div class="footer">
+    RealityTruedeal &amp; AnvReality Engineering Documentation &bull; Covers Nov 19 – Nov 26, 2026 &bull; Verified with <code>npx tsc --noEmit</code> (0 errors)
+  </div>
+
+</body>
+</html>

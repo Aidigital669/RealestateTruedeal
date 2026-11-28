@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { queryOne, query } from "@/lib/db";
 import { getPurposesForProperties, setPropertyBusinessPurposes } from "@/lib/business-purposes";
 import { parseDossierData, embedDossierData } from "@/lib/dossier-parser";
 import { parseAndNormalizeVideoUrl } from "@/lib/video-utils";
 import { clearPropertyCache } from "@/lib/property-data";
 import { processImageListAsync, saveImageIfBase64Async } from "@/lib/image-storage";
+import { parseIndianPriceToNumber, formatIndianPrice, resolvePropertyPrice } from "@/lib/price-utils";
 
 export async function PATCH(
   req: NextRequest,
@@ -22,16 +24,31 @@ export async function PATCH(
       colUpdates.set("title", titleVal.trim());
     }
 
-    // 2. Price
-    if (body.price !== undefined && body.price !== null && body.price !== "") {
-      const rawStr = String(body.price).toLowerCase();
-      let parsed = parseFloat(rawStr.replace(/[^0-9.]/g, ""));
-      if (rawStr.includes("cr") || rawStr.includes("crore")) {
-        parsed = Math.round(parsed * 10000000);
-      } else if (rawStr.includes("lakh") || rawStr.includes("lac") || rawStr.includes("l")) {
-        parsed = Math.round(parsed * 100000);
+    // 2. Price & Rent inputs (parsed cleanly across Cr / Lakh / Lac / L / Th / K / '/ month' / Price on Request)
+    const hasPriceInput = body.price !== undefined;
+    let parsedPriceInput: number | null = null;
+    if (hasPriceInput) {
+      if (body.price === null || String(body.price).trim() === "") {
+        parsedPriceInput = 0;
+      } else {
+        const parsed = parseIndianPriceToNumber(body.price);
+        parsedPriceInput = parsed !== null ? Math.max(0, parsed) : null;
       }
-      colUpdates.set("price", isNaN(parsed) ? 15000000 : parsed);
+      if (parsedPriceInput !== null) {
+        colUpdates.set("price", parsedPriceInput);
+      }
+    }
+
+    const hasRentInput = body.rent !== undefined || body.monthlyRent !== undefined;
+    let parsedRentInput: number | null = null;
+    if (hasRentInput) {
+      const rawRent = body.rent !== undefined ? body.rent : body.monthlyRent;
+      if (rawRent === null || String(rawRent).trim() === "") {
+        parsedRentInput = 0;
+      } else {
+        const parsed = parseIndianPriceToNumber(rawRent);
+        parsedRentInput = parsed !== null ? Math.max(0, parsed) : null;
+      }
     }
 
     // 3. Location / Address & locationId
@@ -142,13 +159,14 @@ export async function PATCH(
       colUpdates.set('"carpetArea"', isNaN(parsedSqft) ? 1200 : parsedSqft);
     }
 
-    // 6. Description & Dossier Data
-    const hasDossierUpdates = 
+    // 6. Description, Dossier Data & Synchronized Price / Rent metadata
+    const hasDossierUpdates =
       body.highlights !== undefined ||
       body.connectivity !== undefined ||
       body.amenitiesList !== undefined ||
       body.reraNumber !== undefined ||
       body.possession !== undefined ||
+      body.availableUnits !== undefined ||
       body.rpsStatus !== undefined ||
       body.legalVettingText !== undefined ||
       body.hideName !== undefined ||
@@ -163,16 +181,65 @@ export async function PATCH(
       body.hideBreadcrumbs !== undefined ||
       body.customCostSheet !== undefined ||
       body.suitableFor !== undefined ||
-      body.isSafe !== undefined;
+      body.isSafe !== undefined ||
+      body.dossier !== undefined ||
+      hasPriceInput ||
+      hasRentInput ||
+      body.listingType !== undefined;
 
     if (hasDossierUpdates || body.description !== undefined) {
-      const currentProp = await queryOne(`SELECT description FROM "Property" WHERE id = $1;`, [id]);
-      const { cleanDescription: existingClean, dossier: existingDossier } = parseDossierData(currentProp?.description || '');
+      const currentProp = await queryOne(
+        `SELECT description, "dossierData", "listingType", status, price, rent FROM "Property" WHERE id = $1;`,
+        [id]
+      );
+      const { cleanDescription: existingClean, dossier: existingEmbedded } = parseDossierData(currentProp?.description || '');
+      const existingJsonDossier =
+        currentProp?.dossierData && typeof currentProp.dossierData === 'object' ? currentProp.dossierData : {};
+      const existingDossier = { ...existingJsonDossier, ...existingEmbedded };
 
-      const baseNarrative = body.description !== undefined ? body.description : existingClean;
+      let baseNarrative = existingClean;
+      let incomingDescDossier: Record<string, any> = {};
+      if (body.description !== undefined) {
+        const parsedIncoming = parseDossierData(String(body.description || ''));
+        baseNarrative = parsedIncoming.cleanDescription;
+        incomingDescDossier = parsedIncoming.dossier || {};
+      }
 
-      const mergedDossier = {
+      const effectiveListingType =
+        body.listingType !== undefined
+          ? (String(body.listingType).toLowerCase().includes('rent') || String(body.listingType).toLowerCase().includes('lease')
+            ? 'Rent'
+            : 'Sale')
+          : (currentProp?.listingType || 'Sale');
+      const isRentListing =
+        String(effectiveListingType).toLowerCase().includes('rent') ||
+        String(effectiveListingType).toLowerCase().includes('lease');
+
+      if (isRentListing && hasPriceInput && parsedPriceInput !== null) {
+        colUpdates.set("rent", parsedPriceInput);
+        colUpdates.set('"monthlyRent"', parsedPriceInput);
+      } else if (body.listingType !== undefined && !isRentListing) {
+        colUpdates.set("rent", null);
+        colUpdates.set('"monthlyRent"', null);
+      }
+      if (hasRentInput && parsedRentInput !== null) {
+        colUpdates.set("rent", parsedRentInput);
+        colUpdates.set('"monthlyRent"', parsedRentInput);
+        if (!hasPriceInput && isRentListing) {
+          colUpdates.set("price", parsedRentInput);
+        }
+      }
+
+      const syncedPriceNum =
+        hasPriceInput && parsedPriceInput !== null
+          ? parsedPriceInput
+          : hasRentInput && parsedRentInput !== null && isRentListing
+            ? parsedRentInput
+            : null;
+
+      const mergedDossier: Record<string, any> = {
         ...existingDossier,
+        ...incomingDescDossier,
         ...(body.dossier || {}),
         highlights: body.highlights !== undefined ? body.highlights : existingDossier.highlights,
         connectivity: body.connectivity !== undefined ? body.connectivity : existingDossier.connectivity,
@@ -180,6 +247,7 @@ export async function PATCH(
         reraNumber: body.reraNumber !== undefined ? body.reraNumber : existingDossier.reraNumber,
         possession: body.possession !== undefined ? body.possession : (body.status !== undefined && body.status !== 'Draft' && body.status !== 'Published' ? body.status : existingDossier.possession),
         PossessionName: body.PossessionName !== undefined ? body.PossessionName : (body.possession !== undefined ? body.possession : existingDossier.PossessionName),
+        availableUnits: body.availableUnits !== undefined ? String(body.availableUnits).trim() : existingDossier.availableUnits,
         SuperAreaName: body.SuperAreaName !== undefined ? body.SuperAreaName : existingDossier.SuperAreaName,
         FlatNo: body.FlatNo !== undefined ? body.FlatNo : (body.unitNo !== undefined ? body.unitNo : existingDossier.FlatNo),
         BuildingName: body.BuildingName !== undefined ? body.BuildingName : existingDossier.BuildingName,
@@ -201,6 +269,21 @@ export async function PATCH(
         isSafe: body.isSafe !== undefined ? Boolean(body.isSafe) : existingDossier.isSafe,
       };
 
+      // Authoritatively synchronize ExpectedPrice / RentPM / Price inside BOTH JSONB dossierData and embedded description
+      if (syncedPriceNum !== null) {
+        const syncedLabel = syncedPriceNum > 0 ? formatIndianPrice(syncedPriceNum) : '0';
+        mergedDossier.ExpectedPrice = syncedLabel;
+        if (isRentListing) {
+          mergedDossier.RentPM = syncedLabel;
+        }
+        if ('Price' in mergedDossier) {
+          mergedDossier.Price = syncedLabel;
+        }
+      } else if (hasRentInput && parsedRentInput !== null) {
+        mergedDossier.RentPM = parsedRentInput > 0 ? formatIndianPrice(parsedRentInput) : '0';
+      }
+
+      colUpdates.set('"dossierData"', JSON.stringify(mergedDossier));
       colUpdates.set("description", embedDossierData(baseNarrative || '', mergedDossier));
     }
 
@@ -342,8 +425,8 @@ export async function PATCH(
     // 11. Fetch Full Updated Property with joined images, videoUrl, location, and developer
     const updatedFull = await queryOne(`
       SELECT 
-        p.id, p.title AS name, p.title, p.slug, p.address AS location,
-        p.price, p."carpetArea" AS sqft, 
+        p.id, p.title AS name, p.title, p.slug, p.address AS location, p.description,
+        p.price, p.rent, p."monthlyRent", p."dossierData", p."carpetArea" AS sqft, 
         p.bedrooms,
         p.configuration,
         p."listingType" as listing_type,
@@ -378,11 +461,12 @@ export async function PATCH(
       WHERE p.id = $1;
     `, [id]);
 
-    const formattedPrice = updatedFull?.price
-      ? updatedFull.price >= 10000000
-        ? `₹${(updatedFull.price / 10000000).toFixed(2)} Cr`
-        : `₹${(updatedFull.price / 100000).toFixed(1)} Lakh`
-      : "Price on Request";
+    const { cleanDescription, dossier: embeddedDossier } = parseDossierData(updatedFull?.description || '');
+    const mergedDossier = {
+      ...(updatedFull?.dossierData && typeof updatedFull.dossierData === 'object' ? updatedFull.dossierData : {}),
+      ...embeddedDossier
+    };
+    const resolvedPrice = resolvePropertyPrice(updatedFull || {}, mergedDossier);
 
     const rawImages: string[] = (updatedFull?.all_images && Array.isArray(updatedFull.all_images))
       ? updatedFull.all_images.filter((u: any) => typeof u === 'string' && u.trim().length > 0)
@@ -393,42 +477,56 @@ export async function PATCH(
     const assignedPurposes = purposesMap[String(id)] || [];
 
     clearPropertyCache();
+    try {
+      revalidatePath('/', 'layout');
+      revalidatePath('/admin');
+      revalidatePath('/crm');
+      revalidatePath('/api/properties');
+      revalidatePath('/api/admin/properties');
+    } catch { }
+    try {
+      revalidatePath('/', 'layout');
+      revalidatePath('/admin');
+      revalidatePath('/crm');
+      revalidatePath('/api/properties');
+      revalidatePath('/api/admin/properties');
+    } catch { }
 
     return NextResponse.json({
       success: true,
       message: `Property "${updatedFull?.name || id}" updated successfully!`,
       property: {
         ...updatedFull,
+        price: resolvedPrice.numPrice,
         images,
         image: images[0] || updatedFull?.image,
         videoUrl: updatedFull?.videoUrl ? String(updatedFull.videoUrl).trim() : '',
-        priceFormatted: formattedPrice,
+        priceFormatted: resolvedPrice.formattedPrice,
+        priceRaw: resolvedPrice.numPrice,
+        priceSuffix: resolvedPrice.priceSuffix,
         listingType: updatedFull?.listingType || updatedFull?.listing_type || 'Sale',
         businessPurposes: assignedPurposes,
         businessPurposeIds: assignedPurposes.map((bp: any) => bp.id),
-        ...(() => {
-          const { cleanDescription, dossier } = parseDossierData(updatedFull?.description || '');
-          return {
-            description: cleanDescription || updatedFull?.description,
-            highlights: dossier.highlights || [],
-            connectivity: dossier.connectivity || [],
-            amenitiesList: dossier.amenitiesList || [],
-            reraNumber: dossier.reraNumber || '',
-            possession: dossier.possession || updatedFull?.status || '',
-            rpsStatus: dossier.rpsStatus || '',
-            legalVettingText: dossier.legalVettingText || '',
-            hideName: Boolean(dossier.hideName),
-            hidePrice: Boolean(dossier.hidePrice),
-            hideRera: Boolean(dossier.hideRera),
-            hideComplianceTab: Boolean(dossier.hideComplianceTab),
-            hideCostSheet: Boolean(dossier.hideCostSheet),
-            hideAmenities: Boolean(dossier.hideAmenities),
-            hideHighlights: Boolean(dossier.hideHighlights),
-            hideConnectivity: Boolean(dossier.hideConnectivity),
-            customCostSheet: dossier.customCostSheet,
-            isSafe: Boolean(dossier.isSafe)
-          };
-        })()
+        dossier: mergedDossier,
+        description: cleanDescription || updatedFull?.description,
+        highlights: mergedDossier.highlights || [],
+        connectivity: mergedDossier.connectivity || [],
+        amenitiesList: mergedDossier.amenitiesList || [],
+        reraNumber: mergedDossier.reraNumber || '',
+        possession: mergedDossier.possession || updatedFull?.status || '',
+        availableUnits: mergedDossier.availableUnits || mergedDossier.AvailableUnits || '',
+        rpsStatus: mergedDossier.rpsStatus || '',
+        legalVettingText: mergedDossier.legalVettingText || '',
+        hideName: Boolean(mergedDossier.hideName),
+        hidePrice: Boolean(mergedDossier.hidePrice),
+        hideRera: Boolean(mergedDossier.hideRera),
+        hideComplianceTab: Boolean(mergedDossier.hideComplianceTab),
+        hideCostSheet: Boolean(mergedDossier.hideCostSheet),
+        hideAmenities: Boolean(mergedDossier.hideAmenities),
+        hideHighlights: Boolean(mergedDossier.hideHighlights),
+        hideConnectivity: Boolean(mergedDossier.hideConnectivity),
+        customCostSheet: mergedDossier.customCostSheet,
+        isSafe: Boolean(mergedDossier.isSafe)
       }
     });
   } catch (error: any) {
@@ -446,7 +544,7 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    
+
     // Check if property is marked safe
     const prop = await queryOne(`SELECT id, title, description FROM "Property" WHERE id = $1;`, [id]);
     if (!prop) {
@@ -463,18 +561,25 @@ export async function DELETE(
     }
 
     // Clean up relations
-    await query(`DELETE FROM "PropertyImage" WHERE "propertyId" = $1;`, [id]).catch(() => {});
-    await query(`DELETE FROM "PropertyDocument" WHERE "propertyId" = $1;`, [id]).catch(() => {});
-    await query(`DELETE FROM "PropertyAmenity" WHERE "propertyId" = $1;`, [id]).catch(() => {});
-    await query(`DELETE FROM "FeaturedProperty" WHERE "propertyId" = $1;`, [id]).catch(() => {});
-    await query(`DELETE FROM "BlogProperty" WHERE "propertyId" = $1;`, [id]).catch(() => {});
-    await query(`UPDATE "WebsiteEnquiry" SET "propertyId" = NULL WHERE "propertyId" = $1;`, [id]).catch(() => {});
+    await query(`DELETE FROM "PropertyImage" WHERE "propertyId" = $1;`, [id]).catch(() => { });
+    await query(`DELETE FROM "PropertyDocument" WHERE "propertyId" = $1;`, [id]).catch(() => { });
+    await query(`DELETE FROM "PropertyAmenity" WHERE "propertyId" = $1;`, [id]).catch(() => { });
+    await query(`DELETE FROM "FeaturedProperty" WHERE "propertyId" = $1;`, [id]).catch(() => { });
+    await query(`DELETE FROM "BlogProperty" WHERE "propertyId" = $1;`, [id]).catch(() => { });
+    await query(`UPDATE "WebsiteEnquiry" SET "propertyId" = NULL WHERE "propertyId" = $1;`, [id]).catch(() => { });
 
     const deleted = await queryOne(`
       DELETE FROM "Property" WHERE id = $1 RETURNING id, title;
     `, [id]);
 
     clearPropertyCache();
+    try {
+      revalidatePath('/', 'layout');
+      revalidatePath('/admin');
+      revalidatePath('/crm');
+      revalidatePath('/api/properties');
+      revalidatePath('/api/admin/properties');
+    } catch { }
 
     return NextResponse.json({
       success: true,

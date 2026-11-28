@@ -1,91 +1,63 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
+import { fetchEightFieldGroupByFacets } from "@/lib/sql-8field-search";
 
-export async function GET(req: NextRequest) {
+export const dynamic = "force-dynamic";
+
+export async function GET(_req: NextRequest) {
   try {
-    // 1. Fetch distinct locations from "Location" table and "Property" address
-    const dbLocs = await query(`
-      SELECT DISTINCT name FROM "Location" WHERE name IS NOT NULL AND TRIM(name) != '' ORDER BY name ASC;
-    `);
-    const propLocs = await query(`
-      SELECT DISTINCT address FROM "Property" WHERE address IS NOT NULL AND TRIM(address) != '';
-    `);
+    const [facets, propStatuses] = await Promise.all([
+      fetchEightFieldGroupByFacets(),
+      query(`
+        SELECT status, COUNT(*)::int AS count
+        FROM "Property"
+        WHERE "publishStatus" = 'Published'
+          AND status IS NOT NULL
+          AND TRIM(status) != ''
+          AND status NOT IN ('Draft', 'Published')
+        GROUP BY status
+        ORDER BY count DESC;
+      `)
+    ]);
 
-    const localitiesSet = new Set<string>();
-    // Baseline Pune prime localities
-    [
-      "Koregaon Park",
-      "Baner",
-      "Balewadi",
-      "Kalyani Nagar",
-      "Bavdhan",
-      "Mahalunge",
-      "Shivajinagar",
-      "Kharadi",
-      "Worli",
-      "Hinjewadi",
-      "Wakad"
-    ].forEach((l) => localitiesSet.add(l));
-
-    dbLocs.forEach((r: any) => {
-      if (r.name && r.name.trim()) localitiesSet.add(r.name.trim());
+    const localitiesSet = new Set<string>([
+      "Baner", "Kharadi", "Magarpatta City", "Viman Nagar", "Shivaji Nagar",
+      "Mundhwa", "NIBM Road", "Camp", "Hinjewadi", "Chakan",
+      "Kalyani Nagar", "Koregaon Park", "Balewadi", "Wakad", "Bavdhan"
+    ]);
+    facets.localities.forEach((r) => {
+      if (r.value && r.value.trim()) localitiesSet.add(r.value.trim());
     });
 
-    propLocs.forEach((r: any) => {
-      if (r.address) {
-        const first = r.address.split(/[,–-]/)[0].trim();
-        if (
-          first &&
-          first.length >= 3 &&
-          !first.toLowerCase().includes("pune") &&
-          !first.toLowerCase().includes("mumbai")
-        ) {
-          localitiesSet.add(first);
-        }
-      }
-    });
-
-    // 2. Fetch distinct property types from "PropertyType" table
-    const dbTypes = await query(`
-      SELECT DISTINCT name FROM "PropertyType" WHERE name IS NOT NULL AND TRIM(name) != '' ORDER BY name ASC;
-    `);
-
-    const typologiesList: { value: string; label: string }[] = [
-
-      { value: "Commercial Office", label: "Office Space" },
-      { value: "Hospital / Healthcare", label: "Hospital / Healthcare" },
+    const typologiesList: { value: string; label: string; count?: number }[] = [
+      { value: "Office Space", label: "Office Space" },
+      { value: "Residential Apartment", label: "Residential Apartment" },
+      { value: "Shop/Showroom", label: "Shop/Showroom" },
+      { value: "Hospital", label: "Hospital" },
       { value: "1 BHK", label: "1 BHK" },
       { value: "2 BHK", label: "2 BHK" },
       { value: "3 BHK", label: "3 BHK" },
       { value: "4 BHK", label: "4 BHK" },
       { value: "4.5+ BHK Penthouse", label: "4.5+ BHK Penthouse" }
     ];
-
-    const existingTypeValues = new Set(typologiesList.map((t) => t.value.toLowerCase()));
-
-    dbTypes.forEach((r: any) => {
-      const name = r.name.trim();
-      const lower = name.toLowerCase();
-      // If it's not already in typologies, add it!
-      if (!existingTypeValues.has(lower) && !lower.includes("commercial")) {
-        existingTypeValues.add(lower);
-        typologiesList.push({ value: name, label: name });
+    const seenTypes = new Set(typologiesList.map((t) => t.value.toLowerCase()));
+    facets.propertyTypes.forEach((pt) => {
+      const name = pt.value?.trim();
+      if (!name) return;
+      const existing = typologiesList.find((t) => t.value.toLowerCase() === name.toLowerCase());
+      if (existing) {
+        existing.count = pt.count;
+      } else if (!seenTypes.has(name.toLowerCase())) {
+        seenTypes.add(name.toLowerCase());
+        typologiesList.push({ value: name, label: name, count: pt.count });
       }
     });
-
-    // 3. Fetch distinct statuses from "Property" table
-    const propStatuses = await query(`
-      SELECT DISTINCT status FROM "Property" WHERE status IS NOT NULL AND TRIM(status) != '';
-    `);
 
     const statusesSet = new Set<string>(["Ready to Move", "Under-Construction", "Newly Launched"]);
     propStatuses.forEach((r: any) => {
-      if (r.status && r.status.trim() && r.status !== "Draft" && r.status !== "Published") {
-        statusesSet.add(r.status.trim());
-      }
+      if (r.status?.trim()) statusesSet.add(r.status.trim());
     });
 
-    // 4. Standard price range brackets
     const priceRanges = [
       { value: "Under ₹1.5 Cr", label: "Under ₹1.5 Cr" },
       { value: "₹1.5 Cr - ₹2.5 Cr", label: "₹1.5 Cr - ₹2.5 Cr" },
@@ -98,33 +70,33 @@ export async function GET(req: NextRequest) {
       localities: Array.from(localitiesSet),
       typologies: typologiesList,
       statuses: Array.from(statusesSet),
-      priceRanges
+      priceRanges,
+      // Real GROUP BY counts across all 8 database search fields
+      eightFieldFacets: {
+        transactionTypes: facets.transactionTypes,
+        propertyTypes: facets.propertyTypes,
+        transactionClassifications: facets.transactionClassifications,
+        localities: facets.localities,
+        cities: facets.cities,
+        builtupAreaStats: facets.builtupAreaStats,
+        carpetAreaStats: facets.carpetAreaStats,
+        expectedPriceStats: facets.expectedPriceStats
+      }
     });
   } catch (error: any) {
     console.error("GET /api/filter-options error:", error);
     return NextResponse.json({
       success: false,
       error: error.message || "Failed to fetch filter options",
-      localities: [
-        "Koregaon Park",
-        "Baner",
-        "Balewadi",
-        "Kalyani Nagar",
-        "Bavdhan",
-        "Mahalunge",
-        "Shivajinagar",
-        "Kharadi",
-        "Worli",
-        "Hinjewadi",
-        "Wakad"
-      ],
+      localities: ["Koregaon Park", "Baner", "Balewadi", "Kalyani Nagar", "Kharadi", "Hinjewadi", "Wakad"],
       typologies: [
-        { value: "Commercial Office", label: "Office Space" },
+        { value: "Office Space", label: "Office Space" },
+        { value: "Residential Apartment", label: "Residential Apartment" },
+        { value: "Shop/Showroom", label: "Shop/Showroom" },
         { value: "1 BHK", label: "1 BHK" },
         { value: "2 BHK", label: "2 BHK" },
         { value: "3 BHK", label: "3 BHK" },
-        { value: "4 BHK", label: "4 BHK" },
-        { value: "4.5+ BHK Penthouse", label: "4.5+ BHK Penthouse" }
+        { value: "4 BHK", label: "4 BHK" }
       ],
       statuses: ["Ready to Move", "Under-Construction", "Newly Launched"],
       priceRanges: [

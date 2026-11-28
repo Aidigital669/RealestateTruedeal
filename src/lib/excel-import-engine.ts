@@ -6,6 +6,9 @@
 import * as XLSX from 'xlsx';
 import crypto from 'crypto';
 import { query, queryOne, pool } from '@/lib/db';
+import { parseIndianPriceToNumber } from '@/lib/price-utils';
+
+export { parseIndianPriceToNumber };
 
 export const MANDATORY_48_COLUMNS = [
   'Title',            'RefNumber',      'Lease_Sale',
@@ -69,51 +72,6 @@ export function computeRowChecksum(row: Record<string, any>): string {
     return `${col}=${val !== undefined && val !== null ? String(val).trim() : ''}`;
   });
   return crypto.createHash('sha256').update(normalizedParts.join('||')).digest('hex');
-}
-
-/**
- * Robust Indian Price Normalization supporting Cr, Lac, Lakh, Th, INR, plain numbers
- */
-export function parseIndianPriceToNumber(rawVal: any): number | null {
-  if (rawVal === undefined || rawVal === null || String(rawVal).trim() === '') {
-    return null;
-  }
-
-  const s = String(rawVal).trim();
-  if (s === '0' || s === '0.0' || s === '0.00' || /^0(?:\.0+)?\s*(?:cr|lac|lakh|th)?$/i.test(s)) {
-    return 0; // Distinct from null (0 represents Price on Request / Not Disclosed)
-  }
-
-  const clean = s.replace(/,/g, '').trim();
-
-  // 1. Crore (e.g. "1.26 Cr", "15.00 Crore")
-  const crMatch = clean.match(/^([\d.]+)\s*(?:cr|crore|crores)\b/i);
-  if (crMatch) {
-    const val = parseFloat(crMatch[1]);
-    return isNaN(val) ? null : Math.round(val * 10000000);
-  }
-
-  // 2. Lakh / Lac (e.g. "5.40 Lac", "32.40 Lakh")
-  const lacMatch = clean.match(/^([\d.]+)\s*(?:lac|lakh|lakhs|lacs)\b/i);
-  if (lacMatch) {
-    const val = parseFloat(lacMatch[1]);
-    return isNaN(val) ? null : Math.round(val * 100000);
-  }
-
-  // 3. Thousand (e.g. "14.00 Th", "50 Thousand")
-  const thMatch = clean.match(/^([\d.]+)\s*(?:th|thousand|k)\b/i);
-  if (thMatch) {
-    const val = parseFloat(thMatch[1]);
-    return isNaN(val) ? null : Math.round(val * 1000);
-  }
-
-  // 4. Plain numeric string (e.g. "14000.00", "5000000")
-  const plainNum = parseFloat(clean.replace(/[^\d.]/g, ''));
-  if (!isNaN(plainNum)) {
-    return Math.round(plainNum);
-  }
-
-  return null;
 }
 
 /**

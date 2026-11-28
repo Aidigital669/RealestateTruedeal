@@ -31,6 +31,7 @@ import { usePropertyComparison } from '@/context/PropertyComparisonContext';
 import { useSavedProperties } from '@/context/SavedPropertiesContext';
 import { PropertyItem, ALL_FALLBACK_PROPERTIES } from '@/lib/property-types';
 import { isZeroPrice, formatPriceDisplay } from '@/components/public/HomepageSearchablePortal';
+import { parseIndianPriceToNumber } from '@/lib/price-utils';
 import { getPropertySlug, getPropertyUrl, matchesProperty } from '@/lib/slug';
 import { PublicHeader } from '@/components/public/PublicHeader';
 import { SharePropertyModal } from '@/components/public/SharePropertyModal';
@@ -604,7 +605,10 @@ export function PropertyDetailPageClient({
   }, [property?.businessPurposes, dossier?.suitableFor, cleanDescription, property?.description]);
 
   // Cost estimates
-  const priceRaw = property?.priceRaw || (dossier?.ExpectedPrice ? (parseFloat(String(dossier.ExpectedPrice).replace(/[^0-9.]/g, '')) || 0) : (dossier?.RentPM ? (parseFloat(String(dossier.RentPM).replace(/[^0-9.]/g, '')) || 0) : 0));
+  const priceRaw =
+    typeof property?.priceRaw === 'number'
+      ? property.priceRaw
+      : (parseIndianPriceToNumber(dossier?.ExpectedPrice ?? dossier?.RentPM ?? property?.price) ?? 0);
   const stampDuty = Math.round(priceRaw * 0.07);
   const registrationFee = 30000;
   const isReady = (property?.status || '').toLowerCase().includes('ready');
@@ -1040,6 +1044,7 @@ export function PropertyDetailPageClient({
                   : '';
 
                 const unitVal = d.FlatNo ? String(d.FlatNo).trim() : '';
+                const availUnitsVal = (d.availableUnits || d.AvailableUnits || property.availableUnits || '').toString().trim();
                 const bldgVal = (d.BuildingName || (property as any)?.buildingName || '').toString().trim();
                 const superAreaVal = (d.SuperAreaName || '').toString().trim();
                 const rawSqftStr = property.sqft !== undefined && property.sqft !== null ? String(property.sqft).trim() : '';
@@ -1055,6 +1060,9 @@ export function PropertyDetailPageClient({
                 }
                 if (unitVal) {
                   stats.push({ label: 'Unit No.', val: unitVal, color: 'text-amber-700' });
+                }
+                if (availUnitsVal) {
+                  stats.push({ label: 'Available Units', val: availUnitsVal, color: 'text-emerald-700' });
                 }
                 if (carpetAreaVal) {
                   stats.push({ label: 'Carpet Area', val: carpetAreaVal });
@@ -1196,6 +1204,7 @@ export function PropertyDetailPageClient({
                 const valPropertyName = getFirst(d.PropertyName, property.propertyName, property.developer);
                 const valAddress = getFirst(d.AddressName, property.location, (property as any).address);
                 const valFlatNo = getFirst(d.FlatNo, lineMap['unit no.'], lineMap['unit no'], lineMap['flat no'], lineMap['shop no']);
+                const valAvailableUnits = getFirst(d.availableUnits, d.AvailableUnits, property.availableUnits, lineMap['available units'], lineMap['units available'], lineMap['total units available']);
                 const valBuildingName = getFirst(d.BuildingName, property.buildingName);
                 const valLandmark = getFirst(d.Landmark);
                 const valSocietyName = getFirst(d.SocietyName);
@@ -1219,12 +1228,15 @@ export function PropertyDetailPageClient({
                 })();
 
                 const valExpectedPrice = (() => {
+                  if (property.priceRaw === 0 && (!property.price || isZeroPrice(property.price))) {
+                    return 'Price on Request';
+                  }
                   if (property.price && !isZeroPrice(property.price)) {
                     return formatPriceDisplay(property.price);
                   }
                   const raw = getFirst(d.ExpectedPrice, property.price);
-                  if (!raw) return '';
-                  return raw.startsWith('₹') ? raw : `₹${raw}`;
+                  if (!raw || isZeroPrice(raw)) return '';
+                  return formatPriceDisplay(raw);
                 })();
 
                 const valDepositePrice = (() => {
@@ -1234,9 +1246,17 @@ export function PropertyDetailPageClient({
                 })();
 
                 const valRentPM = (() => {
+                  const isRentListing = /rent|lease/i.test(valLeaseSale);
                   const raw = getFirst(d.RentPM, property.monthlyRent);
-                  if (!raw) return '';
-                  return raw.startsWith('₹') ? `${raw}/month` : `₹${raw}/month`;
+                  if (!raw || isZeroPrice(raw)) {
+                    if (isRentListing && property.price && !isZeroPrice(property.price)) {
+                      return `${formatPriceDisplay(property.price)}/month`;
+                    }
+                    return '';
+                  }
+                  const formatted = formatPriceDisplay(raw);
+                  const display = formatted !== 'Price on Request' ? formatted : (raw.startsWith('₹') ? raw : `₹${raw}`);
+                  return /\/\s*(?:mo|month)/i.test(display) ? display : `${display}/month`;
                 })();
 
                 const valRentStartDate = getFirst(d.RentStartDate, property.rentStartDate);
@@ -1281,7 +1301,8 @@ export function PropertyDetailPageClient({
                 const accountedKeys = new Set([
                   'h : w : d', 'suitable for', 'unique feature', 'area : carpet : saleable',
                   'super area', 'super built-up area', 'saleable area', 'built-up area', 'carpet area',
-                  'unit no.', 'unit no', 'flat no', 'shop no', 'possession'
+                  'unit no.', 'unit no', 'flat no', 'shop no', 'possession',
+                  'available units', 'units available', 'total units available'
                 ]);
 
                 const dynamicExtraItems: { label: string; value: string }[] = [];
@@ -1311,6 +1332,7 @@ export function PropertyDetailPageClient({
                       { label: 'Property Type', value: valPropertyType },
                       { label: 'Project / Property Name', value: valPropertyName },
                       { label: 'Unit / Flat No.', value: valFlatNo },
+                      { label: 'Available Units', value: valAvailableUnits },
                       { label: 'Building Name', value: valBuildingName },
                       { label: 'Society Name', value: valSocietyName },
                       { label: 'Property Age', value: valPropertyAge },

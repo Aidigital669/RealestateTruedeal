@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
-import { getPropertyBySlugOrId, fetchAllProperties } from '@/lib/property-data';
+import { getPropertyBySlugOrId, fetchHomepageProperties } from '@/lib/property-data';
 import { getAllLiveBuyerDemands } from '@/lib/buyer-demands-service';
 import { getPropertyUrl } from '@/lib/slug';
 import { CATEGORIES_DATA, getCategoryBySlug } from '@/lib/categories-data';
@@ -8,6 +8,8 @@ import { PublicHeader } from '@/components/public/PublicHeader';
 import { PublicFooter } from '@/components/public/PublicFooter';
 import { HomepageSearchablePortal, PropertyItem, BlogItem } from '@/components/public/HomepageSearchablePortal';
 import { CategoryHeroSEOHeader } from '@/components/public/CategoryHeroSEOHeader';
+
+export const dynamic = 'force-dynamic';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -158,7 +160,7 @@ export default async function DirectSlugPage({ params }: PageProps) {
   const category = getCategoryBySlug(slug);
   if (category) {
     const [allProperties, buyerDemands] = await Promise.all([
-      fetchAllProperties(),
+      fetchHomepageProperties(),
       getAllLiveBuyerDemands().catch(() => [])
     ]);
     const searchTerm = category.slug === 'hospital' ? 'hospital' : (category.shortTitle || category.title);

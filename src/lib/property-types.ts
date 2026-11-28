@@ -6,16 +6,20 @@ export interface PropertyItem {
   developer: string;
   buildingName?: string;
   locality?: string;
+  city?: string;
   location: string;
   price: string;
   priceRaw?: number;
   priceSuffix?: string;
+  configuration?: string;
   hideName?: boolean;
   hidePrice?: boolean;
   bhk: string;
   bhkNum?: number;
   sqft: string;
   sqftNum?: number;
+  builtupAreaNum?: number;
+  carpetAreaNum?: number;
   status: string;
   description: string;
   image: string;
@@ -35,6 +39,7 @@ export interface PropertyItem {
   connectivity?: string[];
   amenitiesList?: (string | { title: string; desc: string })[];
   possession?: string;
+  availableUnits?: string;
   legalVettingText?: string;
   hideRera?: boolean;
   hideComplianceTab?: boolean;

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { formatIndianPrice } from '@/lib/price-utils';
 import {
   Zap,
   Plus,
@@ -118,7 +119,7 @@ export default function AdminPage() {
   const [addPropertyTypeModalOpen, setAddPropertyTypeModalOpen] = useState(false);
   const [editingSection, setEditingSection] = useState<HomepageSectionItem | null>(null);
   const [editSectionModalOpen, setEditSectionModalOpen] = useState(false);
-  
+
   // Properties Edit state
   const [editingProperty, setEditingProperty] = useState<any>(null);
   const [editPropertyModalOpen, setEditPropertyModalOpen] = useState(false);
@@ -295,8 +296,8 @@ export default function AdminPage() {
         setSections(sData.sections);
       }
 
-      // 3. Properties
-      const pRes = await fetch('/api/admin/properties');
+      // 3. Properties (cache: no-store ensures fresh DB prices after any edit)
+      const pRes = await fetch('/api/admin/properties', { cache: 'no-store' });
       const pData = await pRes.json();
       if (pData.success && pData.properties) {
         setPropertiesList(pData.properties);
@@ -660,7 +661,7 @@ export default function AdminPage() {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ isSafe: true })
-          }).catch(() => {});
+          }).catch(() => { });
         }
       }
 
@@ -696,8 +697,14 @@ export default function AdminPage() {
       });
       const data = await res.json();
       if (data.success) {
+        if (data.property) {
+          setPropertiesList((prev) =>
+            prev.map((item) => (String(item.id) === String(id) ? { ...item, ...data.property } : item))
+          );
+        }
         showToast(data.message);
-        fetchAllAdminData(); // Refresh list to get updated row
+        await fetchAllAdminData(); // Refresh list to get updated row
+        router.refresh();
       } else {
         showToast(data.error || 'Failed to update property');
         throw new Error(data.error || 'Failed to update property');
@@ -729,10 +736,10 @@ export default function AdminPage() {
           field === 'hideName'
             ? (newVal ? 'Property Name is now Hidden from customers' : 'Property Name is now Visible')
             : field === 'hidePrice'
-            ? (newVal ? 'Property Price is now Hidden ("Price on Request")' : 'Property Price is now Visible')
-            : field === 'hideDirectContact'
-            ? (newVal ? 'Direct Advisor & WhatsApp Desk is now Hidden' : 'Direct Advisor & WhatsApp Desk is now Visible')
-            : (newVal ? 'Breadcrumbs Bar is now Hidden' : 'Breadcrumbs Bar is now Visible')
+              ? (newVal ? 'Property Price is now Hidden ("Price on Request")' : 'Property Price is now Visible')
+              : field === 'hideDirectContact'
+                ? (newVal ? 'Direct Advisor & WhatsApp Desk is now Hidden' : 'Direct Advisor & WhatsApp Desk is now Visible')
+                : (newVal ? 'Breadcrumbs Bar is now Hidden' : 'Breadcrumbs Bar is now Visible')
         );
         fetchAllAdminData();
       } else {
@@ -790,10 +797,10 @@ export default function AdminPage() {
       setCrmSelectedLead((prev) =>
         prev
           ? {
-              ...prev,
-              stage: newStage as any,
-              status: 'Negotiation'
-            }
+            ...prev,
+            stage: newStage as any,
+            status: 'Negotiation'
+          }
           : null
       );
     }
@@ -1175,11 +1182,10 @@ export default function AdminPage() {
                                 type="button"
                                 onClick={() => handleTogglePropertyPrivacy(p, 'hideName')}
                                 title={p.hideName ? 'Click to show property name to public' : 'Click to hide property name from public'}
-                                className={`text-[10px] inline-flex items-center gap-1 px-1.5 py-0.5 rounded border transition font-medium ${
-                                  p.hideName
+                                className={`text-[10px] inline-flex items-center gap-1 px-1.5 py-0.5 rounded border transition font-medium ${p.hideName
                                     ? 'bg-amber-50 border-amber-300 text-amber-800 hover:bg-amber-100'
                                     : 'bg-zinc-50 border-zinc-200 text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'
-                                }`}
+                                  }`}
                               >
                                 {p.hideName ? <Eye className="w-2.5 h-2.5" /> : <EyeOff className="w-2.5 h-2.5" />}
                                 {p.hideName ? 'Unhide Name' : 'Hide Name'}
@@ -1227,7 +1233,7 @@ export default function AdminPage() {
                           <td className="px-5 py-3.5 font-semibold text-zinc-900">
                             <div className="flex flex-col gap-1 items-start">
                               <div className="flex items-center gap-1.5 flex-wrap">
-                                <span>{p.priceFormatted || (p.price ? `₹${(p.price / 10000000).toFixed(2)} Cr` : '₹1.50 Cr')}</span>
+                                <span>{p.priceFormatted || formatIndianPrice(p.price)}</span>
                                 {p.hidePrice && (
                                   <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-800 border border-blue-200 inline-flex items-center gap-1">
                                     <EyeOff className="w-2.5 h-2.5 text-blue-600" />
@@ -1240,11 +1246,10 @@ export default function AdminPage() {
                                   type="button"
                                   onClick={() => handleTogglePropertyPrivacy(p, 'hidePrice')}
                                   title={p.hidePrice ? 'Click to show price to public' : 'Click to hide price from public (shows "Price on Request")'}
-                                  className={`text-[10px] inline-flex items-center gap-1 px-1.5 py-0.5 rounded border transition font-medium ${
-                                    p.hidePrice
+                                  className={`text-[10px] inline-flex items-center gap-1 px-1.5 py-0.5 rounded border transition font-medium ${p.hidePrice
                                       ? 'bg-blue-50 border-blue-300 text-blue-800 hover:bg-blue-100'
                                       : 'bg-zinc-50 border-zinc-200 text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'
-                                  }`}
+                                    }`}
                                 >
                                   {p.hidePrice ? <Eye className="w-2.5 h-2.5" /> : <EyeOff className="w-2.5 h-2.5" />}
                                   {p.hidePrice ? 'Unhide Price' : 'Hide Price'}
@@ -1253,11 +1258,10 @@ export default function AdminPage() {
                                   type="button"
                                   onClick={() => handleTogglePropertyPrivacy(p, 'hideDirectContact')}
                                   title={p.hideDirectContact === false ? 'Direct Advisor Desk is visible. Click to hide.' : 'Direct Advisor Desk is hidden. Click to unhide from admin side.'}
-                                  className={`text-[10px] inline-flex items-center gap-1 px-1.5 py-0.5 rounded border transition font-medium ${
-                                    p.hideDirectContact === false
+                                  className={`text-[10px] inline-flex items-center gap-1 px-1.5 py-0.5 rounded border transition font-medium ${p.hideDirectContact === false
                                       ? 'bg-emerald-50 border-emerald-300 text-emerald-800 hover:bg-emerald-100'
                                       : 'bg-zinc-100 border-zinc-200 text-zinc-600 hover:bg-zinc-200 hover:text-zinc-900'
-                                  }`}
+                                    }`}
                                 >
                                   {p.hideDirectContact === false ? <Eye className="w-2.5 h-2.5 text-emerald-600" /> : <EyeOff className="w-2.5 h-2.5 text-zinc-500" />}
                                   {p.hideDirectContact === false ? 'Advisor: Visible' : 'Advisor: Hidden'}
@@ -1267,11 +1271,10 @@ export default function AdminPage() {
                           </td>
                           <td className="px-5 py-3.5">
                             <span
-                              className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                                p.publishStatus === 'Published' || p.status === 'Published'
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${p.publishStatus === 'Published' || p.status === 'Published'
                                   ? 'bg-emerald-50 text-emerald-700'
                                   : 'bg-zinc-100 text-zinc-600'
-                              }`}
+                                }`}
                             >
                               {p.publishStatus || p.status}
                             </span>
@@ -1297,11 +1300,10 @@ export default function AdminPage() {
                                   ? 'Property is Safe (Protected from deletion). Click to remove safe'
                                   : 'Mark this property as Safe to protect it from deletion'
                               }
-                              className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition inline-flex items-center gap-1 cursor-pointer ${
-                                p.isSafe
+                              className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition inline-flex items-center gap-1 cursor-pointer ${p.isSafe
                                   ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 hover:bg-emerald-200'
                                   : 'bg-zinc-100 text-zinc-600 border border-zinc-200 hover:bg-zinc-200 hover:text-zinc-900'
-                              }`}
+                                }`}
                             >
                               <ShieldCheck
                                 className={`w-3.5 h-3.5 ${p.isSafe ? 'text-emerald-600' : 'text-zinc-400'}`}
@@ -1414,16 +1416,14 @@ export default function AdminPage() {
                   <button
                     key={tab.id}
                     onClick={() => setEnquiryTypeFilter(tab.id)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition ${
-                      enquiryTypeFilter === tab.id
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition ${enquiryTypeFilter === tab.id
                         ? 'bg-zinc-900 text-white shadow-xs'
                         : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'
-                    }`}
+                      }`}
                   >
                     <span>{tab.label}</span>
-                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
-                      enquiryTypeFilter === tab.id ? 'bg-white/20 text-white' : 'bg-zinc-100 text-zinc-500'
-                    }`}>
+                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${enquiryTypeFilter === tab.id ? 'bg-white/20 text-white' : 'bg-zinc-100 text-zinc-500'
+                      }`}>
                       {tab.count}
                     </span>
                   </button>
@@ -2118,11 +2118,10 @@ export default function AdminPage() {
                           setSearchHistoryFilter(item.query);
                           fetchSearchHistory(item.query);
                         }}
-                        className={`text-xs px-3 py-1.5 rounded-lg border transition flex items-center gap-2 cursor-pointer ${
-                          searchHistoryFilter === item.query
+                        className={`text-xs px-3 py-1.5 rounded-lg border transition flex items-center gap-2 cursor-pointer ${searchHistoryFilter === item.query
                             ? 'bg-amber-500 text-black border-amber-600 font-bold'
                             : 'bg-zinc-50 hover:bg-amber-50 hover:text-amber-950 border-zinc-200 text-zinc-800'
-                        }`}
+                          }`}
                       >
                         <span className="font-semibold">{item.query}</span>
                         <span className="text-[10px] font-black px-1.5 py-0.2 rounded-full bg-black/10">
@@ -2290,12 +2289,12 @@ export default function AdminPage() {
                           const dateObj = new Date(rec.created_at);
                           const dateFormatted = !isNaN(dateObj.getTime())
                             ? dateObj.toLocaleDateString('en-IN', {
-                                day: '2-digit',
-                                month: 'short',
-                                year: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              })
+                              day: '2-digit',
+                              month: 'short',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })
                             : 'Recent';
 
                           return (
@@ -2315,11 +2314,10 @@ export default function AdminPage() {
                               </td>
                               <td className="py-3 px-4">
                                 <span
-                                  className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                                    rec.intent === 'seller'
+                                  className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${rec.intent === 'seller'
                                       ? 'bg-amber-100 text-amber-900 border border-amber-200'
                                       : 'bg-emerald-100 text-emerald-900 border border-emerald-200'
-                                  }`}
+                                    }`}
                                 >
                                   {rec.intent === 'seller' ? (
                                     <>
@@ -2678,11 +2676,10 @@ export default function AdminPage() {
                       <div
                         key={p.id}
                         onClick={() => handleToggleTempSafe(p.id)}
-                        className={`p-3.5 flex items-center justify-between gap-3 transition cursor-pointer ${
-                          isSafe
+                        className={`p-3.5 flex items-center justify-between gap-3 transition cursor-pointer ${isSafe
                             ? 'bg-emerald-50/60 hover:bg-emerald-50 border-l-4 border-l-emerald-500'
                             : 'hover:bg-zinc-50 border-l-4 border-l-transparent'
-                        }`}
+                          }`}
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           <input
@@ -2714,7 +2711,7 @@ export default function AdminPage() {
                               <span>{p.configuration || p.bhk || 'Commercial'}</span>
                               <span>&bull;</span>
                               <span className="font-semibold text-zinc-800">
-                                {p.priceFormatted || (p.price ? `₹${(p.price / 10000000).toFixed(2)} Cr` : 'Price on Request')}
+                                {p.priceFormatted || formatIndianPrice(p.price)}
                               </span>
                             </div>
                           </div>
@@ -2726,11 +2723,10 @@ export default function AdminPage() {
                             e.stopPropagation();
                             handleToggleTempSafe(p.id);
                           }}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer ${
-                            isSafe
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer ${isSafe
                               ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs'
                               : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
-                          }`}
+                            }`}
                         >
                           <ShieldCheck className={`w-3.5 h-3.5 ${isSafe ? 'text-white' : 'text-zinc-500'}`} />
                           <span>{isSafe ? 'Safe' : 'Make Safe'}</span>
@@ -2773,11 +2769,10 @@ export default function AdminPage() {
                   type="button"
                   onClick={handleExecuteDeleteAll}
                   disabled={isBulkDeleting || propertiesList.length - tempSafeIds.size === 0}
-                  className={`flex-1 sm:flex-none px-5 py-2.5 rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 shadow-md cursor-pointer ${
-                    propertiesList.length - tempSafeIds.size === 0
+                  className={`flex-1 sm:flex-none px-5 py-2.5 rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 shadow-md cursor-pointer ${propertiesList.length - tempSafeIds.size === 0
                       ? 'bg-zinc-200 text-zinc-400 cursor-not-allowed shadow-none'
                       : 'bg-rose-600 hover:bg-rose-500 text-white'
-                  }`}
+                    }`}
                 >
                   {isBulkDeleting ? (
                     <>

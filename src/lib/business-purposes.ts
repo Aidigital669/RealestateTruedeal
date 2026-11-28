@@ -5,69 +5,88 @@ export type { BusinessPurpose };
 export { INITIAL_BUSINESS_PURPOSES };
 
 let tablesInitialized = false;
+let ensurePromise: Promise<void> | null = null;
 
 export async function ensureBusinessPurposesTables(): Promise<void> {
   if (tablesInitialized) return;
-  try {
-    // 1. Create BusinessPurpose table
-    await query(`
-      CREATE TABLE IF NOT EXISTS "BusinessPurpose" (
-        id SERIAL PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        slug VARCHAR(255) UNIQUE NOT NULL,
-        "isActive" BOOLEAN DEFAULT true,
-        "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-        "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-      );
-    `);
+  if (ensurePromise) return ensurePromise;
 
-    // 2. Create PropertyBusinessPurpose join table
-    await query(`
-      CREATE TABLE IF NOT EXISTS "PropertyBusinessPurpose" (
-        "propertyId" INTEGER NOT NULL REFERENCES "Property"(id) ON DELETE CASCADE,
-        "businessPurposeId" INTEGER NOT NULL REFERENCES "BusinessPurpose"(id) ON DELETE CASCADE,
-        PRIMARY KEY ("propertyId", "businessPurposeId")
-      );
-    `);
+  ensurePromise = (async () => {
+    try {
+      // Fast path: check if table already exists and has seed rows (1 lightweight query instead of 27)
+      const existing = await query(`SELECT 1 FROM "BusinessPurpose" LIMIT 1;`).catch(() => null);
+      if (existing && existing.length > 0) {
+        tablesInitialized = true;
+        return;
+      }
 
-    // 3. Create Indexes
-    await query(`
-      CREATE INDEX IF NOT EXISTS "PropertyBusinessPurpose_businessPurposeId_idx" 
-      ON "PropertyBusinessPurpose"("businessPurposeId");
-    `).catch(() => {});
+      // 1. Create BusinessPurpose table
+      await query(`
+        CREATE TABLE IF NOT EXISTS "BusinessPurpose" (
+          id SERIAL PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          slug VARCHAR(255) UNIQUE NOT NULL,
+          "isActive" BOOLEAN DEFAULT true,
+          "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        );
+      `);
 
-    await query(`
-      CREATE INDEX IF NOT EXISTS "PropertyBusinessPurpose_propertyId_idx" 
-      ON "PropertyBusinessPurpose"("propertyId");
-    `).catch(() => {});
+      // 2. Create PropertyBusinessPurpose join table
+      await query(`
+        CREATE TABLE IF NOT EXISTS "PropertyBusinessPurpose" (
+          "propertyId" INTEGER NOT NULL REFERENCES "Property"(id) ON DELETE CASCADE,
+          "businessPurposeId" INTEGER NOT NULL REFERENCES "BusinessPurpose"(id) ON DELETE CASCADE,
+          PRIMARY KEY ("propertyId", "businessPurposeId")
+        );
+      `);
 
-    // 4. Seed 21 purposes idempotently
-    for (const item of INITIAL_BUSINESS_PURPOSES) {
+      // 3. Create Indexes
+      await Promise.all([
+        query(`
+          CREATE INDEX IF NOT EXISTS "PropertyBusinessPurpose_businessPurposeId_idx" 
+          ON "PropertyBusinessPurpose"("businessPurposeId");
+        `).catch(() => {}),
+        query(`
+          CREATE INDEX IF NOT EXISTS "PropertyBusinessPurpose_propertyId_idx" 
+          ON "PropertyBusinessPurpose"("propertyId");
+        `).catch(() => {})
+      ]);
+
+      // 4. Batch-seed 21 purposes in a single SQL query instead of 21 sequential roundtrips
+      const names = INITIAL_BUSINESS_PURPOSES.map((i) => i.name);
+      const slugs = INITIAL_BUSINESS_PURPOSES.map((i) => i.slug);
       await query(`
         INSERT INTO "BusinessPurpose" (name, slug, "isActive", "createdAt", "updatedAt")
-        VALUES ($1, $2, true, NOW(), NOW())
+        SELECT u.name, u.slug, true, NOW(), NOW()
+        FROM UNNEST($1::text[], $2::text[]) AS u(name, slug)
         ON CONFLICT (slug) DO UPDATE 
         SET name = EXCLUDED.name, "updatedAt" = NOW();
-      `, [item.name, item.slug]).catch(() => {});
+      `, [names, slugs]).catch(() => {});
+
+      // 5. Create compatibility views for lowercase snake_case queries if needed
+      await Promise.all([
+        query(`
+          CREATE OR REPLACE VIEW business_purposes AS 
+          SELECT id, name, slug, "isActive" as is_active, "createdAt" as created_at, "updatedAt" as updated_at 
+          FROM "BusinessPurpose";
+        `).catch(() => {}),
+        query(`
+          CREATE OR REPLACE VIEW property_business_purposes AS 
+          SELECT "propertyId" as property_id, "businessPurposeId" as business_purpose_id 
+          FROM "PropertyBusinessPurpose";
+        `).catch(() => {})
+      ]);
+
+      tablesInitialized = true;
+    } catch (err) {
+      console.warn('Failed to auto-ensure BusinessPurpose tables:', err);
+    } finally {
+      ensurePromise = null;
     }
+  })();
 
-    // 5. Create compatibility views for lowercase snake_case queries if needed
-    await query(`
-      CREATE OR REPLACE VIEW business_purposes AS 
-      SELECT id, name, slug, "isActive" as is_active, "createdAt" as created_at, "updatedAt" as updated_at 
-      FROM "BusinessPurpose";
-    `).catch(() => {});
-
-    await query(`
-      CREATE OR REPLACE VIEW property_business_purposes AS 
-      SELECT "propertyId" as property_id, "businessPurposeId" as business_purpose_id 
-      FROM "PropertyBusinessPurpose";
-    `).catch(() => {});
-
-    tablesInitialized = true;
-  } catch (err) {
-    console.warn('Failed to auto-ensure BusinessPurpose tables:', err);
-  }
+  return ensurePromise;
 }
 
 export async function getAllBusinessPurposes(): Promise<BusinessPurpose[]> {

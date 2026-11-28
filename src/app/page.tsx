@@ -2,7 +2,7 @@ import { PublicHeader } from "@/components/public/PublicHeader";
 import { PublicFooter } from "@/components/public/PublicFooter";
 import { HomepageSearchablePortal, PropertyItem, BlogItem } from "@/components/public/HomepageSearchablePortal";
 import { query } from "@/lib/db";
-import { fetchAllProperties } from "@/lib/property-data";
+import { fetchHomepageProperties, getPropertyCacheVersion } from "@/lib/property-data";
 import { getAllLiveBuyerDemands } from "@/lib/buyer-demands-service";
 import type { Metadata } from "next";
 
@@ -32,9 +32,10 @@ let cachedPageData: {
   dbTypes: any[];
   dbStatuses: any[];
   buyerDemands: any[];
+  cacheVer: number;
   timestamp: number;
 } | null = null;
-const PAGE_CACHE_TTL = 60 * 1000; // 60s in-memory cache for ultra-fast response
+const PAGE_CACHE_TTL = 5 * 60 * 1000; // 5m in-memory cache synced with property cache version
 
 const fallbackInsights: BlogItem[] = [
   {
@@ -89,9 +90,10 @@ export default async function Home(props: {
   let dbTypes: any[] = [];
   let dbStatuses: any[] = [];
 
+  const currentCacheVer = getPropertyCacheVersion();
   try {
-    if (cachedPageData && (now - cachedPageData.timestamp < PAGE_CACHE_TTL)) {
-      properties = await fetchAllProperties();
+    if (cachedPageData && cachedPageData.cacheVer === currentCacheVer && (now - cachedPageData.timestamp < PAGE_CACHE_TTL)) {
+      properties = await fetchHomepageProperties();
       insights = cachedPageData.insights;
       dbLocs = cachedPageData.dbLocs;
       dbTypes = cachedPageData.dbTypes;
@@ -101,7 +103,7 @@ export default async function Home(props: {
         : await getAllLiveBuyerDemands().catch(() => []);
     } else {
       const [fetchedProps, fetchedBlogs, fetchedLocs, fetchedTypes, fetchedStatuses, fetchedBuyers] = await Promise.all([
-        fetchAllProperties(),
+        fetchHomepageProperties(),
         query(`
           SELECT 
             b.id, b.title, COALESCE(b.excerpt, b.content) as description,
@@ -143,12 +145,13 @@ export default async function Home(props: {
         dbTypes,
         dbStatuses,
         buyerDemands,
+        cacheVer: getPropertyCacheVersion(),
         timestamp: now
       };
     }
   } catch (error) {
     console.log("Database connection fallback to curated properties & insights:", error);
-    properties = await fetchAllProperties().catch(() => fallbackProperties);
+    properties = await fetchHomepageProperties().catch(() => fallbackProperties);
   }
 
   // 3. Dynamic Filter Options: automatically increase as per products in database

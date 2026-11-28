@@ -4,19 +4,13 @@ import {
   calculateGeoDistanceKm,
   PUNE_LOCALITIES_GEO
 } from '@/lib/matching-and-search-engine';
+import { parseDossierData } from '@/lib/dossier-parser';
+import { parseIndianPriceToNumber, formatIndianPrice, resolvePropertyPrice } from '@/lib/price-utils';
 
 export const dynamic = 'force-dynamic';
 
 function parsePriceToNumber(rawPrice: any): number {
-  if (typeof rawPrice === 'number') return rawPrice;
-  if (!rawPrice) return 0;
-  const str = String(rawPrice).toLowerCase().replace(/,/g, '');
-  const crMatch = str.match(/([\d.]+)\s*(?:cr|crore)/i);
-  if (crMatch) return parseFloat(crMatch[1]) * 10000000;
-  const lMatch = str.match(/([\d.]+)\s*(?:l|lakh|lac)/i);
-  if (lMatch) return parseFloat(lMatch[1]) * 100000;
-  const numMatch = str.match(/[\d.]+/);
-  return numMatch ? parseFloat(numMatch[0]) : 0;
+  return parseIndianPriceToNumber(rawPrice) ?? 0;
 }
 
 export async function GET(req: NextRequest) {
@@ -34,11 +28,12 @@ export async function GET(req: NextRequest) {
       baseProp = await queryOne<any>(
         `
         SELECT 
-          p.id, p.slug, p.title, p.price, p."carpetArea" as carpet_sqft, p.bedrooms as bhk_num,
+          p.id, p.slug, p.title, p.description, p.price, p.rent, p."monthlyRent", p."dossierData", p."listingType",
+          p."carpetArea" as carpet_sqft, p.bedrooms as bhk_num,
           p.status, COALESCE(loc.name, 'Baner') as locality, COALESCE(pt.name, 'Apartment') as type_name
         FROM "Property" p
         LEFT JOIN "Location" loc ON p."locationId" = loc.id
-        LEFT JOIN "PropertyType" pt ON p."typeId" = pt.id
+        LEFT JOIN "PropertyType" pt ON p."propertyTypeId" = pt.id
         WHERE p.id = $1::integer OR p.slug = $1::text
         LIMIT 1;
         `,
@@ -46,21 +41,25 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    const baseDossier = baseProp ? {
+      ...(typeof baseProp.dossierData === 'object' && baseProp.dossierData !== null ? baseProp.dossierData : {}),
+      ...parseDossierData(baseProp.description || '').dossier
+    } : {};
     const targetLocality = baseProp?.locality || localityParam || 'Baner';
     const targetBhk = baseProp?.bhk_num ? `${baseProp.bhk_num} BHK` : bhkParam || '3 BHK';
-    const targetPriceRaw = baseProp ? parsePriceToNumber(baseProp.price) : parsePriceToNumber(priceParam);
+    const targetPriceRaw = baseProp ? resolvePropertyPrice(baseProp, baseDossier).numPrice : parsePriceToNumber(priceParam);
 
     // Fetch pool of candidate properties
     const candidateRows = await query<any>(`
       SELECT 
         p.id, p.slug, p.title, p.description, p.address as location,
-        p.price, p."carpetArea" as carpet_sqft, p.bedrooms as bhk_num, p.configuration,
+        p.price, p.rent, p."monthlyRent", p."dossierData", p."listingType", p."carpetArea" as carpet_sqft, p.bedrooms as bhk_num, p.configuration,
         p.status, COALESCE(loc.name, 'Baner') as locality,
         COALESCE(pt.name, 'Apartment') as type_name,
         COALESCE(img.url, 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=600&q=80') as image
       FROM "Property" p
       LEFT JOIN "Location" loc ON p."locationId" = loc.id
-      LEFT JOIN "PropertyType" pt ON p."typeId" = pt.id
+      LEFT JOIN "PropertyType" pt ON p."propertyTypeId" = pt.id
       LEFT JOIN "PropertyImage" img ON p.id = img."propertyId" AND img."isPrimary" = true
       WHERE p.status != 'Draft'
       ORDER BY p."createdAt" DESC
@@ -73,7 +72,12 @@ export async function GET(req: NextRequest) {
         let similarityScore = 0;
         const reasons: string[] = [];
         const candLoc = cand.locality || '';
-        const candPriceRaw = parsePriceToNumber(cand.price);
+        const candDossier = {
+          ...(typeof cand.dossierData === 'object' && cand.dossierData !== null ? cand.dossierData : {}),
+          ...parseDossierData(cand.description || '').dossier
+        };
+        const candResolved = resolvePropertyPrice(cand, candDossier);
+        const candPriceRaw = candResolved.numPrice;
 
         // 1. Locality similarity
         if (candLoc.toLowerCase() === targetLocality.toLowerCase()) {
@@ -132,7 +136,7 @@ export async function GET(req: NextRequest) {
       targetCriteria: {
         locality: targetLocality,
         bhk: targetBhk,
-        price: targetPriceRaw > 0 ? `₹${(targetPriceRaw / 10000000).toFixed(2)} Cr` : undefined
+        price: targetPriceRaw > 0 ? formatIndianPrice(targetPriceRaw) : undefined
       },
       similarProperties: scoredAlternatives.slice(0, limit)
     });

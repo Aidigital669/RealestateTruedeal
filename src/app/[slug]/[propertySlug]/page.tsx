@@ -4,6 +4,8 @@ import { getPropertyBySlugOrId } from '@/lib/property-data';
 import { getPropertySlug, getPropertyUrl, getPropertyCategorySlug } from '@/lib/slug';
 import { PropertyDetailPageClient } from '@/components/public/PropertyDetailPageClient';
 
+export const dynamic = 'force-dynamic';
+
 interface PropertyDetailPageProps {
   params: Promise<{ slug: string; propertySlug: string }>;
 }

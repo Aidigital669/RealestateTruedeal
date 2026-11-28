@@ -48,20 +48,19 @@ export function CrmPropertiesTab() {
   const [notificationMsg, setNotificationMsg] = useState<string | null>(null);
   const [failedCardImages, setFailedCardImages] = useState<Record<string | number, boolean>>({});
 
-  const fetchProperties = () => {
+  const fetchProperties = async () => {
     setLoading(true);
-    fetch('/api/admin/properties')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success && data.properties) {
-          setProperties(data.properties);
-        }
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error('Error fetching CRM properties:', err);
-        setLoading(false);
-      });
+    try {
+      const res = await fetch('/api/admin/properties', { cache: 'no-store' });
+      const data = await res.json();
+      if (data.success && data.properties) {
+        setProperties(data.properties);
+      }
+    } catch (err) {
+      console.error('Error fetching CRM properties:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -263,17 +262,24 @@ export function CrmPropertiesTab() {
       });
       const data = await res.json();
       if (data.success) {
+        if (data.property) {
+          setProperties((prev) =>
+            prev.map((item) => (String(item.id) === String(id) ? { ...item, ...data.property } : item))
+          );
+        }
         setIsEditOpen(false);
         setEditingProperty(null);
-        fetchProperties();
+        await fetchProperties();
         setNotificationMsg('✓ Property details updated successfully.');
         setTimeout(() => setNotificationMsg(null), 4000);
       } else {
-        alert(data.error || 'Failed to update property');
+        const msg = data.error || 'Failed to update property';
+        alert(msg);
+        throw new Error(msg);
       }
     } catch (e: any) {
       console.error('Error updating property:', e);
-      alert(e.message || 'Error updating property');
+      throw e;
     }
   };
 

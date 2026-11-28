@@ -75,6 +75,7 @@ const PropertyGalleryModal = dynamic(
 import { getClientSession } from '@/lib/user-auth';
 import { getPropertyUrl } from '@/lib/slug';
 import { parseQueryCriteria, getPropertyRawPrice, scorePropertyMatch } from '@/lib/property-matching';
+import { parseEightFieldRequirements, getPropertyTypeMatchTerms, EightFieldCriteria } from '@/lib/eight-field-parser';
 import { findMatchingCategorySlug } from '@/lib/categories-data';
 import { isUserSeller } from '@/lib/seller-intent';
 import {
@@ -112,6 +113,7 @@ export interface PropertyItem {
   developer: string;
   buildingName?: string;
   locality?: string;
+  city?: string;
   location: string;
   price: string;
   priceRaw?: number;
@@ -121,6 +123,9 @@ export interface PropertyItem {
   bhkNum?: number;
   sqft: string;
   sqftNum?: number;
+  builtupAreaNum?: number;
+  carpetAreaNum?: number;
+  transactionClassification?: string | null;
   status: string;
   description: string;
   image: string;
@@ -131,6 +136,8 @@ export interface PropertyItem {
   highlights?: string[];
   connectivity?: string[];
   amenitiesList?: (string | { title: string; desc: string })[];
+  possession?: string;
+  availableUnits?: string;
   reraNumber?: string;
   rpsStatus?: string;
   featured?: boolean;
@@ -240,34 +247,8 @@ export interface HomepageSearchablePortalProps {
   isDedicatedSearchPage?: boolean;
 }
 
-export function isZeroPrice(val: string | number | undefined | null): boolean {
-  if (!val) return true;
-  const str = String(val).trim();
-  if (/on request|request|confidential/i.test(str)) return true;
-  if (/^₹?\s*0+(\.0+)?\s*(lakh|cr|crore|lac|k)?(\s*\/\s*(mo|month))?$/i.test(str)) return true;
-  const num = Number(str.replace(/[^0-9.]/g, ''));
-  if (isNaN(num) || num <= 0) return true;
-  return false;
-}
-
-export function formatPriceDisplay(val: string | number | undefined | null): string {
-  if (!val) return 'Price on Request';
-  if (isZeroPrice(val)) return 'Price on Request';
-  const str = String(val).trim();
-  if (isZeroPrice(str)) return 'Price on Request';
-  if (str.startsWith('₹') || /cr|lakh|crore/i.test(str)) return str;
-  const num = Number(str.replace(/[^0-9.]/g, ''));
-  if (isNaN(num) || num <= 0) return 'Price on Request';
-  if (num >= 10000000) {
-    const cr = (num / 10000000).toFixed(2).replace(/\.00$/, '');
-    return `₹${cr} Cr`;
-  }
-  if (num >= 100000) {
-    const lk = (num / 100000).toFixed(2).replace(/\.00$/, '');
-    return `₹${lk} Lakh`;
-  }
-  return `₹${num.toLocaleString('en-IN')}`;
-}
+import { isZeroPrice, formatPriceDisplay } from '@/lib/price-utils';
+export { isZeroPrice, formatPriceDisplay };
 
 export function cleanSqft(sqft?: any): string {
   try {
@@ -472,15 +453,14 @@ const PropertyCard = React.memo(function PropertyCard({
                       property.searchBadges.map((badge, bIdx) => (
                         <span
                           key={bIdx}
-                          className={`shrink-0 px-2 py-0.5 rounded text-[10px] font-bold border shadow-2xs ${
-                            badge.includes('Exact')
+                          className={`shrink-0 px-2 py-0.5 rounded text-[10px] font-bold border shadow-2xs ${badge.includes('Exact')
                               ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
                               : badge.includes('Nearby')
-                              ? 'bg-blue-50 text-blue-800 border-blue-300'
-                              : badge.includes('Above')
-                              ? 'bg-orange-50 text-orange-800 border-orange-300'
-                              : 'bg-amber-50 text-amber-900 border-amber-300'
-                          }`}
+                                ? 'bg-blue-50 text-blue-800 border-blue-300'
+                                : badge.includes('Above')
+                                  ? 'bg-orange-50 text-orange-800 border-orange-300'
+                                  : 'bg-amber-50 text-amber-900 border-amber-300'
+                            }`}
                         >
                           {badge}
                         </span>
@@ -655,7 +635,33 @@ export function HomepageSearchablePortal({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Debounce the heavy property filtering by 150ms so typing never lags
+  // Live SQL 8-field search state synced from /api/unified-search
+  const [sqlSearchResult, setSqlSearchResult] = useState<{
+    queryKey: string;
+    items: PropertyItem[];
+    criteria?: EightFieldCriteria | null;
+    groupByFacets?: {
+      transactionTypes?: { value: string; count: number }[];
+      propertyTypes?: { value: string; count: number }[];
+      transactionClassifications?: { value: string; count: number }[];
+      localities?: { value: string; count: number }[];
+      cities?: { value: string; count: number }[];
+    } | null;
+  } | null>(null);
+  const searchAbortRef = useRef<AbortController | null>(null);
+
+  const buildSearchKey = (
+    q: string,
+    loc: string,
+    bhkVal: string,
+    pr: string,
+    st: string,
+    purp: string,
+    tx: string
+  ) => [q.trim().toLowerCase(), loc, bhkVal, pr, st, purp, tx].join('|');
+
+  // Debounce the heavy property filtering by 150ms for instant UI feedback,
+  // and fire real PostgreSQL WHERE...AND... + GROUP BY query at 350ms
   useEffect(() => {
     const raw = (catalogueSearch || searchQuery || '').trim();
     const timer = setTimeout(() => {
@@ -671,8 +677,72 @@ export function HomepageSearchablePortal({
         setActiveResultTab('properties');
       }
     }, 150);
-    return () => clearTimeout(timer);
-  }, [searchQuery, catalogueSearch]);
+
+    const sqlTimer = setTimeout(async () => {
+      const hasExplicitFilters =
+        selectedLocality !== 'All' ||
+        selectedBhk !== 'All' ||
+        selectedPriceRange !== 'All' ||
+        selectedStatus !== 'All' ||
+        selectedPurpose !== 'All' ||
+        selectedTransactionType !== 'All';
+
+      if (!raw && !hasExplicitFilters) {
+        setSqlSearchResult(null);
+        setPhase2Data(null);
+        return;
+      }
+      if (raw.length < 2 && !hasExplicitFilters) return;
+
+      if (searchAbortRef.current) searchAbortRef.current.abort();
+      const controller = new AbortController();
+      searchAbortRef.current = controller;
+
+      try {
+        const params = new URLSearchParams();
+        if (raw) params.set('search', raw);
+        if (selectedLocality !== 'All') params.set('locality', selectedLocality);
+        if (selectedBhk !== 'All') params.set('bhk', selectedBhk);
+        if (selectedPriceRange !== 'All') params.set('priceRange', selectedPriceRange);
+        if (selectedStatus !== 'All') params.set('status', selectedStatus);
+        if (selectedPurpose !== 'All') params.set('purpose', selectedPurpose);
+        if (selectedTransactionType !== 'All') params.set('transactionType', selectedTransactionType);
+
+        const res = await fetch(`/api/unified-search?${params.toString()}`, {
+          signal: controller.signal
+        });
+        const data = await res.json();
+        if (data.success && Array.isArray(data.properties)) {
+          const key = buildSearchKey(
+            raw,
+            selectedLocality,
+            selectedBhk,
+            selectedPriceRange,
+            selectedStatus,
+            selectedPurpose,
+            selectedTransactionType
+          );
+          setSqlSearchResult({
+            queryKey: key,
+            items: data.properties,
+            criteria: data.eightFieldCriteria || null,
+            groupByFacets: data.groupByFacets || null
+          });
+          if (data.phase2) setPhase2Data(data.phase2);
+          if (Array.isArray(data.buyerDemands)) setBuyerDemands(data.buyerDemands);
+        }
+      } catch (err: any) {
+        if (err?.name !== 'AbortError') {
+          console.log('Live SQL search fallback to client 8-field filter');
+        }
+      }
+    }, 320);
+
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(sqlTimer);
+    };
+  }, [searchQuery, catalogueSearch, selectedLocality, selectedBhk, selectedPriceRange, selectedStatus, selectedPurpose, selectedTransactionType]);
 
   const deferredQuery = useDeferredValue(activeFilterQuery);
 
@@ -1566,10 +1636,18 @@ export function HomepageSearchablePortal({
       });
     }
 
-    // Transaction Type Filtering (Buy vs Rent) - check explicit param and query criteria
+    // Transaction Type Filtering (Buy vs Rent) - check explicit param and 8-field parser
+    const eightField = parseEightFieldRequirements(qSearch, {
+      transactionType: qTransactionType,
+      propertyType: qBhk,
+      bhk: qBhk,
+      locality: qLocality,
+      priceRange: qPrice
+    });
+
     const effectiveTransactionType = (qTransactionType && qTransactionType !== 'All' && qTransactionType !== 'all')
       ? qTransactionType
-      : criteria.transactionType;
+      : (eightField.transactionType || criteria.transactionType);
 
     if (effectiveTransactionType) {
       const ttLower = effectiveTransactionType.toLowerCase().trim();
@@ -1578,6 +1656,8 @@ export function HomepageSearchablePortal({
           const lt = String(p.listingType || '').toLowerCase();
           return lt.includes('rent') || lt.includes('lease');
         });
+      } else if (ttLower.includes('joint')) {
+        list = list.filter((p) => String(p.dossier?.Lease_Sale || p.listingType || '').toLowerCase().includes('joint'));
       } else if (ttLower.includes('buy') || ttLower.includes('sale')) {
         list = list.filter((p) => {
           const lt = String(p.listingType || '').toLowerCase();
@@ -1586,17 +1666,86 @@ export function HomepageSearchablePortal({
       }
     }
 
-    // Filter by SqFt range if specifically extracted from search query (e.g. 870-900 Sq.Ft.)
-    if (criteria.minSqft && criteria.maxSqft) {
-      const minVal = criteria.minSqft * 0.8;
-      const maxVal = criteria.maxSqft * 1.2;
+    // 3. Transaction Classification (New / Resale / Pre Launch / Pre Lease / Individual / Group Booking)
+    if (eightField.transactionClassification) {
+      const tcLower = eightField.transactionClassification.toLowerCase();
+      list = list.filter((p) => {
+        const val = `${p.transactionClassification || ''} ${p.dossier?.TransactionName || ''} ${p.dossier?.PropertyTypeName || ''} ${p.configuration || ''} ${p.bhk || ''} ${p.name || ''} ${p.description || ''}`.toLowerCase();
+        if (tcLower.includes('pre lease')) {
+          const compact = val.replace(/[-_\s/]+/g, '');
+          return compact.includes('prelease') || compact.includes('prerented') || compact.includes('prerent');
+        }
+        return val.includes(tcLower);
+      });
+    }
+
+    // 5. City Filtering (Dubai, Mumbai, Goa, Nashik, Pune(East), etc.)
+    if (eightField.cities.length > 0) {
+      list = list.filter((p) => {
+        const cityStr = `${p.city || ''} ${p.dossier?.CityName || ''} ${p.location || ''}`.toLowerCase();
+        return eightField.cities.some((c) => {
+          const clean = c.toLowerCase().replace(/[()]/g, ' ').replace(/\s+/g, ' ').trim();
+          const normalizedCity = cityStr.replace(/[()]/g, ' ').replace(/\s+/g, ' ');
+          return normalizedCity.includes(clean);
+        });
+      });
+    }
+
+    // 6. Built-up Area Filtering (checks Built-up & Super Built-up Area)
+    if (eightField.builtupArea.min !== null || eightField.builtupArea.max !== null) {
+      const bMatched = list.filter((p) => {
+        const bArea =
+          p.builtupAreaNum ||
+          parseFloat(String(p.dossier?.BuiltAreaName || p.dossier?.SuperAreaName || '').replace(/,/g, '')) ||
+          0;
+        if (eightField.builtupArea.min !== null && bArea < eightField.builtupArea.min) return false;
+        if (eightField.builtupArea.max !== null && (bArea <= 0 || bArea > eightField.builtupArea.max)) return false;
+        return true;
+      });
+      if (bMatched.length > 0 || !qSearch.trim()) list = bMatched;
+    }
+
+    // 7. Carpet Area Filtering
+    if (eightField.carpetArea.min !== null || eightField.carpetArea.max !== null) {
+      const cMatched = list.filter((p) => {
+        const cArea = p.carpetAreaNum || p.sqftNum || parseFloat(String(p.sqft || '').replace(/,/g, '')) || 0;
+        if (eightField.carpetArea.min !== null && cArea < eightField.carpetArea.min) return false;
+        if (eightField.carpetArea.max !== null && (cArea <= 0 || cArea > eightField.carpetArea.max)) return false;
+        return true;
+      });
+      if (cMatched.length > 0 || !qSearch.trim()) list = cMatched;
+    }
+
+    // Generic SqFt range (when neither explicit Built-up nor Carpet label was specified)
+    const minAreaVal = eightField.genericArea.min ?? (criteria.minSqft ? criteria.minSqft * 0.8 : null);
+    const maxAreaVal = eightField.genericArea.max ?? (criteria.maxSqft ? criteria.maxSqft * 1.2 : null);
+    if (minAreaVal !== null || maxAreaVal !== null) {
       const sizeFiltered = list.filter((p) => {
-        const s = p.sqftNum || parseFloat(String(p.sqft || '').replace(/,/g, '')) || 0;
-        return s >= minVal && s <= maxVal;
+        const cArea = p.carpetAreaNum || p.sqftNum || parseFloat(String(p.sqft || '').replace(/,/g, '')) || 0;
+        const bArea =
+          p.builtupAreaNum ||
+          parseFloat(String(p.dossier?.BuiltAreaName || p.dossier?.SuperAreaName || '').replace(/,/g, '')) ||
+          0;
+        const fits = (val: number) =>
+          val > 0 &&
+          (minAreaVal === null || val >= minAreaVal) &&
+          (maxAreaVal === null || val <= maxAreaVal);
+        return fits(cArea) || fits(bArea);
       });
       if (sizeFiltered.length > 0) {
         list = sizeFiltered;
       }
+    }
+
+    // Filter by 8-field Property Type labels when parsed from natural language
+    if (eightField.propertyTypes.length > 0 && (!qBhk || qBhk === 'All')) {
+      const typedList = list.filter((p) => {
+        const text = `${p.configuration || ''} ${p.bhk || ''} ${p.name || ''} ${p.description || ''}`.toLowerCase();
+        return eightField.propertyTypes.some((lbl) =>
+          getPropertyTypeMatchTerms(lbl).some((t) => text.includes(t))
+        );
+      });
+      if (typedList.length > 0) list = typedList;
     }
 
     // Intelligent Typo Autocorrect Fallback: If query returned 0 matches, test if it has a known typo
@@ -1631,10 +1780,22 @@ export function HomepageSearchablePortal({
     return 25;
   };
 
-  // Live Instant Filtering: When ANY search or filter dropdown changes, immediately filter and show properties in front!
+  // Live Instant Filtering: Prefer server PostgreSQL WHERE...AND... results when synced, else instant client 8-field filter
   const sortedProperties = useMemo(() => {
     const q = (deferredQuery || '').trim();
-    let list = filterClientSide(q, selectedLocality, selectedBhk, selectedPriceRange, selectedStatus, selectedPurpose, selectedTransactionType);
+    const currentKey = buildSearchKey(
+      q,
+      selectedLocality,
+      selectedBhk,
+      selectedPriceRange,
+      selectedStatus,
+      selectedPurpose,
+      selectedTransactionType
+    );
+    let list =
+      sqlSearchResult && sqlSearchResult.queryKey === currentKey
+        ? [...sqlSearchResult.items]
+        : filterClientSide(q, selectedLocality, selectedBhk, selectedPriceRange, selectedStatus, selectedPurpose, selectedTransactionType);
 
     if (selectedDeveloper && selectedDeveloper !== 'All') {
       const devLower = selectedDeveloper.toLowerCase();
@@ -1874,6 +2035,13 @@ export function HomepageSearchablePortal({
       if (data.success) {
         if (Array.isArray(data.properties)) fetchedProperties = data.properties;
         if (Array.isArray(data.buyerDemands)) fetchedDemands = data.buyerDemands;
+        const syncKey = buildSearchKey(qSearch, qLocality, qBhk, qPrice, qStatus, qPurpose, qTransactionType);
+        setSqlSearchResult({
+          queryKey: syncKey,
+          items: fetchedProperties,
+          criteria: data.eightFieldCriteria || null,
+          groupByFacets: data.groupByFacets || null
+        });
         if (data.phase2) {
           setPhase2Data(data.phase2);
         } else {
@@ -1888,6 +2056,7 @@ export function HomepageSearchablePortal({
         setBuyerDemands(fetchedDemands);
       } else {
         setPhase2Data(null);
+        setSqlSearchResult(null);
         const fallbackMatched = filterClientSide(qSearch, qLocality, qBhk, qPrice, qStatus, qPurpose, qTransactionType);
         setProperties(fallbackMatched);
       }
@@ -1907,6 +2076,7 @@ export function HomepageSearchablePortal({
 
   const handleResetFilters = () => {
     setPhase2Data(null);
+    setSqlSearchResult(null);
     setSearchQuery('');
     setCatalogueSearch('');
     setActiveFilterQuery('');
@@ -3336,15 +3506,14 @@ export function HomepageSearchablePortal({
                                       row.searchBadges.map((badge, bIdx) => (
                                         <span
                                           key={bIdx}
-                                          className={`shrink-0 px-1.5 py-0.2 rounded text-[9px] font-bold border ${
-                                            badge.includes('Exact')
+                                          className={`shrink-0 px-1.5 py-0.2 rounded text-[9px] font-bold border ${badge.includes('Exact')
                                               ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
                                               : badge.includes('Nearby')
-                                              ? 'bg-blue-50 text-blue-800 border-blue-300'
-                                              : badge.includes('Above')
-                                              ? 'bg-orange-50 text-orange-800 border-orange-300'
-                                              : 'bg-amber-50 text-amber-900 border-amber-300'
-                                          }`}
+                                                ? 'bg-blue-50 text-blue-800 border-blue-300'
+                                                : badge.includes('Above')
+                                                  ? 'bg-orange-50 text-orange-800 border-orange-300'
+                                                  : 'bg-amber-50 text-amber-900 border-amber-300'
+                                            }`}
                                         >
                                           {badge}
                                         </span>
@@ -3510,15 +3679,14 @@ export function HomepageSearchablePortal({
                                   row.searchBadges.map((badge, bIdx) => (
                                     <span
                                       key={bIdx}
-                                      className={`shrink-0 px-1.5 py-0.2 rounded text-[9px] font-bold border ${
-                                        badge.includes('Exact')
+                                      className={`shrink-0 px-1.5 py-0.2 rounded text-[9px] font-bold border ${badge.includes('Exact')
                                           ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
                                           : badge.includes('Nearby')
-                                          ? 'bg-blue-50 text-blue-800 border-blue-300'
-                                          : badge.includes('Above')
-                                          ? 'bg-orange-50 text-orange-800 border-orange-300'
-                                          : 'bg-amber-50 text-amber-900 border-amber-300'
-                                      }`}
+                                            ? 'bg-blue-50 text-blue-800 border-blue-300'
+                                            : badge.includes('Above')
+                                              ? 'bg-orange-50 text-orange-800 border-orange-300'
+                                              : 'bg-amber-50 text-amber-900 border-amber-300'
+                                        }`}
                                     >
                                       {badge}
                                     </span>

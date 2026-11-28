@@ -62,7 +62,7 @@ export function detectPropertyTypology(prop: {
   }
 
   // 2. Pre-leased
-  if (/\b(?:pre[-_\s]*lease|pre[-_\s]*leased|pre[-_\s]*rented|roi|rental\s*yield)\b/i.test(text)) {
+  if (/\b(?:pre[-_\s]*leased?|pre[-_\s]*rented?|roi|rental\s*yield)\b/i.test(text)) {
     return 'preleased';
   }
 
@@ -453,7 +453,7 @@ export function parseQueryCriteria(queryText: string, conversationContext?: stri
   const hasShop = /\b(?:shop|retail|store|boutique)\b/i.test(lowerQuery);
   const hasRestaurant = /\b(?:restaurant|restaurants|cafe|cafes|dining|food\s*court|coffee\s*shop|bistro|eatery|lounge|bar|pub|f&b)\b/i.test(lowerQuery);
   const hasOffice = /\b(?:office|it\s*park|tech\s*park|workspace|corporate|business\s*tower|coworking|commercial\s*space|office\s*space)\b/i.test(lowerQuery);
-  const hasPreleased = /\b(?:pre[-_\s]*leased|prelease|pre[-_\s]*rented|rental\s*yield|roi|yield)\b/i.test(lowerQuery);
+  const hasPreleased = /\b(?:pre[-_\s]*leased?|pre[-_\s]*rented?|rental\s*yield|roi|yield)\b/i.test(lowerQuery);
   const hasLand = /\b(?:plot|land|agricultural)\b/i.test(lowerQuery);
   const hasPenthouse = /\b(?:penthouse|sky\s*villa|sky\s*suite)\b/i.test(lowerQuery);
 
@@ -643,7 +643,7 @@ export function parseQueryCriteria(queryText: string, conversationContext?: stri
 
   // Transaction Type Extraction (Sale vs Rent vs Preleased)
   let transactionType: 'sale' | 'rent' | 'preleased' | null = null;
-  if (/\b(?:pre[-_\s]*leased|prelease|roi|rental\s*yield)\b/i.test(lowerQuery)) {
+  if (/\b(?:pre[-_\s]*leased?|pre[-_\s]*rented?|roi|rental\s*yield)\b/i.test(lowerQuery)) {
     transactionType = 'preleased';
   } else if (/\b(?:for\s*rent|rent|lease|on\s*rent|to\s*let|per\s*month|\/month)\b/i.test(lowerQuery)) {
     transactionType = 'rent';
@@ -767,7 +767,8 @@ export function scorePropertyMatch(
   const bldgText = String((prop as any).buildingName || (prop as any).BuildingName || (prop as any).propertyName || '');
   const addressText = String((prop as any).address || (prop as any).fullAddress || '');
 
-  const titleAndDesc = `${prop.title || ''} ${prop.name || ''} ${prop.configuration || ''} ${prop.bhk || ''} ${prop.type_name || ''} ${prop.locality || ''} ${prop.location || ''} ${prop.description || ''} ${dossierHighlights} ${dossierSuitable} ${tagsText} ${searchKeywordsText} ${landmarkText} ${bldgText} ${addressText}`.toLowerCase();
+  const txClassText = `${(prop as any).transactionClassification || ''} ${pDossier.TransactionName || ''} ${pDossier.PropertyTypeName || ''}`;
+  const titleAndDesc = `${prop.title || ''} ${prop.name || ''} ${prop.configuration || ''} ${prop.bhk || ''} ${prop.type_name || ''} ${txClassText} ${prop.locality || ''} ${prop.location || ''} ${prop.description || ''} ${dossierHighlights} ${dossierSuitable} ${tagsText} ${searchKeywordsText} ${landmarkText} ${bldgText} ${addressText}`.toLowerCase();
 
   // 0. STRICT TYPOLOGY BOUNDARY ENFORCEMENT (UNION / OR MATCHING ACROSS ALL INTENTS)
   const intentsToCheck = criteria.typologyIntents && criteria.typologyIntents.length > 0
@@ -820,12 +821,12 @@ export function scorePropertyMatch(
         );
       }
       if (intent === 'preleased') {
+        const compactText = titleAndDesc.replace(/[-_\s/]+/g, '');
         return (
           pTypology === 'preleased' ||
-          titleAndDesc.includes('prelease') ||
-          titleAndDesc.includes('pre-lease') ||
-          titleAndDesc.includes('preleased') ||
-          titleAndDesc.includes('rented') ||
+          compactText.includes('prelease') ||
+          compactText.includes('prerented') ||
+          compactText.includes('prerent') ||
           titleAndDesc.includes('yield')
         );
       }

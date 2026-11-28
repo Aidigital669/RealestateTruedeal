@@ -25,6 +25,7 @@ export interface DossierData {
   amenitiesList?: (string | { title: string; desc: string })[];
   reraNumber?: string;
   possession?: string;
+  availableUnits?: string;
   rpsStatus?: string;
   legalVettingText?: string;
   suitableFor?: (string | number)[] | string;
@@ -140,31 +141,59 @@ export function embedDossierData(cleanNarrative: string, dossier: DossierData): 
   const baseNarrative = normalizeDossierText(cleanNarrative.replace(DOSSIER_TAG_REGEX, '').trim());
 
   const payload: Record<string, any> = {};
+  // Preserve extended metadata fields (ExpectedPrice, RentPM, availableUnits, hideDirectContact, etc.)
+  for (const [key, value] of Object.entries(dossier || {})) {
+    if (value !== undefined) {
+      payload[key] = value;
+    }
+  }
+
   if (dossier.highlights && dossier.highlights.length > 0) {
     payload.highlights = dossier.highlights.filter(Boolean);
+  } else {
+    delete payload.highlights;
   }
   if (dossier.connectivity && dossier.connectivity.length > 0) {
     payload.connectivity = dossier.connectivity.filter(Boolean);
+  } else {
+    delete payload.connectivity;
   }
   if (dossier.amenitiesList && dossier.amenitiesList.length > 0) {
     payload.amenitiesList = dossier.amenitiesList.filter(Boolean);
+  } else {
+    delete payload.amenitiesList;
   }
   if (dossier.reraNumber) {
     payload.reraNumber = dossier.reraNumber.trim();
+  } else {
+    delete payload.reraNumber;
   }
   if (dossier.possession) {
     payload.possession = dossier.possession.trim();
+  } else {
+    delete payload.possession;
+  }
+  if (dossier.availableUnits !== undefined && String(dossier.availableUnits).trim() !== '') {
+    payload.availableUnits = String(dossier.availableUnits).trim();
+  } else {
+    delete payload.availableUnits;
   }
   if (dossier.rpsStatus) {
     payload.rpsStatus = dossier.rpsStatus.trim();
+  } else {
+    delete payload.rpsStatus;
   }
   if (dossier.legalVettingText) {
     payload.legalVettingText = dossier.legalVettingText.trim();
+  } else {
+    delete payload.legalVettingText;
   }
   if (dossier.suitableFor) {
     payload.suitableFor = Array.isArray(dossier.suitableFor)
       ? dossier.suitableFor.filter(Boolean)
       : [dossier.suitableFor].filter(Boolean);
+  } else {
+    delete payload.suitableFor;
   }
   if (dossier.hideName !== undefined) {
     payload.hideName = Boolean(dossier.hideName);
@@ -190,8 +219,16 @@ export function embedDossierData(cleanNarrative: string, dossier: DossierData): 
   if (dossier.hideConnectivity !== undefined) {
     payload.hideConnectivity = Boolean(dossier.hideConnectivity);
   }
+  if (dossier.hideDirectContact !== undefined) {
+    payload.hideDirectContact = Boolean(dossier.hideDirectContact);
+  }
+  if (dossier.hideBreadcrumbs !== undefined) {
+    payload.hideBreadcrumbs = Boolean(dossier.hideBreadcrumbs);
+  }
   if (dossier.customCostSheet && typeof dossier.customCostSheet === 'object') {
     payload.customCostSheet = dossier.customCostSheet;
+  } else {
+    delete payload.customCostSheet;
   }
   if (dossier.isSafe !== undefined) {
     payload.isSafe = Boolean(dossier.isSafe);

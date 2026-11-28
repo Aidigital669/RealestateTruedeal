@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { query, queryOne } from "@/lib/db";
 import { getPurposesForProperties, setPropertyBusinessPurposes } from "@/lib/business-purposes";
 import { parseDossierData, embedDossierData } from "@/lib/dossier-parser";
 import { parseAndNormalizeVideoUrl } from "@/lib/video-utils";
 import { clearPropertyCache } from "@/lib/property-data";
 import { processImageListAsync } from "@/lib/image-storage";
+import { parseIndianPriceToNumber, formatIndianPrice, resolvePropertyPrice } from "@/lib/price-utils";
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   try {
@@ -14,7 +18,7 @@ export async function GET(req: NextRequest) {
     let sql = `
       SELECT 
         p.id, p.title AS name, p.slug, p.address AS location, p.description,
-        p.price, p."carpetArea" AS sqft, 
+        p.price, p.rent, p."monthlyRent", p."dossierData", p."carpetArea" AS sqft, 
         p.bedrooms,
         p.configuration,
         p."listingType" as listing_type,
@@ -30,22 +34,17 @@ export async function GET(req: NextRequest) {
         loc.name as loc_name,
         pt.name as pt_name,
         proj.developer,
-        COALESCE(img.url, 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800') as image,
+        COALESCE(imgs.urls[1], 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800') as image,
         imgs.urls as all_images
       FROM "Property" p
       LEFT JOIN "Location" loc ON p."locationId" = loc.id
       LEFT JOIN "PropertyType" pt ON p."propertyTypeId" = pt.id
       LEFT JOIN "Project" proj ON p."projectId" = proj.id
-      LEFT JOIN LATERAL (
-        SELECT url FROM "PropertyImage" 
-        WHERE "propertyId" = p.id 
-        ORDER BY "sortOrder" ASC LIMIT 1
-      ) img ON true
-      LEFT JOIN LATERAL (
-        SELECT array_agg(url ORDER BY "sortOrder" ASC) as urls 
+      LEFT JOIN (
+        SELECT "propertyId", array_agg(url ORDER BY "sortOrder" ASC) as urls 
         FROM "PropertyImage" 
-        WHERE "propertyId" = p.id
-      ) imgs ON true
+        GROUP BY "propertyId"
+      ) imgs ON imgs."propertyId" = p.id
       WHERE 1=1
     `;
     const params: any[] = [];
@@ -70,10 +69,16 @@ export async function GET(req: NextRequest) {
           ? p.all_images.filter((u: any) => typeof u === 'string' && u.trim().length > 0)
           : [];
         const images = rawImages.length > 0 ? rawImages : (p.image ? [p.image] : []);
-        const { cleanDescription, dossier } = parseDossierData(p.description || '');
+        const { cleanDescription, dossier: embeddedDossier } = parseDossierData(p.description || '');
+        const dossier = {
+          ...(typeof p.dossierData === 'object' && p.dossierData !== null ? p.dossierData : {}),
+          ...embeddedDossier
+        };
+        const resolvedPrice = resolvePropertyPrice(p, dossier);
 
         return {
           ...p,
+          price: resolvedPrice.numPrice,
           hideName: Boolean(dossier.hideName),
           hidePrice: Boolean(dossier.hidePrice),
           hideRera: Boolean(dossier.hideRera),
@@ -93,6 +98,7 @@ export async function GET(req: NextRequest) {
           amenitiesList: dossier.amenitiesList || [],
           reraNumber: dossier.reraNumber || '',
           possession: dossier.possession || p.status || '',
+          availableUnits: dossier.availableUnits || dossier.AvailableUnits || '',
           rpsStatus: dossier.rpsStatus || '',
           images,
           image: images[0] || p.image,
@@ -102,11 +108,9 @@ export async function GET(req: NextRequest) {
           businessPurposeIds: assignedPurposes.map((bp: any) => bp.id),
           suitableFor: dossier.suitableFor || [],
           dossier,
-          priceFormatted: p.price
-            ? p.price >= 10000000
-              ? `₹${(p.price / 10000000).toFixed(2)} Cr`
-              : `₹${(p.price / 100000).toFixed(1)} Lakh`
-            : "Price on Request"
+          priceFormatted: resolvedPrice.formattedPrice,
+          priceRaw: resolvedPrice.numPrice,
+          priceSuffix: resolvedPrice.priceSuffix
         };
       })
     });
@@ -125,7 +129,7 @@ export async function POST(req: NextRequest) {
     const {
       title, location, developer, price, bhk, configuration, sqft, status, publishStatus, description, imageUrl, images, videoUrl, propertyType, listingType, businessPurposeIds, businessPurposes,
       hideName, hidePrice, hideRera, hideComplianceTab, hideCostSheet, hideAmenities, hideHighlights, hideConnectivity, hideDirectContact, hideBreadcrumbs, customCostSheet, legalVettingText,
-      highlights, connectivity, amenitiesList, reraNumber, possession, rpsStatus
+      highlights, connectivity, amenitiesList, reraNumber, possession, availableUnits, rpsStatus
     } = body;
 
     const rawListingType = String(listingType || '').toLowerCase();
@@ -228,18 +232,9 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const rawPriceStr = String(price || "").toLowerCase();
-    let numPrice = parseFloat(rawPriceStr.replace(/[^0-9.]/g, ""));
-    if (rawPriceStr.includes("cr") || rawPriceStr.includes("crore")) {
-      numPrice = Math.round(numPrice * 10000000);
-    } else if (rawPriceStr.includes("lakh") || rawPriceStr.includes("lac") || rawPriceStr.includes("l")) {
-      numPrice = Math.round(numPrice * 100000);
-    } else if (rawPriceStr.includes("th") || rawPriceStr.includes("k") || rawPriceStr.includes("thousand")) {
-      numPrice = Math.round(numPrice * 1000);
-    }
-    if (isNaN(numPrice) || numPrice <= 0) {
-      numPrice = 15000000;
-    }
+    const parsedPrice = parseIndianPriceToNumber(price);
+    const numPrice = parsedPrice !== null && parsedPrice >= 0 ? parsedPrice : 0;
+    const formattedPriceLabel = numPrice > 0 ? formatIndianPrice(numPrice) : '0';
     const numBedrooms = isCommercial
       ? null
       : (bhk ? parseInt(String(bhk).replace(/[^0-9]/g, ""), 10) || 3 : 3);
@@ -255,29 +250,34 @@ export async function POST(req: NextRequest) {
       if (proj) projectId = proj.id;
     }
 
+    const dossierPayload = {
+      highlights: Array.isArray(highlights) ? highlights : undefined,
+      connectivity: Array.isArray(connectivity) ? connectivity : undefined,
+      amenitiesList: Array.isArray(amenitiesList) ? amenitiesList : undefined,
+      reraNumber: reraNumber ? String(reraNumber).trim() : undefined,
+      possession: possession ? String(possession).trim() : undefined,
+      availableUnits: availableUnits !== undefined ? String(availableUnits).trim() : undefined,
+      rpsStatus: rpsStatus ? String(rpsStatus).trim() : undefined,
+      legalVettingText: legalVettingText ? String(legalVettingText).trim() : undefined,
+      hideName: Boolean(hideName),
+      hidePrice: Boolean(hidePrice),
+      hideRera: Boolean(hideRera),
+      hideComplianceTab: Boolean(hideComplianceTab),
+      hideCostSheet: Boolean(hideCostSheet),
+      hideAmenities: Boolean(hideAmenities),
+      hideHighlights: Boolean(hideHighlights),
+      hideConnectivity: Boolean(hideConnectivity),
+      hideDirectContact: hideDirectContact === false ? false : true,
+      hideBreadcrumbs: hideBreadcrumbs === undefined ? true : Boolean(hideBreadcrumbs),
+      suitableFor: Array.isArray(businessPurposeIds) ? businessPurposeIds : (Array.isArray(businessPurposes) ? businessPurposes : undefined),
+      customCostSheet: customCostSheet && typeof customCostSheet === 'object' ? customCostSheet : undefined,
+      ExpectedPrice: formattedPriceLabel,
+      ...(finalListingType === 'Rent' ? { RentPM: formattedPriceLabel } : {}),
+    };
+
     const finalDescription = embedDossierData(
       description || `Exclusive luxury property curated by Anv Reealty in ${locFirst}.`,
-      {
-        highlights: Array.isArray(highlights) ? highlights : undefined,
-        connectivity: Array.isArray(connectivity) ? connectivity : undefined,
-        amenitiesList: Array.isArray(amenitiesList) ? amenitiesList : undefined,
-        reraNumber: reraNumber ? String(reraNumber).trim() : undefined,
-        possession: possession ? String(possession).trim() : undefined,
-        rpsStatus: rpsStatus ? String(rpsStatus).trim() : undefined,
-        legalVettingText: legalVettingText ? String(legalVettingText).trim() : undefined,
-        hideName: Boolean(hideName),
-        hidePrice: Boolean(hidePrice),
-        hideRera: Boolean(hideRera),
-        hideComplianceTab: Boolean(hideComplianceTab),
-        hideCostSheet: Boolean(hideCostSheet),
-        hideAmenities: Boolean(hideAmenities),
-        hideHighlights: Boolean(hideHighlights),
-        hideConnectivity: Boolean(hideConnectivity),
-        hideDirectContact: hideDirectContact === false ? false : true,
-        hideBreadcrumbs: hideBreadcrumbs === undefined ? true : Boolean(hideBreadcrumbs),
-        suitableFor: Array.isArray(businessPurposeIds) ? businessPurposeIds : (Array.isArray(businessPurposes) ? businessPurposes : undefined),
-        customCostSheet: customCostSheet && typeof customCostSheet === 'object' ? customCostSheet : undefined,
-      }
+      dossierPayload
     );
 
     const rawVideo = videoUrl ? String(videoUrl).trim() : "";
@@ -289,12 +289,12 @@ export async function POST(req: NextRequest) {
     const newProp = await queryOne<any>(`
       INSERT INTO "Property" (
         title, slug, "propertyTypeId", "locationId", "projectId", "listingType", status, "publishStatus",
-        description, address, price, "carpetArea", "areaUnit", bedrooms, "configuration", "videoUrl", "isFeatured",
+        description, address, price, rent, "monthlyRent", "dossierData", "carpetArea", "areaUnit", bedrooms, "configuration", "videoUrl", "isFeatured",
         "createdAt", "updatedAt"
       )
       VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8,
-        $9, $10, $11, $12, 'Sq.Ft.', $13, $14, $15, true,
+        $9, $10, $11, $12, $13, $14, $15, 'Sq.Ft.', $16, $17, $18, true,
         NOW(), NOW()
       )
       RETURNING *;
@@ -310,6 +310,9 @@ export async function POST(req: NextRequest) {
       finalDescription,
       location || `${locFirst}, Pune, Maharashtra`,
       numPrice,
+      finalListingType === 'Rent' ? numPrice : null,
+      finalListingType === 'Rent' ? numPrice : null,
+      JSON.stringify(dossierPayload),
       numArea,
       numBedrooms,
       rawType || null,
@@ -335,18 +338,27 @@ export async function POST(req: NextRequest) {
     const purposeListToSave = Array.isArray(businessPurposeIds)
       ? businessPurposeIds
       : (Array.isArray(businessPurposes) ? businessPurposes.map((bp: any) => bp.id || bp) : []);
-    
+
     if (newProp && purposeListToSave.length > 0) {
       await setPropertyBusinessPurposes(newProp.id, purposeListToSave);
     }
 
     clearPropertyCache();
+    try {
+      revalidatePath('/', 'layout');
+      revalidatePath('/admin');
+      revalidatePath('/crm');
+      revalidatePath('/api/properties');
+      revalidatePath('/api/admin/properties');
+    } catch { }
 
     return NextResponse.json({
       success: true,
       message: `Property "${trimmedTitle}" published to catalog successfully!`,
       property: {
         ...newProp,
+        priceFormatted: formatIndianPrice(numPrice),
+        priceRaw: numPrice,
         listingType: finalListingType,
         businessPurposeIds: purposeListToSave
       }
@@ -372,7 +384,7 @@ export async function DELETE(req: NextRequest) {
           .map((id: any) => Number(id))
           .filter((id: number) => !isNaN(id) && id > 0);
       }
-    } catch (e) {}
+    } catch (e) { }
 
     // 2. Also check any property marked as safe in DB
     const allProps = await query(`SELECT id, description FROM "Property";`);
@@ -387,12 +399,12 @@ export async function DELETE(req: NextRequest) {
     if (keepSafeIds.length > 0) {
       const safeIdList = keepSafeIds.join(',');
 
-      await query(`DELETE FROM "PropertyImage" WHERE "propertyId" NOT IN (${safeIdList});`).catch(() => {});
-      await query(`DELETE FROM "PropertyDocument" WHERE "propertyId" NOT IN (${safeIdList});`).catch(() => {});
-      await query(`DELETE FROM "PropertyAmenity" WHERE "propertyId" NOT IN (${safeIdList});`).catch(() => {});
-      await query(`DELETE FROM "FeaturedProperty" WHERE "propertyId" NOT IN (${safeIdList});`).catch(() => {});
-      await query(`DELETE FROM "BlogProperty" WHERE "propertyId" NOT IN (${safeIdList});`).catch(() => {});
-      await query(`UPDATE "WebsiteEnquiry" SET "propertyId" = NULL WHERE "propertyId" NOT IN (${safeIdList});`).catch(() => {});
+      await query(`DELETE FROM "PropertyImage" WHERE "propertyId" NOT IN (${safeIdList});`).catch(() => { });
+      await query(`DELETE FROM "PropertyDocument" WHERE "propertyId" NOT IN (${safeIdList});`).catch(() => { });
+      await query(`DELETE FROM "PropertyAmenity" WHERE "propertyId" NOT IN (${safeIdList});`).catch(() => { });
+      await query(`DELETE FROM "FeaturedProperty" WHERE "propertyId" NOT IN (${safeIdList});`).catch(() => { });
+      await query(`DELETE FROM "BlogProperty" WHERE "propertyId" NOT IN (${safeIdList});`).catch(() => { });
+      await query(`UPDATE "WebsiteEnquiry" SET "propertyId" = NULL WHERE "propertyId" NOT IN (${safeIdList});`).catch(() => { });
 
       const deleted = await query(`DELETE FROM "Property" WHERE id NOT IN (${safeIdList}) RETURNING id;`);
       const count = deleted.length;
@@ -407,12 +419,12 @@ export async function DELETE(req: NextRequest) {
     }
 
     // No properties marked safe: wipe all
-    await query(`DELETE FROM "PropertyImage";`).catch(() => {});
-    await query(`DELETE FROM "PropertyDocument";`).catch(() => {});
-    await query(`DELETE FROM "PropertyAmenity";`).catch(() => {});
-    await query(`DELETE FROM "FeaturedProperty";`).catch(() => {});
-    await query(`DELETE FROM "BlogProperty";`).catch(() => {});
-    await query(`UPDATE "WebsiteEnquiry" SET "propertyId" = NULL WHERE "propertyId" IS NOT NULL;`).catch(() => {});
+    await query(`DELETE FROM "PropertyImage";`).catch(() => { });
+    await query(`DELETE FROM "PropertyDocument";`).catch(() => { });
+    await query(`DELETE FROM "PropertyAmenity";`).catch(() => { });
+    await query(`DELETE FROM "FeaturedProperty";`).catch(() => { });
+    await query(`DELETE FROM "BlogProperty";`).catch(() => { });
+    await query(`UPDATE "WebsiteEnquiry" SET "propertyId" = NULL WHERE "propertyId" IS NOT NULL;`).catch(() => { });
 
     const deleted = await query(`DELETE FROM "Property" RETURNING id;`);
     const count = deleted.length;

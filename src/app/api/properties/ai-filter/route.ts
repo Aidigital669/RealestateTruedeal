@@ -12,6 +12,7 @@ import {
   scorePropertyMatch,
   getBestMatchingProperties
 } from "@/lib/property-matching";
+import { formatIndianPrice, parseIndianPriceToNumber } from "@/lib/price-utils";
 
 export const dynamic = "force-dynamic";
 
@@ -202,8 +203,8 @@ Return ONLY a valid JSON object matching this schema (no markdown, no backticks)
 
     // Format properties for frontend card consumption
     const formattedProperties = portfolioMatches.slice(0, 12).map((p) => {
-      const numPrice = typeof p.priceRaw === "number" ? p.priceRaw : 0;
-      const formattedPrice = p.price || (numPrice >= 10000000 ? `₹${(numPrice / 10000000).toFixed(2)} Cr` : `₹${(numPrice / 100000).toFixed(1)} Lakh`);
+      const numPrice = typeof p.priceRaw === "number" ? p.priceRaw : (parseIndianPriceToNumber(p.price) ?? 0);
+      const formattedPrice = p.price || formatIndianPrice(numPrice);
 
       return {
         id: String(p.id),
