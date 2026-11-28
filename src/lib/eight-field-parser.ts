@@ -351,7 +351,8 @@ export function parseEightFieldRequirements(
   // 2. PROPERTY TYPE (+ BHK numbers)
   const propertyTypes: string[] = [];
   const expPt = String(explicit?.propertyType || explicit?.bhk || '').trim();
-  if (expPt && expPt !== 'All' && expPt !== 'All Types' && expPt !== 'All Typologies') {
+  const isPreleasedDropdown = expPt && /^pre[-_\s]*(?:lease|leased|rent|rented)(?:\s+propert(?:y|ies))?$/i.test(expPt);
+  if (expPt && expPt !== 'All' && expPt !== 'All Types' && expPt !== 'All Typologies' && !isPreleasedDropdown) {
     propertyTypes.push(expPt);
   }
   if (q) {
@@ -377,6 +378,8 @@ export function parseEightFieldRequirements(
   const expClass = String(explicit?.transactionClassification || '').trim();
   if (expClass && expClass !== 'All') {
     transactionClassification = expClass;
+  } else if (isPreleasedDropdown) {
+    transactionClassification = 'Pre Lease/Pre Rented';
   } else if (q) {
     for (const rule of CLASSIFICATION_RULES) {
       if (rule.patterns.some((rx) => rx.test(lower))) {

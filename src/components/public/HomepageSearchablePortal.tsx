@@ -680,7 +680,7 @@ export function HomepageSearchablePortal({
       } else {
         setActiveResultTab('properties');
       }
-    }, 150);
+    }, 60);
 
     const sqlTimer = setTimeout(async () => {
       const hasExplicitFilters =
@@ -749,7 +749,7 @@ export function HomepageSearchablePortal({
           console.log('Live SQL search fallback to client 8-field filter');
         }
       }
-    }, 320);
+    }, 150);
 
     return () => {
       clearTimeout(timer);
@@ -1442,6 +1442,14 @@ export function HomepageSearchablePortal({
   ): PropertyItem[] => {
     let list = [...(initialProperties && initialProperties.length > 0 ? initialProperties : properties)];
 
+    const eightFieldTop = parseEightFieldRequirements(qSearch, {
+      transactionType: qTransactionType,
+      propertyType: qBhk,
+      bhk: qBhk,
+      locality: qLocality,
+      priceRange: qPrice
+    });
+
     const criteria = parseQueryCriteria(qSearch);
     const isMultiCat = criteria.isMultiCategory || (criteria.typologyIntents && criteria.typologyIntents.length > 1) || (criteria.bhkNums && criteria.bhkNums.length > 1);
 
@@ -1476,7 +1484,8 @@ export function HomepageSearchablePortal({
       criteria.hasSpecificIntent = true;
     }
 
-    if (criteria.hasSpecificIntent || qSearch.trim() || (qLocality && qLocality !== 'All') || (!isMultiCat && qBhk && qBhk !== 'All')) {
+    // Legacy scorer only when 8-field deterministic parser extracted nothing at all
+    if (!eightFieldTop.hasAnyConstraint && (criteria.hasSpecificIntent || qSearch.trim() || (qLocality && qLocality !== 'All') || (!isMultiCat && qBhk && qBhk !== 'All'))) {
       const scoredItems = list
         .map((p) => ({ p, score: scorePropertyMatch(p, criteria) }))
         .filter((item) => {
@@ -1651,13 +1660,28 @@ export function HomepageSearchablePortal({
     }
 
     // Transaction Type Filtering (Buy vs Rent) - check explicit param and 8-field parser
-    const eightField = parseEightFieldRequirements(qSearch, {
-      transactionType: qTransactionType,
-      propertyType: qBhk,
-      bhk: qBhk,
-      locality: qLocality,
-      priceRange: qPrice
-    });
+    const eightField = eightFieldTop;
+
+    // Locality Filtering from 8-field parser (when typing in search bar without clicking Enter or dropdown)
+    if (eightField.localities.length > 0 && (!qLocality || qLocality === 'All')) {
+      list = list.filter((p) => {
+        const locText = `${p.locality || ''} ${p.location || ''} ${p.name || ''} ${p.dossier?.LocationName || ''}`;
+        return eightField.localities.some((loc) => {
+          const esc = loc.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+');
+          return new RegExp(`\\b${esc}\\b`, 'i').test(locText);
+        });
+      });
+    }
+
+    // Expected Price Filtering from 8-field parser (budget in search bar)
+    if ((eightField.expectedPrice.min !== null || eightField.expectedPrice.max !== null) && (!qPrice || qPrice === 'All')) {
+      list = list.filter((p) => {
+        const pr = getPropertyRawPrice(p);
+        if (eightField.expectedPrice.min !== null && pr < eightField.expectedPrice.min) return false;
+        if (eightField.expectedPrice.max !== null && (pr <= 0 || pr > eightField.expectedPrice.max)) return false;
+        return true;
+      });
+    }
 
     const effectiveTransactionType = (qTransactionType && qTransactionType !== 'All' && qTransactionType !== 'all')
       ? qTransactionType
@@ -1796,6 +1820,15 @@ export function HomepageSearchablePortal({
           const rx = new RegExp(`(?:^|[^0-9.])${esc}\\s*[- ]*\\s*(?:bhk|bed|bedroom)`, 'i');
           return rx.test(primaryBhkText) || (fallbackDesc ? rx.test(fallbackDesc) : false);
         });
+      });
+    }
+
+    // Residual keywords AND match (e.g. building or project names typed without Enter)
+    if (eightField.keywords.length > 0) {
+      const kws = eightField.keywords.slice(0, 5);
+      list = list.filter((p) => {
+        const full = `${p.name || ''} ${p.location || ''} ${p.description || ''} ${p.buildingName || ''} ${p.dossier?.BuildingName || ''} ${p.developer || ''} ${p.locality || ''} ${p.configuration || ''} ${(p as any).searchKeywords || p.SearchKeyword || ''}`.toLowerCase();
+        return kws.every((kw) => full.includes(kw.toLowerCase()));
       });
     }
 
