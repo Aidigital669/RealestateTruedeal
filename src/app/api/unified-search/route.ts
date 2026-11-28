@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAllLiveBuyerDemands } from "@/lib/buyer-demands-service";
+import { getAllLiveBuyerDemands, queryBuyerDemandsSql } from "@/lib/buyer-demands-service";
 import { generateWithGemini } from "@/lib/gemini";
 import { getPropertySlug } from "@/lib/slug";
 import { detectPropertyTypology, parseQueryCriteria } from "@/lib/property-matching";
@@ -121,26 +121,27 @@ export async function GET(req: NextRequest) {
 
     const isSellerQuery = (text: string) => {
       const t = text.toLowerCase();
-      if (/\b(?:i am a buyer|buyer looking to buy|buyer looking for (?:flat|home|property|house|apartment))\b/i.test(t)) {
+      if (/\b(?:i am a buyer\s*(?:looking|wanting)?\s*to\s*buy|buyer\s*looking\s*to\s*buy)\b/i.test(t)) {
         return false;
       }
       return (
         isUserSeller(t) ||
-        /\b(?:want|need|find|get|looking for|look for|search for|connect with|require|seeking)\s+(?:a\s+|an\s+|the\s+|some\s+|any\s+|me\s+)?buyers?\b/i.test(t) ||
-        /\bbuyers?\s+(?:for|needed|required|wanted)\b/i.test(t) ||
+        /\b(?:buyers?|sellers?)\b/i.test(t) ||
         /\b(?:sell|selling)\s+(?:my\s+|a\s+|an\s+)?(?:flat|apartment|property|home|house|plot|land|commercial|office|unit|penthouse)\b/i.test(t) ||
-        /\b(?:i want to sell|want to sell|willing to sell|plan to sell|looking to sell|sell property|sell flat)\b/i.test(t) ||
-        /\b(?:seller|sellers|owner|pitch property|have flat to sell|have property to sell|leads?)\b/i.test(t)
+        /\b(?:i want to sell|want to sell|willing to sell|plan to sell|looking to sell|sell property|sell flat)\b/i.test(t)
       );
     };
 
     const isBuyerQuery = (text: string) => {
       const t = text.toLowerCase();
+      if (/\b(?:buyers?|sellers?)\b/i.test(t) && !/\bbuyer\s*(?:looking|wanting)?\s*to\s*buy\b/i.test(t)) {
+        return false;
+      }
       return (
         /\b(?:want to buy|looking to buy|plan to buy|wish to buy|ready to buy)\b/i.test(t) ||
         /\b(?:buy|buying|purchase|purchasing)\s+(?:a\s+|an\s+|the\s+|i\s+|\d+\s*)?(?:flat|apartment|property|home|house|commercial|office|unit|penthouse|\d+\s*bhk)\b/i.test(t) ||
         /\b(?:find|looking for|search for)\s+(?:a\s+|an\s+|the\s+)?(?:flat|apartment|property|home|house|commercial|office|penthouse|\d+\s*bhk)\b/i.test(t) ||
-        /\b(?:i am a buyer|buyer seeking|buyer looking for)\b/i.test(t)
+        /\b(?:buyer\s*looking\s*to\s*buy|i\s*am\s*a\s*buyer\s*to\s*buy)\b/i.test(t)
       );
     };
 
@@ -212,7 +213,66 @@ export async function GET(req: NextRequest) {
           : `Unified marketplace: Matching verified properties & active buyers`;
     }
 
-    // 2. Buyer Demands filtering
+    // 2. Exclusive Buyer / Seller Mandate SQL Flow:
+    // If user searched "buyer", "buyers", "seller", or "i need a buyer for...", return ONLY buyer SQL rows & ZERO properties!
+    if (primaryView === "buyer_leads" || intent === "seller") {
+      const buyerSqlResult = await queryBuyerDemandsSql(cleanSearch, {
+        locality,
+        propertyType: bhk,
+        bhk,
+        city,
+        priceRange,
+        minPrice,
+        maxPrice
+      });
+
+      if (cleanSearch.length > 2) {
+        query(
+          `INSERT INTO search_history (query, locality, bhk, results_count, intent, created_at)
+           VALUES ($1, $2, $3, $4, $5, NOW())`,
+          [
+            cleanSearch,
+            buyerSqlResult.criteria.localities[0] || buyerSqlResult.criteria.cities[0] || "All",
+            buyerSqlResult.criteria.propertyTypes[0] || "Buyers",
+            buyerSqlResult.totalCount,
+            "seller"
+          ]
+        ).catch(() => {});
+      }
+
+      return NextResponse.json({
+        success: true,
+        ai: {
+          intent: "seller",
+          primaryView: "buyer_leads",
+          summary: `SQL buyer search matched ${buyerSqlResult.totalCount} active buyer mandates`,
+          locality: buyerSqlResult.criteria.localities[0] || null,
+          city: buyerSqlResult.criteria.cities[0] || null,
+          bhk: buyerSqlResult.criteria.propertyTypes[0] || null,
+          transactionType: buyerSqlResult.criteria.transactionType || null,
+          transactionClassification: buyerSqlResult.criteria.transactionClassification || null,
+          priceRange: priceRange || null,
+          isAiPowered: aiParsed
+        },
+        eightFieldCriteria: buyerSqlResult.criteria,
+        buyerGroupByFacets: buyerSqlResult.facets,
+        groupByFacets: null,
+        phase2: {
+          isFallbackActivated: false,
+          strictCount: 0,
+          expandedCount: 0,
+          totalCount: 0,
+          appliedFilters: buyerSqlResult.criteria
+        },
+        officialHelpline: OFFICIAL_ANV_PHONE,
+        propertiesCount: 0,
+        buyerDemandsCount: buyerSqlResult.totalCount,
+        properties: [],
+        buyerDemands: buyerSqlResult.demands
+      });
+    }
+
+    // 3. Buyer Demands filtering (secondary background list when browsing Properties)
     const allDemands = await getAllLiveBuyerDemands();
     const locFilterLower = (locality && locality !== "All" ? locality : eightField.localities[0] || "").toLowerCase();
     const bhkFilterLower = (bhk && bhk !== "All" ? bhk : eightField.propertyTypes[0] || "").toLowerCase();
@@ -238,7 +298,7 @@ export async function GET(req: NextRequest) {
       filteredDemands = filterBuyerDemandsByQuery(filteredDemands, cleanSearch);
     }
 
-    // 3. Execute real SQL WHERE ... AND ... + GROUP BY queries across the 8 database fields
+    // 4. Execute real SQL WHERE ... AND ... + GROUP BY queries across the 8 database fields
     const builtFilter = buildEightFieldWhereClause(eightField, {
       includeStatus: status,
       includePurpose: purpose

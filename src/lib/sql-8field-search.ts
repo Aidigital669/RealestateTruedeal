@@ -180,9 +180,9 @@ export function buildEightFieldWhereClause(
       clauses.push(
         `(${preleaseMatch('p."transactionClassification"')} OR ${preleaseMatch(`p."dossierData"->>'TransactionName'`)})`
       );
-    } else if (tc.includes('pre launch') || tc.includes('prelaunch')) {
+    } else if (tc.includes('pre launch') || tc.includes('prelaunch') || tc.includes('newly launch') || tc.includes('upcoming') || tc.includes('ready to move')) {
       clauses.push(
-        `(${normExpr('p."transactionClassification"')} LIKE '%prelaunch%' OR ${normExpr(`p."dossierData"->>'TransactionName'`)} LIKE '%prelaunch%')`
+        `(${normExpr('p."transactionClassification"')} ~ '(prelaunch|newlylaunch|newlaunch|upcoming|readytomove)' OR ${normExpr(`p."dossierData"->>'TransactionName'`)} ~ '(prelaunch|newlylaunch|newlaunch|upcoming|readytomove)' OR ${normExpr('p.status')} ~ '(prelaunch|newlylaunch|newlaunch|upcoming|readytomove)' OR ${normExpr('p.configuration')} ~ '(prelaunch|newlylaunch|newlaunch|upcoming|readytomove)' OR ${normExpr('pt.name')} ~ '(prelaunch|newlylaunch|newlaunch|upcoming|readytomove)')`
       );
     } else if (tc === 'new') {
       clauses.push(

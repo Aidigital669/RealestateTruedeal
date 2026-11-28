@@ -454,12 +454,12 @@ const PropertyCard = React.memo(function PropertyCard({
                         <span
                           key={bIdx}
                           className={`shrink-0 px-2 py-0.5 rounded text-[10px] font-bold border shadow-2xs ${badge.includes('Exact')
-                              ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                              : badge.includes('Nearby')
-                                ? 'bg-blue-50 text-blue-800 border-blue-300'
-                                : badge.includes('Above')
-                                  ? 'bg-orange-50 text-orange-800 border-orange-300'
-                                  : 'bg-amber-50 text-amber-900 border-amber-300'
+                            ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                            : badge.includes('Nearby')
+                              ? 'bg-blue-50 text-blue-800 border-blue-300'
+                              : badge.includes('Above')
+                                ? 'bg-orange-50 text-orange-800 border-orange-300'
+                                : 'bg-amber-50 text-amber-900 border-amber-300'
                             }`}
                         >
                           {badge}
@@ -648,6 +648,10 @@ export function HomepageSearchablePortal({
       cities?: { value: string; count: number }[];
     } | null;
   } | null>(null);
+  const [sqlBuyerResult, setSqlBuyerResult] = useState<{
+    queryKey: string;
+    items: BuyerDemandItem[];
+  } | null>(null);
   const searchAbortRef = useRef<AbortController | null>(null);
 
   const buildSearchKey = (
@@ -689,6 +693,7 @@ export function HomepageSearchablePortal({
 
       if (!raw && !hasExplicitFilters) {
         setSqlSearchResult(null);
+        setSqlBuyerResult(null);
         setPhase2Data(null);
         return;
       }
@@ -729,7 +734,15 @@ export function HomepageSearchablePortal({
             groupByFacets: data.groupByFacets || null
           });
           if (data.phase2) setPhase2Data(data.phase2);
-          if (Array.isArray(data.buyerDemands)) setBuyerDemands(data.buyerDemands);
+          if (Array.isArray(data.buyerDemands)) {
+            setBuyerDemands(data.buyerDemands);
+            setSqlBuyerResult({ queryKey: key, items: data.buyerDemands });
+          }
+          if (data.ai?.primaryView === 'buyer_leads' || data.ai?.intent === 'seller' || isUserSeller(raw)) {
+            setActiveResultTab('buyer_leads');
+          } else {
+            setActiveResultTab('properties');
+          }
         }
       } catch (err: any) {
         if (err?.name !== 'AbortError') {
@@ -858,7 +871,18 @@ export function HomepageSearchablePortal({
   const [showAllBuyerCards, setShowAllBuyerCards] = useState(false);
 
   const filteredCatalogueBuyerDemands = useMemo(() => {
-    let list = buyerDemands;
+    const rawSearchInput = (catalogueBuyerFilter || deferredQuery).trim();
+    const activeBuyerKey = buildSearchKey(
+      rawSearchInput,
+      selectedLocality,
+      selectedBhk,
+      selectedPriceRange,
+      selectedStatus,
+      selectedPurpose,
+      selectedTransactionType
+    );
+    const hasSyncedBuyerSql = Boolean(sqlBuyerResult && sqlBuyerResult.queryKey === activeBuyerKey && !catalogueBuyerFilter.trim());
+    let list = hasSyncedBuyerSql ? sqlBuyerResult!.items : buyerDemands;
 
     if (buyerBhkFilter && buyerBhkFilter !== 'All') {
       const bLower = buyerBhkFilter.toLowerCase();
@@ -895,12 +919,11 @@ export function HomepageSearchablePortal({
       });
     }
 
-    const rawSearchInput = (catalogueBuyerFilter || deferredQuery).trim();
-    if (!rawSearchInput) return list;
+    if (!rawSearchInput || hasSyncedBuyerSql) return list;
 
-    // Use intelligent trained NLP multi-line buyer filter
+    // Client fallback filter before SQL responds
     return filterBuyerDemandsByQuery(list, rawSearchInput);
-  }, [deferredQuery, buyerDemands, catalogueBuyerFilter, buyerBhkFilter, buyerLocalityFilter]);
+  }, [deferredQuery, buyerDemands, sqlBuyerResult, catalogueBuyerFilter, buyerBhkFilter, buyerLocalityFilter, selectedLocality, selectedBhk, selectedPriceRange, selectedStatus, selectedPurpose, selectedTransactionType]);
 
   const sortedBuyerDemands = useMemo(() => {
     const list = [...filteredCatalogueBuyerDemands];
@@ -1667,7 +1690,10 @@ export function HomepageSearchablePortal({
           return Boolean((p as any).isPreleased) || compactTc.includes('prelease') || compactTc.includes('prerent');
         }
         if (tcLower.includes('pre launch')) {
-          return compactTc.includes('prelaunch');
+          const compactUnion = `${structuredTc} ${p.configuration || ''} ${p.bhk || ''} ${p.status || ''} ${p.dossier?.PossessionName || ''}`
+            .toLowerCase()
+            .replace(/[-_\s]+/g, '');
+          return /prelaunch|newlylaunch|newlaunch|upcoming|readytomove/.test(compactUnion);
         }
         if (tcLower === 'new') {
           return structuredTc === 'new';
@@ -1955,68 +1981,70 @@ export function HomepageSearchablePortal({
 
     const isSellerText =
       isUserSeller(normalizedSearch) ||
-      /\b(?:want|need|find|get|looking for|require|seeking)\s+(?:a\s+|an\s+|the\s+)?buyers?\b/i.test(normalizedSearch) ||
-      /\bbuyers?\s+(?:for|needed|required|wanted)\b/i.test(normalizedSearch) ||
-      /\b(?:sell|selling)\s+(?:my\s+|a\s+)?(?:flat|apartment|property|home|house|plot|commercial|office)\b/i.test(normalizedSearch);
+      detectQueryIntent(normalizedSearch).intent === 'seller';
 
     if (isDirectBarSearch && normalizedSearch) {
-      const parsedCriteria = parseQueryCriteria(normalizedSearch);
-      const isMultiCat = parsedCriteria.isMultiCategory || (parsedCriteria.typologyIntents && parsedCriteria.typologyIntents.length > 1) || (parsedCriteria.bhkNums && parsedCriteria.bhkNums.length > 1);
-
-      // BHK / Typology extraction
-      let detectedBhk = 'All';
-      if (!isMultiCat) {
-        if (/\b(?:commercial\s*office|it\s*park|tech\s*park|corporate)\b/i.test(normalizedSearch)) {
-          detectedBhk = 'Commercial Office';
-        } else if (/\b(?:showroom)\b/i.test(normalizedSearch)) {
-          detectedBhk = 'Showroom';
-        } else if (/\b(?:restaurant|cafe|dining|food\s*court|bistro|eatery)\b/i.test(normalizedSearch)) {
-          detectedBhk = 'Restaurant';
-        } else if (/\b(?:shop|retail)\b/i.test(normalizedSearch)) {
-          detectedBhk = 'Shop';
-        } else if (/\b(?:hospital|clinic)\b/i.test(normalizedSearch)) {
-          detectedBhk = 'Hospital';
-        } else if (/\b(?:industrial|warehouse|factory)\b/i.test(normalizedSearch)) {
-          detectedBhk = 'Industrial Factory';
-        } else {
-          const bhkMatch =
-            normalizedSearch.match(/\b([1-9])\s*(?:bhk|bedroom|bed)s?\b/i) ||
-            normalizedSearch.match(/\b(?:bhk|bedroom|bed)s?\s*([1-9])\b/i);
-          if (bhkMatch) {
-            detectedBhk = `${bhkMatch[1]} BHK`;
-          } else if (/\bpenthouses?\b/i.test(normalizedSearch)) {
-            detectedBhk = '4.5+ BHK Penthouse';
-          }
-        }
-      }
-      if (detectedBhk !== 'All') {
-        qBhk = detectedBhk;
-        setSelectedBhk(detectedBhk);
-      } else {
-        qBhk = 'All';
-        setSelectedBhk('All');
-      }
-
-      // Locality extraction
-      let detectedLoc = 'All';
-      for (const loc of availableLocalities) {
-        if (loc === 'All') continue;
-        if (
-          new RegExp(`\\b${loc.replace(/\\s+/g, '[\\s-]+')}\\b`, 'i').test(qSearch) ||
-          new RegExp(`\\b${loc}\\b`, 'i').test(normalizedSearch)
-        ) {
-          detectedLoc = loc;
-          break;
-        }
-      }
-      if (detectedLoc !== 'All') {
-        qLocality = detectedLoc;
-        setSelectedLocality(detectedLoc);
-      }
-
       if (isSellerText) {
+        qBhk = 'All';
+        qLocality = 'All';
+        setSelectedBhk('All');
+        setSelectedLocality('All');
         setActiveResultTab('buyer_leads');
       } else {
+        const parsedCriteria = parseQueryCriteria(normalizedSearch);
+        const isMultiCat = parsedCriteria.isMultiCategory || (parsedCriteria.typologyIntents && parsedCriteria.typologyIntents.length > 1) || (parsedCriteria.bhkNums && parsedCriteria.bhkNums.length > 1);
+
+        // BHK / Typology extraction
+        let detectedBhk = 'All';
+        if (!isMultiCat) {
+          if (/\b(?:commercial\s*office|it\s*park|tech\s*park|corporate)\b/i.test(normalizedSearch)) {
+            detectedBhk = 'Commercial Office';
+          } else if (/\b(?:showroom)\b/i.test(normalizedSearch)) {
+            detectedBhk = 'Showroom';
+          } else if (/\b(?:restaurant|cafe|dining|food\s*court|bistro|eatery)\b/i.test(normalizedSearch)) {
+            detectedBhk = 'Restaurant';
+          } else if (/\b(?:shop|retail)\b/i.test(normalizedSearch)) {
+            detectedBhk = 'Shop';
+          } else if (/\b(?:hospital|clinic)\b/i.test(normalizedSearch)) {
+            detectedBhk = 'Hospital';
+          } else if (/\b(?:industrial|warehouse|factory)\b/i.test(normalizedSearch)) {
+            detectedBhk = 'Industrial Factory';
+          } else {
+            const bhkMatch =
+              normalizedSearch.match(/\b([1-9])\s*(?:bhk|bedroom|bed)s?\b/i) ||
+              normalizedSearch.match(/\b(?:bhk|bedroom|bed)s?\s*([1-9])\b/i);
+            if (bhkMatch) {
+              detectedBhk = `${bhkMatch[1]} BHK`;
+            } else if (/\bpenthouses?\b/i.test(normalizedSearch)) {
+              detectedBhk = '4.5+ BHK Penthouse';
+            }
+          }
+        }
+        if (detectedBhk !== 'All') {
+          qBhk = detectedBhk;
+          setSelectedBhk(detectedBhk);
+        } else {
+          qBhk = 'All';
+          setSelectedBhk('All');
+        }
+
+        // Locality extraction
+        let detectedLoc = 'All';
+        for (const loc of availableLocalities) {
+          if (loc === 'All') continue;
+          if (
+            new RegExp(`\\b${loc.replace(/\s+/g, '[\\s-]+')}\\b`, 'i').test(qSearch) ||
+            new RegExp(`\\b${loc}\\b`, 'i').test(normalizedSearch)
+          ) {
+            detectedLoc = loc;
+            break;
+          }
+        }
+        if (detectedLoc !== 'All') {
+          qLocality = detectedLoc;
+          setSelectedLocality(detectedLoc);
+        }
+
         setActiveResultTab('properties');
       }
     }
@@ -2079,6 +2107,7 @@ export function HomepageSearchablePortal({
         }
         setProperties(fetchedProperties);
         setBuyerDemands(fetchedDemands);
+        setSqlBuyerResult({ queryKey: syncKey, items: fetchedDemands });
       } else {
         setPhase2Data(null);
         setSqlSearchResult(null);
@@ -2102,6 +2131,7 @@ export function HomepageSearchablePortal({
   const handleResetFilters = () => {
     setPhase2Data(null);
     setSqlSearchResult(null);
+    setSqlBuyerResult(null);
     setSearchQuery('');
     setCatalogueSearch('');
     setActiveFilterQuery('');
@@ -2610,29 +2640,29 @@ export function HomepageSearchablePortal({
             {/* Real-time Counts & View Mode Switcher Row */}
             <div className="mt-2 sm:mt-2.5 lg:mt-3 pt-2 sm:pt-2.5 lg:pt-3 border-t border-zinc-100 flex items-center justify-between gap-2" suppressHydrationWarning>
               <div className="flex items-center gap-1.5 sm:gap-2 text-xs shrink-0">
-                <span
-                  className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 lg:px-3 py-1 sm:py-1 lg:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold bg-zinc-950 text-white select-none cursor-default shadow-xs shrink-0"
-                  title={`${sortedProperties.length} Verified Properties`}
-                  aria-label={`${sortedProperties.length} Properties`}
-                >
-                  <Building2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                  <span className="flex items-center gap-1">
-                    <span className="font-extrabold text-amber-400">{sortedProperties.length}</span>
-                    <span className="text-zinc-300 font-medium hidden lg:inline">Properties</span>
+                {activeResultTab !== 'buyer_leads' && (
+                  <span
+                    className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 lg:px-3 py-1 sm:py-1 lg:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold bg-zinc-950 text-white select-none cursor-default shadow-xs shrink-0"
+                    title={`${sortedProperties.length} Verified Properties`}
+                    aria-label={`${sortedProperties.length} Properties`}
+                  >
+                    <Building2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <span className="flex items-center gap-1">
+                      <span className="font-extrabold text-amber-400">{sortedProperties.length}</span>
+                      <span className="text-zinc-300 font-medium hidden lg:inline">Properties</span>
+                    </span>
                   </span>
-                </span>
+                )}
 
                 <span
                   className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 lg:px-3 py-1 sm:py-1 lg:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold bg-[#b9974f] text-zinc-950 select-none cursor-default shadow-xs shrink-0"
-                  title={`${filteredCatalogueBuyerDemands.length > 0 ? filteredCatalogueBuyerDemands.length : (buyerDemands.length > 0 ? buyerDemands.length : 278)} Verified Buyers`}
-                  aria-label={`${filteredCatalogueBuyerDemands.length > 0 ? filteredCatalogueBuyerDemands.length : (buyerDemands.length > 0 ? buyerDemands.length : 278)} Buyers`}
+                  title={`${filteredCatalogueBuyerDemands.length} Verified Buyers`}
+                  aria-label={`${filteredCatalogueBuyerDemands.length} Buyers`}
                 >
                   <Users className="w-3.5 h-3.5 text-zinc-950 shrink-0" />
                   <span className="flex items-center gap-1">
                     <span className="font-black text-zinc-950">
-                      {filteredCatalogueBuyerDemands.length > 0
-                        ? filteredCatalogueBuyerDemands.length
-                        : ((catalogueBuyerFilter || catalogueSearch) ? 0 : (buyerDemands.length > 0 ? buyerDemands.length : 278))}
+                      {filteredCatalogueBuyerDemands.length}
                     </span>
                     <span className="text-zinc-900 font-semibold hidden lg:inline">Buyers</span>
                   </span>
@@ -2671,1334 +2701,52 @@ export function HomepageSearchablePortal({
             </div>
           </div>
 
-          {/* ================= SECTION 1: VERIFIED PROPERTIES ================= */}
-          <div id="properties-section" className="space-y-6">
-            {/* Phase 2 Fallback Banner */}
-            {phase2Data?.isFallbackActivated && phase2Data?.fallbackBanner && (
-              <div className="bg-amber-50/95 border border-amber-300 rounded-2xl p-4 flex items-start gap-3 text-amber-950 shadow-xs">
-                <Sparkles className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-                <div className="flex-1 text-xs sm:text-sm font-medium">
-                  <strong className="font-bold text-amber-900">Notice: </strong>
-                  {phase2Data.fallbackBanner}
-                </div>
-              </div>
-            )}
-
-            {/* ================= 1. INSTITUTIONAL COMPARISON TABLE (SEEN FIRST) ================= */}
-            {propertyViewMode === 'table' && sortedProperties.length > 0 && (
-              <div id="properties-table-container" className="mb-4 sm:mb-8 bg-white rounded-xl sm:rounded-2xl lg:rounded-3xl shadow-sm border border-zinc-200 overflow-hidden w-full max-w-full">
-                <div className="bg-zinc-950 p-2 sm:p-3 lg:p-5 text-white flex items-center justify-between gap-2">
-                  <div className="hidden sm:block">
-                    <h3 className="text-lg font-bold flex items-center gap-2 tracking-tight text-white">
-                      <Building2 className="w-5 h-5 text-amber-400" />
-                      <span>
-                        {sortedProperties.length} {sortedProperties.length === 1 ? 'Property' : 'Properties'} Found
-                      </span>
-                    </h3>
-                  </div>
-                  <div className="flex items-center gap-1.5 sm:gap-2.5 flex-wrap ml-auto sm:ml-0">
-                    {/* Dedicated Single Sort By Dropdown - MOBILE ONLY (hidden on laptop and big screens) */}
-                    <div className="relative sm:hidden">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setActiveHeaderDropdown(activeHeaderDropdown === 'sort' ? null : 'sort');
-                          setHeaderSearchQuery('');
-                        }}
-                        className={`p-2 rounded-xl transition flex items-center justify-center gap-1 shadow-sm cursor-pointer ${sortBy !== 'price_low'
-                          ? 'bg-amber-400 text-zinc-950 font-black ring-1 ring-amber-300'
-                          : 'bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-700/80'
-                          }`}
-                        title={`Sort properties (Active: ${getSortLabel(sortBy)})`}
-                        aria-label="Sort properties"
-                      >
-                        <ArrowUpDown className={`w-4 h-4 ${sortBy !== 'price_low' ? 'text-zinc-950' : 'text-amber-400'}`} />
-                      </button>
-
-                      {activeHeaderDropdown === 'sort' && (
-                        <div
-                          ref={headerDropdownRef}
-                          className="fixed inset-x-3 bottom-4 max-h-[85vh] overflow-y-auto sm:max-h-none sm:overflow-visible z-[100] sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 w-auto sm:w-88 max-w-sm mx-auto sm:mx-0 shadow-2xl"
-                        >
-                          {renderSortDropdownContent()}
-                        </div>
-                      )}
-                    </div>
-
-                    <Link
-                      href="/compare"
-                      aria-label="Compare properties"
-                      className="text-xs bg-[#b9974f] hover:bg-[#a4823d] text-black font-extrabold p-2 sm:px-4 sm:py-2 rounded-xl transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
-                      title="Compare properties"
-                    >
-                      <Scale className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
-                      <span className="hidden sm:inline">Compare</span>
-                    </Link>
-
-                    <button
-                      type="button"
-                      onClick={handleShareWhatsApp}
-                      aria-label="Share properties on WhatsApp"
-                      className="text-xs bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold p-2 sm:px-4 sm:py-2 rounded-xl transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer active:scale-95"
-                      title="Share on WhatsApp"
-                    >
-                      <svg viewBox="0 0 32 32" className="w-4 h-4 sm:w-3.5 sm:h-3.5 fill-white shrink-0" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M16 2C8.28 2 2 8.28 2 16c0 2.66.75 5.15 2.05 7.29L2.3 29.7l6.63-1.74A13.9 13.9 0 0016 30c7.72 0 14-6.28 14-14S23.72 2 16 2zm8.17 19.83c-.34.96-1.7 1.76-2.76 1.99-.73.16-1.68.29-4.88-1.04-4.09-1.69-6.72-5.83-6.93-6.1-.2-.28-1.67-2.22-1.67-4.23s1.05-3.01 1.43-3.42c.38-.41.82-.51 1.1-.51.27 0 .55 0 .79.02.25.01.59-.1.92.7.34.82 1.16 2.83 1.26 3.04.1.2.17.44.03.71-.13.27-.2.44-.4.68-.2.24-.43.53-.61.71-.21.21-.43.44-.19.86.25.41 1.09 1.8 2.34 2.91 1.61 1.43 2.97 1.88 3.39 2.09.42.2.67.18.92-.1.25-.28 1.07-1.24 1.35-1.67.28-.43.56-.36.94-.22.38.14 2.42 1.14 2.83 1.35.41.2.69.31.79.48.1.18.1 1.02-.24 1.98z" />
-                      </svg>
-                      <span className="hidden sm:inline">Share</span>
-                    </button>
+          {/* ================= SECTION 1: VERIFIED PROPERTIES (Hidden when searching Buyers/Sellers) ================= */}
+          {activeResultTab !== 'buyer_leads' && (
+            <div id="properties-section" className="space-y-6">
+              {/* Phase 2 Fallback Banner */}
+              {phase2Data?.isFallbackActivated && phase2Data?.fallbackBanner && (
+                <div className="bg-amber-50/95 border border-amber-300 rounded-2xl p-4 flex items-start gap-3 text-amber-950 shadow-xs">
+                  <Sparkles className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="flex-1 text-xs sm:text-sm font-medium">
+                    <strong className="font-bold text-amber-900">Notice: </strong>
+                    {phase2Data.fallbackBanner}
                   </div>
                 </div>
+              )}
 
-                {/* ================= DESKTOP VIEW: COMPARISON TABLE (HORIZONTAL SCROLL ON DESKTOP ONLY) ================= */}
-                <div className="hidden sm:block overflow-x-auto text-xs w-full">
-                  <table className="w-full text-left min-w-[700px]">
-                    <thead className="bg-zinc-50 text-zinc-600 font-bold border-b border-zinc-200">
-                      <tr>
-                        {/* 1. Property & Developer */}
-                        <th className="px-5 py-3 relative">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setActiveHeaderDropdown(activeHeaderDropdown === 'developer' ? null : 'developer');
-                                setHeaderSearchQuery('');
-                              }}
-                              className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${selectedDeveloper !== 'All' || ['name_asc', 'name_desc', 'developer_asc'].includes(sortBy)
-                                ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                                : 'text-zinc-700 hover:bg-zinc-100'
-                                }`}
-                            >
-                              <span>Property &amp; Developer</span>
-                              <ChevronDown
-                                className={`w-3.5 h-3.5 transition-transform duration-200 ${activeHeaderDropdown === 'developer' ? 'rotate-180 text-amber-600' : 'text-zinc-500'
-                                  }`}
-                              />
-                            </button>
-
-                            {selectedDeveloper !== 'All' && (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">
-                                <span>{selectedDeveloper}</span>
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelectedDeveloper('All');
-                                  }}
-                                  className="text-amber-700 hover:text-black cursor-pointer font-black"
-                                  title="Clear developer filter"
-                                >
-                                  ×
-                                </button>
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Popover */}
-                          {activeHeaderDropdown === 'developer' && (
-                            <div
-                              ref={headerDropdownRef}
-                              className="absolute left-3 top-full mt-1.5 w-64 sm:w-72 bg-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.18)] border border-zinc-200 ring-1 ring-black/5 p-2.5 z-[90] animate-in fade-in zoom-in-95 duration-150 font-normal select-none text-left"
-                            >
-                              {/* Small Search Box */}
-                              <div className="relative mb-2">
-                                <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                                <input
-                                  type="text"
-                                  autoFocus
-                                  value={headerSearchQuery}
-                                  onChange={(e) => setHeaderSearchQuery(e.target.value)}
-                                  placeholder="Search property or developer..."
-                                  className="w-full pl-8 pr-7 py-1.5 bg-zinc-50 border border-zinc-200 rounded-xl text-xs text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-amber-400 focus:bg-white transition"
-                                />
-                                {headerSearchQuery && (
-                                  <button
-                                    type="button"
-                                    onClick={() => setHeaderSearchQuery('')}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700 text-xs font-bold cursor-pointer"
-                                  >
-                                    ×
-                                  </button>
-                                )}
-                              </div>
-
-                              <div className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider px-2 py-1">
-                                Sort Properties
-                              </div>
-
-                              <div className="space-y-0.5 text-xs mb-2">
-                                {[
-                                  { label: 'Default (Featured & Relevancy)', value: 'relevance' },
-                                  { label: 'Property Name: A → Z', value: 'name_asc' },
-                                  { label: 'Property Name: Z → A', value: 'name_desc' },
-                                  { label: 'Developer: A → Z', value: 'developer_asc' }
-                                ]
-                                  .filter((opt) => !headerSearchQuery || opt.label.toLowerCase().includes(headerSearchQuery.toLowerCase()))
-                                  .map((opt) => {
-                                    const isSelected = sortBy === opt.value || (sortBy === '' && opt.value === 'relevance');
-                                    return (
-                                      <button
-                                        key={opt.value}
-                                        type="button"
-                                        onClick={() => {
-                                          setSortBy(opt.value);
-                                          setActiveHeaderDropdown(null);
-                                        }}
-                                        className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${isSelected ? 'bg-amber-50 font-bold text-amber-900' : 'text-zinc-700 hover:bg-zinc-100'
-                                          }`}
-                                      >
-                                        <span>{opt.label}</span>
-                                        {isSelected && <Check className="w-3.5 h-3.5 text-amber-600 shrink-0" />}
-                                      </button>
-                                    );
-                                  })}
-                              </div>
-
-                              {/* Developers Filter Section */}
-                              {availableDevelopers.length > 0 && (
-                                <div className="pt-2 border-t border-zinc-100">
-                                  <div className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider px-2 py-1">
-                                    Filter By Developer
-                                  </div>
-                                  <div className="max-h-40 overflow-y-auto space-y-0.5 text-xs pr-1">
-                                    {(!headerSearchQuery || 'all developers'.includes(headerSearchQuery.toLowerCase())) && (
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setSelectedDeveloper('All');
-                                          setActiveHeaderDropdown(null);
-                                        }}
-                                        className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${selectedDeveloper === 'All'
-                                          ? 'bg-amber-50 font-bold text-amber-900'
-                                          : 'text-zinc-700 hover:bg-zinc-100'
-                                          }`}
-                                      >
-                                        <span>All Developers</span>
-                                        {selectedDeveloper === 'All' && <Check className="w-3.5 h-3.5 text-amber-600 shrink-0" />}
-                                      </button>
-                                    )}
-
-                                    {filteredHeaderDevelopers.map((dev) => {
-                                      const isSelected = selectedDeveloper.toLowerCase() === dev.toLowerCase();
-                                      return (
-                                        <button
-                                          key={dev}
-                                          type="button"
-                                          onClick={() => {
-                                            setSelectedDeveloper(isSelected ? 'All' : dev);
-                                            setActiveHeaderDropdown(null);
-                                          }}
-                                          className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${isSelected
-                                            ? 'bg-amber-50 font-bold text-amber-900'
-                                            : 'text-zinc-700 hover:bg-zinc-100'
-                                            }`}
-                                        >
-                                          <span className="truncate">{dev}</span>
-                                          {isSelected && <Check className="w-3.5 h-3.5 text-amber-600 shrink-0" />}
-                                        </button>
-                                      );
-                                    })}
-
-                                    {filteredHeaderDevelopers.length === 0 && headerSearchQuery && (
-                                      <div className="p-3 text-center text-xs text-zinc-400">
-                                        No developers matching "{headerSearchQuery}"
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              )}
-
-                              {(selectedDeveloper !== 'All' || ['name_asc', 'name_desc', 'developer_asc'].includes(sortBy)) && (
-                                <div className="pt-2 mt-2 border-t border-zinc-100 text-right">
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setSelectedDeveloper('All');
-                                      setSortBy('relevance');
-                                      setActiveHeaderDropdown(null);
-                                    }}
-                                    className="text-[11px] font-bold text-amber-700 hover:text-amber-800 cursor-pointer"
-                                  >
-                                    Reset Developer &amp; Sort
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </th>
-
-                        {/* 2. Locality */}
-                        <th className="px-5 py-3 relative">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setActiveHeaderDropdown(activeHeaderDropdown === 'locality' ? null : 'locality');
-                                setHeaderSearchQuery('');
-                              }}
-                              className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${selectedLocality !== 'All' || ['locality_asc', 'locality_desc'].includes(sortBy)
-                                ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                                : 'text-zinc-700 hover:bg-zinc-100'
-                                }`}
-                            >
-                              <span>Locality</span>
-                              <ChevronDown
-                                className={`w-3.5 h-3.5 transition-transform duration-200 ${activeHeaderDropdown === 'locality' ? 'rotate-180 text-amber-600' : 'text-zinc-500'
-                                  }`}
-                              />
-                            </button>
-
-                            {selectedLocality !== 'All' && (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">
-                                <span>{selectedLocality}</span>
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelectedLocality('All');
-                                  }}
-                                  className="text-amber-700 hover:text-black cursor-pointer font-black"
-                                  title="Clear location filter"
-                                >
-                                  ×
-                                </button>
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Popover */}
-                          {activeHeaderDropdown === 'locality' && (
-                            <div
-                              ref={headerDropdownRef}
-                              className="absolute left-3 top-full mt-1.5 w-64 sm:w-72 bg-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.18)] border border-zinc-200 ring-1 ring-black/5 p-2.5 z-[90] animate-in fade-in zoom-in-95 duration-150 font-normal select-none text-left"
-                            >
-                              {/* Small Search Box */}
-                              <div className="relative mb-2">
-                                <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                                <input
-                                  type="text"
-                                  autoFocus
-                                  value={headerSearchQuery}
-                                  onChange={(e) => setHeaderSearchQuery(e.target.value)}
-                                  placeholder="Search locality (e.g. Baner, Wakad)..."
-                                  className="w-full pl-8 pr-7 py-1.5 bg-zinc-50 border border-zinc-200 rounded-xl text-xs text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-amber-400 focus:bg-white transition"
-                                />
-                                {headerSearchQuery && (
-                                  <button
-                                    type="button"
-                                    onClick={() => setHeaderSearchQuery('')}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700 text-xs font-bold cursor-pointer"
-                                  >
-                                    ×
-                                  </button>
-                                )}
-                              </div>
-
-                              {/* Quick Sort Actions */}
-                              <div className="pb-1.5 mb-1.5 border-b border-zinc-100 flex items-center justify-between text-[11px]">
-                                <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">Sort:</span>
-                                <div className="flex items-center gap-1">
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setSortBy(sortBy === 'locality_asc' ? 'relevance' : 'locality_asc');
-                                      setActiveHeaderDropdown(null);
-                                    }}
-                                    className={`px-2 py-0.5 rounded text-[10px] font-bold transition cursor-pointer ${sortBy === 'locality_asc' ? 'bg-amber-500 text-zinc-950' : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
-                                      }`}
-                                  >
-                                    A → Z
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setSortBy(sortBy === 'locality_desc' ? 'relevance' : 'locality_desc');
-                                      setActiveHeaderDropdown(null);
-                                    }}
-                                    className={`px-2 py-0.5 rounded text-[10px] font-bold transition cursor-pointer ${sortBy === 'locality_desc' ? 'bg-amber-500 text-zinc-950' : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
-                                      }`}
-                                  >
-                                    Z → A
-                                  </button>
-                                </div>
-                              </div>
-
-                              {/* Scrollable Localities List */}
-                              <div className="max-h-52 overflow-y-auto space-y-0.5 text-xs pr-1">
-                                {(!headerSearchQuery || 'all locations'.includes(headerSearchQuery.toLowerCase())) && (
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setSelectedLocality('All');
-                                      setActiveHeaderDropdown(null);
-                                    }}
-                                    className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${selectedLocality === 'All'
-                                      ? 'bg-amber-50 font-bold text-amber-900'
-                                      : 'text-zinc-700 hover:bg-zinc-100'
-                                      }`}
-                                  >
-                                    <span>All Locations (Default)</span>
-                                    {selectedLocality === 'All' && <Check className="w-3.5 h-3.5 text-amber-600" />}
-                                  </button>
-                                )}
-
-                                {filteredHeaderLocalities.map((loc) => {
-                                  const isSelected = selectedLocality.toLowerCase() === loc.toLowerCase();
-                                  return (
-                                    <button
-                                      key={loc}
-                                      type="button"
-                                      onClick={() => {
-                                        setSelectedLocality(isSelected ? 'All' : loc);
-                                        setActiveHeaderDropdown(null);
-                                      }}
-                                      className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${isSelected
-                                        ? 'bg-amber-50 font-bold text-amber-900'
-                                        : 'text-zinc-700 hover:bg-zinc-100'
-                                        }`}
-                                    >
-                                      <span className="truncate">{loc}</span>
-                                      {isSelected && <Check className="w-3.5 h-3.5 text-amber-600 shrink-0" />}
-                                    </button>
-                                  );
-                                })}
-
-                                {filteredHeaderLocalities.length === 0 && headerSearchQuery && (
-                                  <div className="p-3 text-center text-xs text-zinc-400">
-                                    No localities matching "{headerSearchQuery}"
-                                  </div>
-                                )}
-                              </div>
-
-                              {(selectedLocality !== 'All' || ['locality_asc', 'locality_desc'].includes(sortBy)) && (
-                                <div className="pt-2 mt-2 border-t border-zinc-100 text-right">
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setSelectedLocality('All');
-                                      if (['locality_asc', 'locality_desc'].includes(sortBy)) setSortBy('relevance');
-                                      setActiveHeaderDropdown(null);
-                                    }}
-                                    className="text-[11px] font-bold text-amber-700 hover:text-amber-800 cursor-pointer"
-                                  >
-                                    Reset Filter &amp; Sort
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </th>
-
-                        {/* 3. Typography */}
-                        <th className="px-5 py-3 relative">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setActiveHeaderDropdown(activeHeaderDropdown === 'typography' ? null : 'typography');
-                                setHeaderSearchQuery('');
-                              }}
-                              className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${selectedBhk !== 'All' ||
-                                ['typography_asc', 'typography_desc'].includes(sortBy)
-                                ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                                : 'text-zinc-700 hover:bg-zinc-100'
-                                }`}
-                            >
-                              <span>Typology</span>
-                              <ChevronDown
-                                className={`w-3.5 h-3.5 transition-transform duration-200 ${activeHeaderDropdown === 'typography' ? 'rotate-180 text-amber-600' : 'text-zinc-500'
-                                  }`}
-                              />
-                            </button>
-
-                            {selectedBhk !== 'All' && (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">
-                                <span>{selectedBhk}</span>
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelectedBhk('All');
-                                  }}
-                                  className="text-amber-700 hover:text-black cursor-pointer font-black"
-                                  title="Clear configuration filter"
-                                >
-                                  ×
-                                </button>
-                              </span>
-                            )}
-
-                            {['typography_asc', 'typography_desc'].includes(sortBy) && (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">
-                                <span>{sortBy === 'typography_asc' ? 'A → Z' : 'Z → A'}</span>
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSortBy('relevance');
-                                  }}
-                                  className="text-amber-700 hover:text-black cursor-pointer font-black"
-                                  title="Clear sort"
-                                >
-                                  ×
-                                </button>
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Popover */}
-                          {activeHeaderDropdown === 'typography' && (
-                            <div
-                              ref={headerDropdownRef}
-                              className="absolute left-3 top-full mt-1.5 w-72 sm:w-80 bg-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.18)] border border-zinc-200 ring-1 ring-black/5 p-2.5 z-[90] animate-in fade-in zoom-in-95 duration-150 font-normal select-none text-left"
-                            >
-                              {/* Small Search Box */}
-                              <div className="relative mb-2">
-                                <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                                <input
-                                  type="text"
-                                  autoFocus
-                                  value={headerSearchQuery}
-                                  onChange={(e) => setHeaderSearchQuery(e.target.value)}
-                                  placeholder="Search typology (e.g. 3 BHK, Office)..."
-                                  className="w-full pl-8 pr-7 py-1.5 bg-zinc-50 border border-zinc-200 rounded-xl text-xs text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-amber-400 focus:bg-white transition"
-                                />
-                                {headerSearchQuery && (
-                                  <button
-                                    type="button"
-                                    onClick={() => setHeaderSearchQuery('')}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700 text-xs font-bold cursor-pointer"
-                                  >
-                                    ×
-                                  </button>
-                                )}
-                              </div>
-
-                              {/* Quick Sort Actions */}
-                              <div className="pb-1.5 mb-1.5 border-b border-zinc-100 flex items-center justify-between text-[11px]">
-                                <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">Sort:</span>
-                                <div className="flex items-center gap-1">
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setSortBy(sortBy === 'typography_asc' ? 'relevance' : 'typography_asc');
-                                      setActiveHeaderDropdown(null);
-                                    }}
-                                    className={`px-2 py-0.5 rounded text-[10px] font-bold transition cursor-pointer ${sortBy === 'typography_asc' ? 'bg-amber-500 text-zinc-950' : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
-                                      }`}
-                                  >
-                                    A → Z
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setSortBy(sortBy === 'typography_desc' ? 'relevance' : 'typography_desc');
-                                      setActiveHeaderDropdown(null);
-                                    }}
-                                    className={`px-2 py-0.5 rounded text-[10px] font-bold transition cursor-pointer ${sortBy === 'typography_desc' ? 'bg-amber-500 text-zinc-950' : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
-                                      }`}
-                                  >
-                                    Z → A
-                                  </button>
-                                </div>
-                              </div>
-
-                              {/* Scrollable Typologies List */}
-                              <div className="max-h-52 overflow-y-auto space-y-0.5 text-xs pr-1">
-                                {(!headerSearchQuery || 'all configurations'.includes(headerSearchQuery.toLowerCase())) && (
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setSelectedBhk('All');
-                                      setActiveHeaderDropdown(null);
-                                    }}
-                                    className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${selectedBhk === 'All'
-                                      ? 'bg-amber-50 font-bold text-amber-900'
-                                      : 'text-zinc-700 hover:bg-zinc-100'
-                                      }`}
-                                  >
-                                    <span>All Configurations (Default)</span>
-                                    {selectedBhk === 'All' && <Check className="w-3.5 h-3.5 text-amber-600" />}
-                                  </button>
-                                )}
-
-                                {filteredHeaderTypologies.map((t) => {
-                                  const isSelected = selectedBhk.toLowerCase() === t.value.toLowerCase();
-                                  return (
-                                    <button
-                                      key={t.value}
-                                      type="button"
-                                      onClick={() => {
-                                        setSelectedBhk(isSelected ? 'All' : t.value);
-                                        setActiveHeaderDropdown(null);
-                                      }}
-                                      className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${isSelected
-                                        ? 'bg-amber-50 font-bold text-amber-900'
-                                        : 'text-zinc-700 hover:bg-zinc-100'
-                                        }`}
-                                    >
-                                      <div className="flex items-center gap-1.5 truncate">
-                                        <span className="truncate">{t.label}</span>
-                                        {t.group && (
-                                          <span className="text-[9px] text-zinc-400 font-mono">({t.group})</span>
-                                        )}
-                                      </div>
-                                      {isSelected && <Check className="w-3.5 h-3.5 text-amber-600 shrink-0" />}
-                                    </button>
-                                  );
-                                })}
-
-                                {filteredHeaderTypologies.length === 0 && headerSearchQuery && (
-                                  <div className="p-3 text-center text-xs text-zinc-400">
-                                    No typologies matching "{headerSearchQuery}"
-                                  </div>
-                                )}
-                              </div>
-
-                              {(selectedBhk !== 'All' ||
-                                ['typography_asc', 'typography_desc'].includes(sortBy)) && (
-                                  <div className="pt-2 mt-2 border-t border-zinc-100 text-right">
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setSelectedBhk('All');
-                                        if (['typography_asc', 'typography_desc'].includes(sortBy)) {
-                                          setSortBy('relevance');
-                                        }
-                                        setActiveHeaderDropdown(null);
-                                      }}
-                                      className="text-[11px] font-bold text-amber-700 hover:text-amber-800 cursor-pointer"
-                                    >
-                                      Reset Filter &amp; Sort
-                                    </button>
-                                  </div>
-                                )}
-                            </div>
-                          )}
-                        </th>
-
-                        {/* 4. Price */}
-                        <th className="px-5 py-3 relative">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setActiveHeaderDropdown(activeHeaderDropdown === 'price' ? null : 'price');
-                                setHeaderSearchQuery('');
-                              }}
-                              className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${selectedPriceRange !== 'All' || sortBy === 'price_high'
-                                ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                                : 'text-zinc-700 hover:bg-zinc-100'
-                                }`}
-                            >
-                              <span>Price</span>
-                              <ChevronDown
-                                className={`w-3.5 h-3.5 transition-transform duration-200 ${activeHeaderDropdown === 'price' ? 'rotate-180 text-amber-600' : 'text-zinc-500'
-                                  }`}
-                              />
-                            </button>
-
-                            {sortBy === 'price_high' && (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">
-                                <span>High → Low</span>
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSortBy('price_low');
-                                  }}
-                                  className="text-amber-700 hover:text-black cursor-pointer font-black"
-                                  title="Reset price sort"
-                                >
-                                  ×
-                                </button>
-                              </span>
-                            )}
-
-                            {selectedPriceRange !== 'All' && (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">
-                                <span>{selectedPriceRange}</span>
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelectedPriceRange('All');
-                                  }}
-                                  className="text-amber-700 hover:text-black cursor-pointer font-black"
-                                  title="Clear price filter"
-                                >
-                                  ×
-                                </button>
-                              </span>
-                            )}
-
-                            {selectedStatus !== 'All' && (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">
-                                <span>{selectedStatus}</span>
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelectedStatus('All');
-                                  }}
-                                  className="text-amber-700 hover:text-black cursor-pointer font-black"
-                                  title="Clear status filter"
-                                >
-                                  ×
-                                </button>
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Dedicated Price Sort & Filter Popover */}
-                          {activeHeaderDropdown === 'price' && (
-                            <div
-                              ref={headerDropdownRef}
-                              className="absolute right-0 top-full mt-1.5 w-64 sm:w-72 bg-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.18)] border border-zinc-200 ring-1 ring-black/5 p-3 z-[90] animate-in fade-in zoom-in-95 duration-150 font-normal select-none text-left space-y-3 text-zinc-900"
-                            >
-                              {/* Header */}
-                              <div className="flex items-center justify-between border-b border-zinc-100 pb-2">
-                                <div className="text-xs font-black text-zinc-900 uppercase tracking-wider flex items-center gap-1.5">
-                                  <Tag className="w-3.5 h-3.5 text-amber-600" />
-                                  <span>Sort &amp; Filter Price</span>
-                                </div>
-                                {(sortBy !== 'price_low' || selectedPriceRange !== 'All') && (
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setSortBy('price_low');
-                                      setSelectedPriceRange('All');
-                                      setActiveHeaderDropdown(null);
-                                    }}
-                                    className="text-[11px] font-bold text-amber-700 hover:text-amber-800 cursor-pointer"
-                                  >
-                                    Reset Price
-                                  </button>
-                                )}
-                              </div>
-
-                              {/* Price Sort Order */}
-                              <div>
-                                <div className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider mb-1.5">
-                                  Sort By Price
-                                </div>
-                                <div className="grid grid-cols-2 gap-1.5 text-xs">
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setSortBy('price_low');
-                                      setActiveHeaderDropdown(null);
-                                    }}
-                                    className={`px-2.5 py-2 rounded-xl text-left transition flex items-center justify-between cursor-pointer ${sortBy === 'price_low'
-                                      ? 'bg-[#b9974f] font-black text-zinc-950 shadow-xs'
-                                      : 'bg-zinc-50 hover:bg-zinc-100 text-zinc-700 border border-zinc-200/80'
-                                      }`}
-                                  >
-                                    <span>Low to High</span>
-                                    {sortBy === 'price_low' && <Check className="w-3.5 h-3.5 text-zinc-950 stroke-[2.5]" />}
-                                  </button>
-
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setSortBy('price_high');
-                                      setActiveHeaderDropdown(null);
-                                    }}
-                                    className={`px-2.5 py-2 rounded-xl text-left transition flex items-center justify-between cursor-pointer ${sortBy === 'price_high'
-                                      ? 'bg-[#b9974f] font-black text-zinc-950 shadow-xs'
-                                      : 'bg-zinc-50 hover:bg-zinc-100 text-zinc-700 border border-zinc-200/80'
-                                      }`}
-                                  >
-                                    <span>High to Low</span>
-                                    {sortBy === 'price_high' && <Check className="w-3.5 h-3.5 text-zinc-950 stroke-[2.5]" />}
-                                  </button>
-                                </div>
-                              </div>
-
-                              {/* Filter by Budget / Price Range */}
-                              {filterOptions?.priceRanges && filterOptions.priceRanges.length > 0 && (
-                                <div className="pt-2 border-t border-zinc-100">
-                                  <div className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider mb-1.5">
-                                    Filter By Budget / Price
-                                  </div>
-                                  <div className="space-y-1 text-xs">
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setSelectedPriceRange('All');
-                                        setActiveHeaderDropdown(null);
-                                      }}
-                                      className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${selectedPriceRange === 'All'
-                                        ? 'bg-amber-50 font-bold text-amber-900'
-                                        : 'text-zinc-700 hover:bg-zinc-100'
-                                        }`}
-                                    >
-                                      <span>All Budgets (Default)</span>
-                                      {selectedPriceRange === 'All' && <Check className="w-3.5 h-3.5 text-amber-600" />}
-                                    </button>
-
-                                    {filterOptions.priceRanges.map((range) => {
-                                      const isSelected = selectedPriceRange === range.value;
-                                      return (
-                                        <button
-                                          key={range.value}
-                                          type="button"
-                                          onClick={() => {
-                                            setSelectedPriceRange(isSelected ? 'All' : range.value);
-                                            setActiveHeaderDropdown(null);
-                                          }}
-                                          className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${isSelected
-                                            ? 'bg-amber-50 font-bold text-amber-900'
-                                            : 'text-zinc-700 hover:bg-zinc-100'
-                                            }`}
-                                        >
-                                          <span>{range.label}</span>
-                                          {isSelected && <Check className="w-3.5 h-3.5 text-amber-600 shrink-0" />}
-                                        </button>
-                                      );
-                                    })}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </th>
-
-                        {/* 5. Site Visit */}
-                        <th className="px-5 py-3 text-right font-bold text-zinc-700 whitespace-nowrap">Site Visit</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-zinc-100">
-                      {displayedComparisonProperties.map((row, rowIdx) => (
-                        <tr
-                          key={row.id}
-                          className="hover:bg-amber-50/50 transition-colors group"
-                        >
-                          {/* 1. Property & Developer - ONLY hovering this area opens the preview card */}
-                          <td
-                            className="px-5 py-3.5 cursor-pointer"
-                            onMouseEnter={(e) => handleTablePropertyHover(e, row)}
-                            onMouseMove={(e) => {
-                              if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
-                              if (!hoveredTableProperty || hoveredTableProperty.property.id !== row.id) {
-                                handleTablePropertyHover(e, row);
-                              }
-                            }}
-                            onMouseLeave={handleTablePropertyLeave}
-                          >
-                            <div className="flex items-center gap-3">
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  openPropertyGallery(row, 'photos');
-                                }}
-                                className="relative w-12 h-12 rounded-xl overflow-hidden shrink-0 border border-zinc-200 hover:border-amber-500 hover:ring-2 hover:ring-amber-400/30 shadow-2xs bg-zinc-100 block group/thumb cursor-pointer text-left"
-                                title={`Click to view photo & video gallery for ${row.name}`}
-                              >
-                                <Image
-                                  src={
-                                    row.image ||
-                                    'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
-                                  }
-                                  alt={row.name}
-                                  fill
-                                  sizes="48px"
-                                  unoptimized
-                                  className="object-cover group-hover/thumb:scale-110 transition-transform duration-500"
-                                />
-                                <div className="absolute inset-0 bg-black/35 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex items-center justify-center">
-                                  <div className="w-6 h-6 rounded-lg bg-black/70 backdrop-blur-xs flex items-center justify-center text-white border border-white/20 shadow-xs">
-                                    <Expand className="w-3.5 h-3.5 text-white drop-shadow stroke-[2.5]" />
-                                  </div>
-                                </div>
-                              </button>
-                              <div className="min-w-0">
-                                <Link
-                                  href={getPropertyUrl(row)}
-                                  prefetch={true}
-                                  className="font-bold text-zinc-900 group-hover:text-amber-700 hover:underline block truncate max-w-xs sm:max-w-sm transition-colors"
-                                >
-                                  <span className="inline-flex items-center gap-1.5 flex-wrap">
-                                    <span className="truncate">{row.name}</span>
-                                    {row.hideName && (
-                                      <span className="shrink-0 px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
-                                        Confidential
-                                      </span>
-                                    )}
-                                    {row.searchBadges && row.searchBadges.length > 0 && (
-                                      row.searchBadges.map((badge, bIdx) => (
-                                        <span
-                                          key={bIdx}
-                                          className={`shrink-0 px-1.5 py-0.2 rounded text-[9px] font-bold border ${badge.includes('Exact')
-                                              ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                                              : badge.includes('Nearby')
-                                                ? 'bg-blue-50 text-blue-800 border-blue-300'
-                                                : badge.includes('Above')
-                                                  ? 'bg-orange-50 text-orange-800 border-orange-300'
-                                                  : 'bg-amber-50 text-amber-900 border-amber-300'
-                                            }`}
-                                        >
-                                          {badge}
-                                        </span>
-                                      ))
-                                    )}
-                                  </span>
-                                </Link>
-                                {row.developer &&
-                                  !/anv\b/i.test(row.developer) && (
-                                    <div className="text-[10px] text-zinc-400 truncate mt-0.5">
-                                      {row.developer}
-                                    </div>
-                                  )}
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-5 py-3.5" onMouseEnter={handleTablePropertyLeave}>
-                            <span className="font-semibold text-zinc-800">{row.locality || 'Pune'}</span>
-                          </td>
-                          <td className="px-5 py-3.5" onMouseEnter={handleTablePropertyLeave}>
-                            {(() => {
-                              const rawVal = row.configuration || row.bhk || '';
-                              const isPreleased = /\b(?:preleased|pre-leased)\b/i.test(rawVal);
-                              const isPreLaunch = /\b(?:prelaunch|pre-launch)\b/i.test(rawVal);
-                              const isNew = /\bnew\b/i.test(rawVal);
-                              const baseCategory = rawVal
-                                .replace(/\s*\((?:Preleased|New|PreLaunch|Pre-Launch)\)\s*/gi, '')
-                                .replace(/^(?:Preleased|Pre-Leased|New|PreLaunch|Pre-Launch)\s+/gi, '')
-                                .trim();
-
-                              return (
-                                <div>
-                                  <div className="flex items-center gap-1.5 flex-wrap">
-                                    <span className="font-bold text-zinc-800">{baseCategory || rawVal}</span>
-                                    {isPreleased && (
-                                      <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-amber-100 text-amber-900 border border-amber-300">
-                                        Preleased
-                                      </span>
-                                    )}
-                                    {isPreLaunch && (
-                                      <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-purple-100 text-purple-900 border border-purple-300">
-                                        PreLaunch
-                                      </span>
-                                    )}
-                                    {isNew && !isPreleased && !isPreLaunch && (
-                                      <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300">
-                                        New
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className="text-[10px] text-zinc-400 font-medium">{cleanSqft(row.sqft)}</div>
-                                </div>
-                              );
-                            })()}
-                          </td>
-                          <td className="px-5 py-3.5" onMouseEnter={handleTablePropertyLeave}>
-                            {formatPriceDisplay(row.price) === 'Price on Request' || row.hidePrice ? (
-                              <button
-                                type="button"
-                                onClick={() => handleInstantEnquiry(row)}
-                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#b9974f] hover:bg-[#a4823d] text-zinc-950 font-bold text-xs transition cursor-pointer shadow-2xs"
-                              >
-                                <Lock className="w-3 h-3 text-zinc-950" />
-                                <span>Request Price</span>
-                              </button>
-                            ) : (
-                              <>
-                                <div className="font-black text-zinc-950">{formatPriceDisplay(row.price)}</div>
-                                <div className="text-[10px] text-zinc-400">{row.status}</div>
-                              </>
-                            )}
-                          </td>
-                          <td className="px-5 py-3.5 text-right whitespace-nowrap" onMouseEnter={handleTablePropertyLeave}>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSelectedPropertyForSiteVisit(row);
-                                setSiteVisitModalOpen(true);
-                              }}
-                              className="inline-flex items-center justify-center p-2 rounded-xl bg-[#b9974f] hover:bg-[#a4823d] text-zinc-950 shadow-xs hover:shadow-md transition-all cursor-pointer active:scale-95 group"
-                              title={`Book VIP Site Visit for ${row.name}`}
-                              aria-label={`Book VIP Site Visit for ${row.name}`}
-                            >
-                              <Calendar className="w-4 h-4 text-zinc-950 stroke-[2.5]" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* ================= MOBILE VIEW: RESPONSIVE CARDS (ZERO HORIZONTAL SCROLL) ================= */}
-                <div className="sm:hidden w-full bg-white divide-y divide-zinc-100">
-                  {/* Mobile Property List Cards */}
-
-                  {/* Mobile Property List Cards */}
-                  {displayedComparisonProperties.length === 0 ? (
-                    <div className="p-8 text-center bg-zinc-50/50">
-                      <Building2 className="w-8 h-8 text-zinc-300 mx-auto mb-2" />
-                      <p className="text-xs font-bold text-zinc-700">No properties match your active filters.</p>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedLocality('All');
-                          setSelectedBhk('All');
-                          setSelectedStatus('All');
-                          setSelectedDeveloper('All');
-                          setSortBy('price_low');
-                        }}
-                        className="mt-3 text-xs font-bold text-amber-700 hover:text-amber-800 underline cursor-pointer"
-                      >
-                        Reset all filters
-                      </button>
-                    </div>
-                  ) : (
-                    displayedComparisonProperties.map((row, mRowIdx) => (
-                      <div key={row.id} className="p-3.5 bg-white space-y-2.5 hover:bg-amber-50/30 transition-colors">
-                        {/* 1. Property & Developer */}
-                        <div className="flex items-start gap-3">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              openPropertyGallery(row, 'photos');
-                            }}
-                            className="relative w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-zinc-200 shadow-2xs bg-zinc-100 block group/thumb cursor-pointer text-left active:scale-95 transition-transform"
-                            title={`Click to view photo & video gallery for ${row.name}`}
-                          >
-                            <Image
-                              src={
-                                row.image ||
-                                'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
-                              }
-                              alt={row.name}
-                              fill
-                              sizes="64px"
-                              unoptimized
-                              className="object-cover"
-                            />
-                            <div className="absolute inset-0 bg-black/35 flex items-center justify-center">
-                              <div className="w-6 h-6 rounded-lg bg-black/70 backdrop-blur-xs flex items-center justify-center text-white border border-white/20 shadow-xs">
-                                <Expand className="w-3.5 h-3.5 text-white drop-shadow stroke-[2.5]" />
-                              </div>
-                            </div>
-                          </button>
-
-                          <div className="flex-1 min-w-0">
-                            <Link
-                              href={getPropertyUrl(row)}
-                              prefetch={true}
-                              className="font-bold text-zinc-950 text-sm leading-snug line-clamp-2 hover:text-amber-700 active:text-amber-800 transition-colors"
-                            >
-                              <span className="inline-flex items-center gap-1.5 flex-wrap">
-                                <span>{row.name}</span>
-                                {row.hideName && (
-                                  <span className="shrink-0 px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
-                                    Confidential
-                                  </span>
-                                )}
-                                {row.searchBadges && row.searchBadges.length > 0 && (
-                                  row.searchBadges.map((badge, bIdx) => (
-                                    <span
-                                      key={bIdx}
-                                      className={`shrink-0 px-1.5 py-0.2 rounded text-[9px] font-bold border ${badge.includes('Exact')
-                                          ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                                          : badge.includes('Nearby')
-                                            ? 'bg-blue-50 text-blue-800 border-blue-300'
-                                            : badge.includes('Above')
-                                              ? 'bg-orange-50 text-orange-800 border-orange-300'
-                                              : 'bg-amber-50 text-amber-900 border-amber-300'
-                                        }`}
-                                    >
-                                      {badge}
-                                    </span>
-                                  ))
-                                )}
-                              </span>
-                            </Link>
-                            {(() => {
-                              const bldgOrDev = (row.developer && !/anv\b/i.test(row.developer))
-                                ? row.developer
-                                : (row.buildingName || (row as any)?.dossier?.BuildingName);
-                              if (!bldgOrDev) return null;
-                              return (
-                                <div className="text-[11px] text-zinc-500 font-medium truncate mt-0.5 flex items-center gap-1">
-                                  <Building2 className="w-3 h-3 text-zinc-400 shrink-0" />
-                                  <span>{bldgOrDev}</span>
-                                </div>
-                              );
-                            })()}
-                          </div>
-                        </div>
-
-                        {/* 2. Price & Status */}
-                        <div className="grid grid-cols-2 gap-2 bg-zinc-50/90 p-2.5 rounded-xl border border-zinc-100 text-xs">
-                          {/* Price */}
-                          <div>
-                            <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider block">Price</span>
-                            {formatPriceDisplay(row.price) === 'Price on Request' || row.hidePrice ? (
-                              <button
-                                type="button"
-                                onClick={() => handleInstantEnquiry(row)}
-                                className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#b9974f] hover:bg-[#a4823d] text-zinc-950 font-bold text-[11px] transition cursor-pointer"
-                              >
-                                <Lock className="w-2.5 h-2.5 text-zinc-950" />
-                                <span>Request Price</span>
-                              </button>
-                            ) : (
-                              <div className="font-black text-zinc-950 text-sm mt-0.5">{formatPriceDisplay(row.price)}</div>
-                            )}
-                          </div>
-
-                          {/* Status */}
-                          <div>
-                            <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider block">Status</span>
-                            <div className="mt-0.5">
-                              <span className="inline-block text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200/60">
-                                {row.status}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* 3. Site Visit icon & Explore button */}
-                        <div className="flex items-center gap-2 pt-0.5">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedPropertyForSiteVisit(row);
-                              setSiteVisitModalOpen(true);
-                            }}
-                            className="inline-flex items-center justify-center p-2.5 rounded-xl bg-[#b9974f] hover:bg-[#a4823d] active:scale-95 text-zinc-950 shadow-xs transition-all cursor-pointer shrink-0"
-                            title={`Book VIP Site Visit for ${row.name}`}
-                            aria-label={`Book VIP Site Visit for ${row.name}`}
-                          >
-                            <Calendar className="w-4 h-4 text-zinc-950 stroke-[2.5]" />
-                          </button>
-
-                          <Link
-                            href={getPropertyUrl(row)}
-                            prefetch={true}
-                            className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 active:scale-95 text-zinc-900 font-bold text-xs transition-all cursor-pointer"
-                            title="Explore property"
-                          >
-                            <span>Explore</span>
-                            <ArrowRight className="w-3.5 h-3.5 text-zinc-700" />
-                          </Link>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-
-                {/* FLOATING HOVER DETAILS PREVIEW CARD */}
-                {hoveredTableProperty && (
-                  <div
-                    style={{
-                      position: 'fixed',
-                      top: `${hoveredTableProperty.y}px`,
-                      left: `${hoveredTableProperty.x}px`,
-                      width: '350px',
-                      maxHeight: 'min(450px, calc(100vh - 90px))'
-                    }}
-                    className="hidden sm:flex z-[75] bg-white rounded-2xl shadow-2xl border border-amber-300/90 ring-1 ring-black/10 overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex-col pointer-events-auto"
-                    onMouseEnter={() => {
-                      if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
-                    }}
-                    onMouseLeave={() => {
-                      hoverTimerRef.current = setTimeout(() => {
-                        setHoveredTableProperty(null);
-                      }, 220);
-                    }}
-                  >
-                    {/* Top Preview Image */}
-                    <div
-                      className="relative w-full h-32 bg-zinc-950 overflow-hidden shrink-0 cursor-pointer group/hoverimg"
-                      onClick={() => {
-                        openPropertyGallery(hoveredTableProperty.property, 'photos');
-                        setHoveredTableProperty(null);
-                      }}
-                      title="Click to view full photo & video gallery"
-                    >
-                      <Image
-                        src={
-                          hoveredTableProperty.property.image ||
-                          'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
-                        }
-                        alt={hoveredTableProperty.property.name}
-                        fill
-                        sizes="320px"
-                        unoptimized
-                        className="object-cover group-hover/hoverimg:scale-105 transition-transform duration-500"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
-
-                      {/* Badges on preview image */}
-                      <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
-                        <span
-                          className={`text-[10px] font-bold px-2 py-0.5 rounded-md backdrop-blur-md shadow-xs ${hoveredTableProperty.property.isCommercial ||
-                            hoveredTableProperty.property.bhk.includes('Commercial')
-                            ? 'bg-blue-950/90 text-blue-200 border border-blue-400/40'
-                            : 'bg-zinc-950/90 text-amber-300 border border-amber-500/40'
-                            }`}
-                        >
-                          {hoveredTableProperty.property.isCommercial ||
-                            hoveredTableProperty.property.bhk.includes('Commercial')
-                            ? 'Commercial'
-                            : 'Verified Listing'}
+              {/* ================= 1. INSTITUTIONAL COMPARISON TABLE (SEEN FIRST) ================= */}
+              {propertyViewMode === 'table' && sortedProperties.length > 0 && (
+                <div id="properties-table-container" className="mb-4 sm:mb-8 bg-white rounded-xl sm:rounded-2xl lg:rounded-3xl shadow-sm border border-zinc-200 overflow-hidden w-full max-w-full">
+                  <div className="bg-zinc-950 p-2 sm:p-3 lg:p-5 text-white flex items-center justify-between gap-2">
+                    <div className="hidden sm:block">
+                      <h3 className="text-lg font-bold flex items-center gap-2 tracking-tight text-white">
+                        <Building2 className="w-5 h-5 text-amber-400" />
+                        <span>
+                          {sortedProperties.length} {sortedProperties.length === 1 ? 'Property' : 'Properties'} Found
                         </span>
-                      </div>
-
-                      <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5">
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-zinc-900/90 text-white backdrop-blur-md uppercase tracking-wider">
-                          {hoveredTableProperty.property.status}
-                        </span>
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-black/60 text-white backdrop-blur-md uppercase tracking-wider group-hover/hoverimg:bg-amber-500 group-hover/hoverimg:text-zinc-950 transition-colors flex items-center gap-1">
-                          <Expand className="w-3 h-3" />
-                          <span>Expand</span>
-                        </span>
-                      </div>
-
-                      {/* Price on preview image */}
-                      <div className="absolute bottom-2 left-3 right-3 flex items-center justify-between text-white">
-                        <div className="text-lg font-black text-white tracking-tight drop-shadow-sm">
-                          {formatPriceDisplay(hoveredTableProperty.property.price)}
-                        </div>
-                      </div>
+                      </h3>
                     </div>
-
-                    {/* Details Content Body */}
-                    <div className="p-3 flex flex-col gap-2 overflow-y-auto max-h-full">
-                      <div>
-                        <h4 className="font-extrabold text-sm text-zinc-950 line-clamp-1 flex items-center gap-1.5">
-                          <span className="truncate">{hoveredTableProperty.property.name}</span>
-                          {hoveredTableProperty.property.hideName && (
-                            <span className="shrink-0 px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
-                              Confidential
-                            </span>
-                          )}
-                        </h4>
-                        <div className="flex items-center gap-1 text-[11px] text-zinc-500 mt-0.5">
-                          <MapPin className="w-3 h-3 text-amber-600 shrink-0" />
-                          <span className="truncate">{hoveredTableProperty.property.location}</span>
-                        </div>
-                      </div>
-
-                      {/* Specifications Grid */}
-                      <div className="grid grid-cols-2 gap-1.5 p-2 bg-zinc-50 rounded-xl border border-zinc-100 text-xs">
-                        <div>
-                          <span className="text-[9px] uppercase tracking-wider text-zinc-400 font-bold block">Typology</span>
-                          <span className="font-extrabold text-zinc-900 truncate block text-[11px]">
-                            {hoveredTableProperty.property.configuration || hoveredTableProperty.property.bhk}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-[9px] uppercase tracking-wider text-zinc-400 font-bold block">Carpet Area</span>
-                          <span className="font-extrabold text-zinc-900 block text-[11px]">
-                            {cleanSqft(hoveredTableProperty.property.sqft)}
-                          </span>
-                        </div>
-                        {(() => {
-                          const bldgOrDev = (hoveredTableProperty.property.developer && !/anv\b/i.test(hoveredTableProperty.property.developer))
-                            ? hoveredTableProperty.property.developer
-                            : (hoveredTableProperty.property.buildingName || (hoveredTableProperty.property as any)?.dossier?.BuildingName);
-                          if (!bldgOrDev) return null;
-                          return (
-                            <div>
-                              <span className="text-[9px] uppercase tracking-wider text-zinc-400 font-bold block">Building / Project</span>
-                              <span className="font-semibold text-zinc-800 truncate block text-[11px]">
-                                {bldgOrDev}
-                              </span>
-                            </div>
-                          );
-                        })()}
-                        <div>
-                          <span className="text-[9px] uppercase tracking-wider text-zinc-400 font-bold block">MahaRERA</span>
-                          <span className="font-mono font-bold text-emerald-700 text-[10px] truncate block">
-                            {hoveredTableProperty.property.reraNumber || 'Verified Registered'}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Short Description */}
-                      <p className="text-[11px] text-zinc-600 line-clamp-2 leading-relaxed whitespace-pre-line">
-                        {formatPropertyDescription(hoveredTableProperty.property.description)}
-                      </p>
-
-                      {/* Action Button: Explore */}
-                      <div className="pt-1.5 border-t border-zinc-100 shrink-0 mt-auto">
-                        <Link
-                          href={getPropertyUrl(hoveredTableProperty.property)}
-                          prefetch={true}
-                          className="w-full py-2 px-3 rounded-xl bg-[#b9974f] hover:bg-[#a4823d] text-zinc-950 text-xs font-black transition flex items-center justify-center gap-1.5 shadow-xs active:scale-95 cursor-pointer"
-                        >
-                          <span>Explore</span>
-                          <ArrowRight className="w-3.5 h-3.5" />
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Show More / Show Less for Comparison Table (Top 4 initially) */}
-                {sortedProperties.length > 4 && (
-                  <div className="p-4 bg-zinc-50 border-t border-zinc-200 text-center flex items-center justify-center">
-                    <button
-                      type="button"
-                      onClick={() => setShowAllComparison(!showAllComparison)}
-                      className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-bold transition shadow-sm cursor-pointer group"
-                    >
-                      <span>
-                        {showAllComparison
-                          ? 'Show Less Comparison (Show Top 4)'
-                          : `Show More Comparison (${sortedProperties.length - 4} More Properties)`}
-                      </span>
-                      <ChevronDown
-                        className={`w-4 h-4 text-amber-400 transition-transform duration-200 ${showAllComparison ? 'rotate-180' : ''
-                          }`}
-                      />
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* ================= 2. PROPERTY PREVIEW CARDS ================= */}
-            {sortedProperties.length > 0 ? (
-              propertyViewMode === 'paragraph' ? (
-                <div id="properties-showcase-container" className="space-y-6">
-                  <div className="flex items-center justify-between pb-1 border-b border-zinc-200/80">
-                    <h3 className="text-sm sm:text-base font-extrabold text-zinc-950 tracking-tight flex items-center gap-2">
-                      <Building2 className="w-4 h-4 text-amber-500" />
-                      <span>Property Showcase (Cards)</span>
-                      <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
-                        {sortedProperties.length} Available
-                      </span>
-                    </h3>
-
-                    <div className="flex items-center gap-1.5 sm:gap-2">
-                      {/* Sort Icon Button for Cards View - Mobile Only (hidden on laptop/desktop) */}
+                    <div className="flex items-center gap-1.5 sm:gap-2.5 flex-wrap ml-auto sm:ml-0">
+                      {/* Dedicated Single Sort By Dropdown - MOBILE ONLY (hidden on laptop and big screens) */}
                       <div className="relative sm:hidden">
                         <button
                           type="button"
                           onClick={() => {
-                            setActiveHeaderDropdown(activeHeaderDropdown === 'sort_cards' ? null : 'sort_cards');
+                            setActiveHeaderDropdown(activeHeaderDropdown === 'sort' ? null : 'sort');
                             setHeaderSearchQuery('');
                           }}
-                          className={`p-1.5 sm:px-2 sm:py-1.5 rounded-xl transition flex items-center justify-center gap-1 shadow-xs cursor-pointer ${sortBy !== 'price_low'
+                          className={`p-2 rounded-xl transition flex items-center justify-center gap-1 shadow-sm cursor-pointer ${sortBy !== 'price_low'
                             ? 'bg-amber-400 text-zinc-950 font-black ring-1 ring-amber-300'
-                            : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-800 border border-zinc-200'
+                            : 'bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-700/80'
                             }`}
                           title={`Sort properties (Active: ${getSortLabel(sortBy)})`}
                           aria-label="Sort properties"
                         >
-                          <ArrowUpDown className={`w-3.5 h-3.5 ${sortBy !== 'price_low' ? 'text-zinc-950' : 'text-amber-600'}`} />
+                          <ArrowUpDown className={`w-4 h-4 ${sortBy !== 'price_low' ? 'text-zinc-950' : 'text-amber-400'}`} />
                         </button>
 
-                        {activeHeaderDropdown === 'sort_cards' && (
+                        {activeHeaderDropdown === 'sort' && (
                           <div
                             ref={headerDropdownRef}
                             className="fixed inset-x-3 bottom-4 max-h-[85vh] overflow-y-auto sm:max-h-none sm:overflow-visible z-[100] sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 w-auto sm:w-88 max-w-sm mx-auto sm:mx-0 shadow-2xl"
@@ -4007,188 +2755,1472 @@ export function HomepageSearchablePortal({
                           </div>
                         )}
                       </div>
+
+                      <Link
+                        href="/compare"
+                        aria-label="Compare properties"
+                        className="text-xs bg-[#b9974f] hover:bg-[#a4823d] text-black font-extrabold p-2 sm:px-4 sm:py-2 rounded-xl transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+                        title="Compare properties"
+                      >
+                        <Scale className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+                        <span className="hidden sm:inline">Compare</span>
+                      </Link>
+
+                      <button
+                        type="button"
+                        onClick={handleShareWhatsApp}
+                        aria-label="Share properties on WhatsApp"
+                        className="text-xs bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold p-2 sm:px-4 sm:py-2 rounded-xl transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer active:scale-95"
+                        title="Share on WhatsApp"
+                      >
+                        <svg viewBox="0 0 32 32" className="w-4 h-4 sm:w-3.5 sm:h-3.5 fill-white shrink-0" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M16 2C8.28 2 2 8.28 2 16c0 2.66.75 5.15 2.05 7.29L2.3 29.7l6.63-1.74A13.9 13.9 0 0016 30c7.72 0 14-6.28 14-14S23.72 2 16 2zm8.17 19.83c-.34.96-1.7 1.76-2.76 1.99-.73.16-1.68.29-4.88-1.04-4.09-1.69-6.72-5.83-6.93-6.1-.2-.28-1.67-2.22-1.67-4.23s1.05-3.01 1.43-3.42c.38-.41.82-.51 1.1-.51.27 0 .55 0 .79.02.25.01.59-.1.92.7.34.82 1.16 2.83 1.26 3.04.1.2.17.44.03.71-.13.27-.2.44-.4.68-.2.24-.43.53-.61.71-.21.21-.43.44-.19.86.25.41 1.09 1.8 2.34 2.91 1.61 1.43 2.97 1.88 3.39 2.09.42.2.67.18.92-.1.25-.28 1.07-1.24 1.35-1.67.28-.43.56-.36.94-.22.38.14 2.42 1.14 2.83 1.35.41.2.69.31.79.48.1.18.1 1.02-.24 1.98z" />
+                        </svg>
+                        <span className="hidden sm:inline">Share</span>
+                      </button>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {displayedCardProperties.map((property) => (
-                      <PropertyCard
-                        key={property.id}
-                        property={property}
-                        onInstantEnquiry={handleInstantEnquiry}
-                        onQuickView={(p) => {
-                          setSelectedDetailsProperty(p);
-                          setDetailsModalOpen(true);
+                  {/* ================= DESKTOP VIEW: COMPARISON TABLE (HORIZONTAL SCROLL ON DESKTOP ONLY) ================= */}
+                  <div className="hidden sm:block overflow-x-auto text-xs w-full">
+                    <table className="w-full text-left min-w-[700px]">
+                      <thead className="bg-zinc-50 text-zinc-600 font-bold border-b border-zinc-200">
+                        <tr>
+                          {/* 1. Property & Developer */}
+                          <th className="px-5 py-3 relative">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setActiveHeaderDropdown(activeHeaderDropdown === 'developer' ? null : 'developer');
+                                  setHeaderSearchQuery('');
+                                }}
+                                className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${selectedDeveloper !== 'All' || ['name_asc', 'name_desc', 'developer_asc'].includes(sortBy)
+                                  ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                                  : 'text-zinc-700 hover:bg-zinc-100'
+                                  }`}
+                              >
+                                <span>Property &amp; Developer</span>
+                                <ChevronDown
+                                  className={`w-3.5 h-3.5 transition-transform duration-200 ${activeHeaderDropdown === 'developer' ? 'rotate-180 text-amber-600' : 'text-zinc-500'
+                                    }`}
+                                />
+                              </button>
+
+                              {selectedDeveloper !== 'All' && (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">
+                                  <span>{selectedDeveloper}</span>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedDeveloper('All');
+                                    }}
+                                    className="text-amber-700 hover:text-black cursor-pointer font-black"
+                                    title="Clear developer filter"
+                                  >
+                                    ×
+                                  </button>
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Popover */}
+                            {activeHeaderDropdown === 'developer' && (
+                              <div
+                                ref={headerDropdownRef}
+                                className="absolute left-3 top-full mt-1.5 w-64 sm:w-72 bg-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.18)] border border-zinc-200 ring-1 ring-black/5 p-2.5 z-[90] animate-in fade-in zoom-in-95 duration-150 font-normal select-none text-left"
+                              >
+                                {/* Small Search Box */}
+                                <div className="relative mb-2">
+                                  <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                  <input
+                                    type="text"
+                                    autoFocus
+                                    value={headerSearchQuery}
+                                    onChange={(e) => setHeaderSearchQuery(e.target.value)}
+                                    placeholder="Search property or developer..."
+                                    className="w-full pl-8 pr-7 py-1.5 bg-zinc-50 border border-zinc-200 rounded-xl text-xs text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-amber-400 focus:bg-white transition"
+                                  />
+                                  {headerSearchQuery && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setHeaderSearchQuery('')}
+                                      className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700 text-xs font-bold cursor-pointer"
+                                    >
+                                      ×
+                                    </button>
+                                  )}
+                                </div>
+
+                                <div className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider px-2 py-1">
+                                  Sort Properties
+                                </div>
+
+                                <div className="space-y-0.5 text-xs mb-2">
+                                  {[
+                                    { label: 'Default (Featured & Relevancy)', value: 'relevance' },
+                                    { label: 'Property Name: A → Z', value: 'name_asc' },
+                                    { label: 'Property Name: Z → A', value: 'name_desc' },
+                                    { label: 'Developer: A → Z', value: 'developer_asc' }
+                                  ]
+                                    .filter((opt) => !headerSearchQuery || opt.label.toLowerCase().includes(headerSearchQuery.toLowerCase()))
+                                    .map((opt) => {
+                                      const isSelected = sortBy === opt.value || (sortBy === '' && opt.value === 'relevance');
+                                      return (
+                                        <button
+                                          key={opt.value}
+                                          type="button"
+                                          onClick={() => {
+                                            setSortBy(opt.value);
+                                            setActiveHeaderDropdown(null);
+                                          }}
+                                          className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${isSelected ? 'bg-amber-50 font-bold text-amber-900' : 'text-zinc-700 hover:bg-zinc-100'
+                                            }`}
+                                        >
+                                          <span>{opt.label}</span>
+                                          {isSelected && <Check className="w-3.5 h-3.5 text-amber-600 shrink-0" />}
+                                        </button>
+                                      );
+                                    })}
+                                </div>
+
+                                {/* Developers Filter Section */}
+                                {availableDevelopers.length > 0 && (
+                                  <div className="pt-2 border-t border-zinc-100">
+                                    <div className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider px-2 py-1">
+                                      Filter By Developer
+                                    </div>
+                                    <div className="max-h-40 overflow-y-auto space-y-0.5 text-xs pr-1">
+                                      {(!headerSearchQuery || 'all developers'.includes(headerSearchQuery.toLowerCase())) && (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setSelectedDeveloper('All');
+                                            setActiveHeaderDropdown(null);
+                                          }}
+                                          className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${selectedDeveloper === 'All'
+                                            ? 'bg-amber-50 font-bold text-amber-900'
+                                            : 'text-zinc-700 hover:bg-zinc-100'
+                                            }`}
+                                        >
+                                          <span>All Developers</span>
+                                          {selectedDeveloper === 'All' && <Check className="w-3.5 h-3.5 text-amber-600 shrink-0" />}
+                                        </button>
+                                      )}
+
+                                      {filteredHeaderDevelopers.map((dev) => {
+                                        const isSelected = selectedDeveloper.toLowerCase() === dev.toLowerCase();
+                                        return (
+                                          <button
+                                            key={dev}
+                                            type="button"
+                                            onClick={() => {
+                                              setSelectedDeveloper(isSelected ? 'All' : dev);
+                                              setActiveHeaderDropdown(null);
+                                            }}
+                                            className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${isSelected
+                                              ? 'bg-amber-50 font-bold text-amber-900'
+                                              : 'text-zinc-700 hover:bg-zinc-100'
+                                              }`}
+                                          >
+                                            <span className="truncate">{dev}</span>
+                                            {isSelected && <Check className="w-3.5 h-3.5 text-amber-600 shrink-0" />}
+                                          </button>
+                                        );
+                                      })}
+
+                                      {filteredHeaderDevelopers.length === 0 && headerSearchQuery && (
+                                        <div className="p-3 text-center text-xs text-zinc-400">
+                                          No developers matching "{headerSearchQuery}"
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {(selectedDeveloper !== 'All' || ['name_asc', 'name_desc', 'developer_asc'].includes(sortBy)) && (
+                                  <div className="pt-2 mt-2 border-t border-zinc-100 text-right">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setSelectedDeveloper('All');
+                                        setSortBy('relevance');
+                                        setActiveHeaderDropdown(null);
+                                      }}
+                                      className="text-[11px] font-bold text-amber-700 hover:text-amber-800 cursor-pointer"
+                                    >
+                                      Reset Developer &amp; Sort
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </th>
+
+                          {/* 2. Locality */}
+                          <th className="px-5 py-3 relative">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setActiveHeaderDropdown(activeHeaderDropdown === 'locality' ? null : 'locality');
+                                  setHeaderSearchQuery('');
+                                }}
+                                className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${selectedLocality !== 'All' || ['locality_asc', 'locality_desc'].includes(sortBy)
+                                  ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                                  : 'text-zinc-700 hover:bg-zinc-100'
+                                  }`}
+                              >
+                                <span>Locality</span>
+                                <ChevronDown
+                                  className={`w-3.5 h-3.5 transition-transform duration-200 ${activeHeaderDropdown === 'locality' ? 'rotate-180 text-amber-600' : 'text-zinc-500'
+                                    }`}
+                                />
+                              </button>
+
+                              {selectedLocality !== 'All' && (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">
+                                  <span>{selectedLocality}</span>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedLocality('All');
+                                    }}
+                                    className="text-amber-700 hover:text-black cursor-pointer font-black"
+                                    title="Clear location filter"
+                                  >
+                                    ×
+                                  </button>
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Popover */}
+                            {activeHeaderDropdown === 'locality' && (
+                              <div
+                                ref={headerDropdownRef}
+                                className="absolute left-3 top-full mt-1.5 w-64 sm:w-72 bg-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.18)] border border-zinc-200 ring-1 ring-black/5 p-2.5 z-[90] animate-in fade-in zoom-in-95 duration-150 font-normal select-none text-left"
+                              >
+                                {/* Small Search Box */}
+                                <div className="relative mb-2">
+                                  <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                  <input
+                                    type="text"
+                                    autoFocus
+                                    value={headerSearchQuery}
+                                    onChange={(e) => setHeaderSearchQuery(e.target.value)}
+                                    placeholder="Search locality (e.g. Baner, Wakad)..."
+                                    className="w-full pl-8 pr-7 py-1.5 bg-zinc-50 border border-zinc-200 rounded-xl text-xs text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-amber-400 focus:bg-white transition"
+                                  />
+                                  {headerSearchQuery && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setHeaderSearchQuery('')}
+                                      className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700 text-xs font-bold cursor-pointer"
+                                    >
+                                      ×
+                                    </button>
+                                  )}
+                                </div>
+
+                                {/* Quick Sort Actions */}
+                                <div className="pb-1.5 mb-1.5 border-b border-zinc-100 flex items-center justify-between text-[11px]">
+                                  <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">Sort:</span>
+                                  <div className="flex items-center gap-1">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setSortBy(sortBy === 'locality_asc' ? 'relevance' : 'locality_asc');
+                                        setActiveHeaderDropdown(null);
+                                      }}
+                                      className={`px-2 py-0.5 rounded text-[10px] font-bold transition cursor-pointer ${sortBy === 'locality_asc' ? 'bg-amber-500 text-zinc-950' : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
+                                        }`}
+                                    >
+                                      A → Z
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setSortBy(sortBy === 'locality_desc' ? 'relevance' : 'locality_desc');
+                                        setActiveHeaderDropdown(null);
+                                      }}
+                                      className={`px-2 py-0.5 rounded text-[10px] font-bold transition cursor-pointer ${sortBy === 'locality_desc' ? 'bg-amber-500 text-zinc-950' : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
+                                        }`}
+                                    >
+                                      Z → A
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {/* Scrollable Localities List */}
+                                <div className="max-h-52 overflow-y-auto space-y-0.5 text-xs pr-1">
+                                  {(!headerSearchQuery || 'all locations'.includes(headerSearchQuery.toLowerCase())) && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setSelectedLocality('All');
+                                        setActiveHeaderDropdown(null);
+                                      }}
+                                      className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${selectedLocality === 'All'
+                                        ? 'bg-amber-50 font-bold text-amber-900'
+                                        : 'text-zinc-700 hover:bg-zinc-100'
+                                        }`}
+                                    >
+                                      <span>All Locations (Default)</span>
+                                      {selectedLocality === 'All' && <Check className="w-3.5 h-3.5 text-amber-600" />}
+                                    </button>
+                                  )}
+
+                                  {filteredHeaderLocalities.map((loc) => {
+                                    const isSelected = selectedLocality.toLowerCase() === loc.toLowerCase();
+                                    return (
+                                      <button
+                                        key={loc}
+                                        type="button"
+                                        onClick={() => {
+                                          setSelectedLocality(isSelected ? 'All' : loc);
+                                          setActiveHeaderDropdown(null);
+                                        }}
+                                        className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${isSelected
+                                          ? 'bg-amber-50 font-bold text-amber-900'
+                                          : 'text-zinc-700 hover:bg-zinc-100'
+                                          }`}
+                                      >
+                                        <span className="truncate">{loc}</span>
+                                        {isSelected && <Check className="w-3.5 h-3.5 text-amber-600 shrink-0" />}
+                                      </button>
+                                    );
+                                  })}
+
+                                  {filteredHeaderLocalities.length === 0 && headerSearchQuery && (
+                                    <div className="p-3 text-center text-xs text-zinc-400">
+                                      No localities matching "{headerSearchQuery}"
+                                    </div>
+                                  )}
+                                </div>
+
+                                {(selectedLocality !== 'All' || ['locality_asc', 'locality_desc'].includes(sortBy)) && (
+                                  <div className="pt-2 mt-2 border-t border-zinc-100 text-right">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setSelectedLocality('All');
+                                        if (['locality_asc', 'locality_desc'].includes(sortBy)) setSortBy('relevance');
+                                        setActiveHeaderDropdown(null);
+                                      }}
+                                      className="text-[11px] font-bold text-amber-700 hover:text-amber-800 cursor-pointer"
+                                    >
+                                      Reset Filter &amp; Sort
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </th>
+
+                          {/* 3. Typography */}
+                          <th className="px-5 py-3 relative">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setActiveHeaderDropdown(activeHeaderDropdown === 'typography' ? null : 'typography');
+                                  setHeaderSearchQuery('');
+                                }}
+                                className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${selectedBhk !== 'All' ||
+                                  ['typography_asc', 'typography_desc'].includes(sortBy)
+                                  ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                                  : 'text-zinc-700 hover:bg-zinc-100'
+                                  }`}
+                              >
+                                <span>Typology</span>
+                                <ChevronDown
+                                  className={`w-3.5 h-3.5 transition-transform duration-200 ${activeHeaderDropdown === 'typography' ? 'rotate-180 text-amber-600' : 'text-zinc-500'
+                                    }`}
+                                />
+                              </button>
+
+                              {selectedBhk !== 'All' && (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">
+                                  <span>{selectedBhk}</span>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedBhk('All');
+                                    }}
+                                    className="text-amber-700 hover:text-black cursor-pointer font-black"
+                                    title="Clear configuration filter"
+                                  >
+                                    ×
+                                  </button>
+                                </span>
+                              )}
+
+                              {['typography_asc', 'typography_desc'].includes(sortBy) && (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">
+                                  <span>{sortBy === 'typography_asc' ? 'A → Z' : 'Z → A'}</span>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSortBy('relevance');
+                                    }}
+                                    className="text-amber-700 hover:text-black cursor-pointer font-black"
+                                    title="Clear sort"
+                                  >
+                                    ×
+                                  </button>
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Popover */}
+                            {activeHeaderDropdown === 'typography' && (
+                              <div
+                                ref={headerDropdownRef}
+                                className="absolute left-3 top-full mt-1.5 w-72 sm:w-80 bg-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.18)] border border-zinc-200 ring-1 ring-black/5 p-2.5 z-[90] animate-in fade-in zoom-in-95 duration-150 font-normal select-none text-left"
+                              >
+                                {/* Small Search Box */}
+                                <div className="relative mb-2">
+                                  <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                  <input
+                                    type="text"
+                                    autoFocus
+                                    value={headerSearchQuery}
+                                    onChange={(e) => setHeaderSearchQuery(e.target.value)}
+                                    placeholder="Search typology (e.g. 3 BHK, Office)..."
+                                    className="w-full pl-8 pr-7 py-1.5 bg-zinc-50 border border-zinc-200 rounded-xl text-xs text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-amber-400 focus:bg-white transition"
+                                  />
+                                  {headerSearchQuery && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setHeaderSearchQuery('')}
+                                      className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700 text-xs font-bold cursor-pointer"
+                                    >
+                                      ×
+                                    </button>
+                                  )}
+                                </div>
+
+                                {/* Quick Sort Actions */}
+                                <div className="pb-1.5 mb-1.5 border-b border-zinc-100 flex items-center justify-between text-[11px]">
+                                  <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">Sort:</span>
+                                  <div className="flex items-center gap-1">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setSortBy(sortBy === 'typography_asc' ? 'relevance' : 'typography_asc');
+                                        setActiveHeaderDropdown(null);
+                                      }}
+                                      className={`px-2 py-0.5 rounded text-[10px] font-bold transition cursor-pointer ${sortBy === 'typography_asc' ? 'bg-amber-500 text-zinc-950' : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
+                                        }`}
+                                    >
+                                      A → Z
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setSortBy(sortBy === 'typography_desc' ? 'relevance' : 'typography_desc');
+                                        setActiveHeaderDropdown(null);
+                                      }}
+                                      className={`px-2 py-0.5 rounded text-[10px] font-bold transition cursor-pointer ${sortBy === 'typography_desc' ? 'bg-amber-500 text-zinc-950' : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
+                                        }`}
+                                    >
+                                      Z → A
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {/* Scrollable Typologies List */}
+                                <div className="max-h-52 overflow-y-auto space-y-0.5 text-xs pr-1">
+                                  {(!headerSearchQuery || 'all configurations'.includes(headerSearchQuery.toLowerCase())) && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setSelectedBhk('All');
+                                        setActiveHeaderDropdown(null);
+                                      }}
+                                      className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${selectedBhk === 'All'
+                                        ? 'bg-amber-50 font-bold text-amber-900'
+                                        : 'text-zinc-700 hover:bg-zinc-100'
+                                        }`}
+                                    >
+                                      <span>All Configurations (Default)</span>
+                                      {selectedBhk === 'All' && <Check className="w-3.5 h-3.5 text-amber-600" />}
+                                    </button>
+                                  )}
+
+                                  {filteredHeaderTypologies.map((t) => {
+                                    const isSelected = selectedBhk.toLowerCase() === t.value.toLowerCase();
+                                    return (
+                                      <button
+                                        key={t.value}
+                                        type="button"
+                                        onClick={() => {
+                                          setSelectedBhk(isSelected ? 'All' : t.value);
+                                          setActiveHeaderDropdown(null);
+                                        }}
+                                        className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${isSelected
+                                          ? 'bg-amber-50 font-bold text-amber-900'
+                                          : 'text-zinc-700 hover:bg-zinc-100'
+                                          }`}
+                                      >
+                                        <div className="flex items-center gap-1.5 truncate">
+                                          <span className="truncate">{t.label}</span>
+                                          {t.group && (
+                                            <span className="text-[9px] text-zinc-400 font-mono">({t.group})</span>
+                                          )}
+                                        </div>
+                                        {isSelected && <Check className="w-3.5 h-3.5 text-amber-600 shrink-0" />}
+                                      </button>
+                                    );
+                                  })}
+
+                                  {filteredHeaderTypologies.length === 0 && headerSearchQuery && (
+                                    <div className="p-3 text-center text-xs text-zinc-400">
+                                      No typologies matching "{headerSearchQuery}"
+                                    </div>
+                                  )}
+                                </div>
+
+                                {(selectedBhk !== 'All' ||
+                                  ['typography_asc', 'typography_desc'].includes(sortBy)) && (
+                                    <div className="pt-2 mt-2 border-t border-zinc-100 text-right">
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setSelectedBhk('All');
+                                          if (['typography_asc', 'typography_desc'].includes(sortBy)) {
+                                            setSortBy('relevance');
+                                          }
+                                          setActiveHeaderDropdown(null);
+                                        }}
+                                        className="text-[11px] font-bold text-amber-700 hover:text-amber-800 cursor-pointer"
+                                      >
+                                        Reset Filter &amp; Sort
+                                      </button>
+                                    </div>
+                                  )}
+                              </div>
+                            )}
+                          </th>
+
+                          {/* 4. Price */}
+                          <th className="px-5 py-3 relative">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setActiveHeaderDropdown(activeHeaderDropdown === 'price' ? null : 'price');
+                                  setHeaderSearchQuery('');
+                                }}
+                                className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${selectedPriceRange !== 'All' || sortBy === 'price_high'
+                                  ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                                  : 'text-zinc-700 hover:bg-zinc-100'
+                                  }`}
+                              >
+                                <span>Price</span>
+                                <ChevronDown
+                                  className={`w-3.5 h-3.5 transition-transform duration-200 ${activeHeaderDropdown === 'price' ? 'rotate-180 text-amber-600' : 'text-zinc-500'
+                                    }`}
+                                />
+                              </button>
+
+                              {sortBy === 'price_high' && (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">
+                                  <span>High → Low</span>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSortBy('price_low');
+                                    }}
+                                    className="text-amber-700 hover:text-black cursor-pointer font-black"
+                                    title="Reset price sort"
+                                  >
+                                    ×
+                                  </button>
+                                </span>
+                              )}
+
+                              {selectedPriceRange !== 'All' && (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">
+                                  <span>{selectedPriceRange}</span>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedPriceRange('All');
+                                    }}
+                                    className="text-amber-700 hover:text-black cursor-pointer font-black"
+                                    title="Clear price filter"
+                                  >
+                                    ×
+                                  </button>
+                                </span>
+                              )}
+
+                              {selectedStatus !== 'All' && (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">
+                                  <span>{selectedStatus}</span>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedStatus('All');
+                                    }}
+                                    className="text-amber-700 hover:text-black cursor-pointer font-black"
+                                    title="Clear status filter"
+                                  >
+                                    ×
+                                  </button>
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Dedicated Price Sort & Filter Popover */}
+                            {activeHeaderDropdown === 'price' && (
+                              <div
+                                ref={headerDropdownRef}
+                                className="absolute right-0 top-full mt-1.5 w-64 sm:w-72 bg-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.18)] border border-zinc-200 ring-1 ring-black/5 p-3 z-[90] animate-in fade-in zoom-in-95 duration-150 font-normal select-none text-left space-y-3 text-zinc-900"
+                              >
+                                {/* Header */}
+                                <div className="flex items-center justify-between border-b border-zinc-100 pb-2">
+                                  <div className="text-xs font-black text-zinc-900 uppercase tracking-wider flex items-center gap-1.5">
+                                    <Tag className="w-3.5 h-3.5 text-amber-600" />
+                                    <span>Sort &amp; Filter Price</span>
+                                  </div>
+                                  {(sortBy !== 'price_low' || selectedPriceRange !== 'All') && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setSortBy('price_low');
+                                        setSelectedPriceRange('All');
+                                        setActiveHeaderDropdown(null);
+                                      }}
+                                      className="text-[11px] font-bold text-amber-700 hover:text-amber-800 cursor-pointer"
+                                    >
+                                      Reset Price
+                                    </button>
+                                  )}
+                                </div>
+
+                                {/* Price Sort Order */}
+                                <div>
+                                  <div className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider mb-1.5">
+                                    Sort By Price
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-1.5 text-xs">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setSortBy('price_low');
+                                        setActiveHeaderDropdown(null);
+                                      }}
+                                      className={`px-2.5 py-2 rounded-xl text-left transition flex items-center justify-between cursor-pointer ${sortBy === 'price_low'
+                                        ? 'bg-[#b9974f] font-black text-zinc-950 shadow-xs'
+                                        : 'bg-zinc-50 hover:bg-zinc-100 text-zinc-700 border border-zinc-200/80'
+                                        }`}
+                                    >
+                                      <span>Low to High</span>
+                                      {sortBy === 'price_low' && <Check className="w-3.5 h-3.5 text-zinc-950 stroke-[2.5]" />}
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setSortBy('price_high');
+                                        setActiveHeaderDropdown(null);
+                                      }}
+                                      className={`px-2.5 py-2 rounded-xl text-left transition flex items-center justify-between cursor-pointer ${sortBy === 'price_high'
+                                        ? 'bg-[#b9974f] font-black text-zinc-950 shadow-xs'
+                                        : 'bg-zinc-50 hover:bg-zinc-100 text-zinc-700 border border-zinc-200/80'
+                                        }`}
+                                    >
+                                      <span>High to Low</span>
+                                      {sortBy === 'price_high' && <Check className="w-3.5 h-3.5 text-zinc-950 stroke-[2.5]" />}
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {/* Filter by Budget / Price Range */}
+                                {filterOptions?.priceRanges && filterOptions.priceRanges.length > 0 && (
+                                  <div className="pt-2 border-t border-zinc-100">
+                                    <div className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider mb-1.5">
+                                      Filter By Budget / Price
+                                    </div>
+                                    <div className="space-y-1 text-xs">
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setSelectedPriceRange('All');
+                                          setActiveHeaderDropdown(null);
+                                        }}
+                                        className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${selectedPriceRange === 'All'
+                                          ? 'bg-amber-50 font-bold text-amber-900'
+                                          : 'text-zinc-700 hover:bg-zinc-100'
+                                          }`}
+                                      >
+                                        <span>All Budgets (Default)</span>
+                                        {selectedPriceRange === 'All' && <Check className="w-3.5 h-3.5 text-amber-600" />}
+                                      </button>
+
+                                      {filterOptions.priceRanges.map((range) => {
+                                        const isSelected = selectedPriceRange === range.value;
+                                        return (
+                                          <button
+                                            key={range.value}
+                                            type="button"
+                                            onClick={() => {
+                                              setSelectedPriceRange(isSelected ? 'All' : range.value);
+                                              setActiveHeaderDropdown(null);
+                                            }}
+                                            className={`w-full px-2.5 py-1.5 rounded-lg text-left transition flex items-center justify-between cursor-pointer ${isSelected
+                                              ? 'bg-amber-50 font-bold text-amber-900'
+                                              : 'text-zinc-700 hover:bg-zinc-100'
+                                              }`}
+                                          >
+                                            <span>{range.label}</span>
+                                            {isSelected && <Check className="w-3.5 h-3.5 text-amber-600 shrink-0" />}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </th>
+
+                          {/* 5. Site Visit */}
+                          <th className="px-5 py-3 text-right font-bold text-zinc-700 whitespace-nowrap">Site Visit</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-zinc-100">
+                        {displayedComparisonProperties.map((row, rowIdx) => (
+                          <tr
+                            key={row.id}
+                            className="hover:bg-amber-50/50 transition-colors group"
+                          >
+                            {/* 1. Property & Developer - ONLY hovering this area opens the preview card */}
+                            <td
+                              className="px-5 py-3.5 cursor-pointer"
+                              onMouseEnter={(e) => handleTablePropertyHover(e, row)}
+                              onMouseMove={(e) => {
+                                if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+                                if (!hoveredTableProperty || hoveredTableProperty.property.id !== row.id) {
+                                  handleTablePropertyHover(e, row);
+                                }
+                              }}
+                              onMouseLeave={handleTablePropertyLeave}
+                            >
+                              <div className="flex items-center gap-3">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    openPropertyGallery(row, 'photos');
+                                  }}
+                                  className="relative w-12 h-12 rounded-xl overflow-hidden shrink-0 border border-zinc-200 hover:border-amber-500 hover:ring-2 hover:ring-amber-400/30 shadow-2xs bg-zinc-100 block group/thumb cursor-pointer text-left"
+                                  title={`Click to view photo & video gallery for ${row.name}`}
+                                >
+                                  <Image
+                                    src={
+                                      row.image ||
+                                      'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
+                                    }
+                                    alt={row.name}
+                                    fill
+                                    sizes="48px"
+                                    unoptimized
+                                    className="object-cover group-hover/thumb:scale-110 transition-transform duration-500"
+                                  />
+                                  <div className="absolute inset-0 bg-black/35 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex items-center justify-center">
+                                    <div className="w-6 h-6 rounded-lg bg-black/70 backdrop-blur-xs flex items-center justify-center text-white border border-white/20 shadow-xs">
+                                      <Expand className="w-3.5 h-3.5 text-white drop-shadow stroke-[2.5]" />
+                                    </div>
+                                  </div>
+                                </button>
+                                <div className="min-w-0">
+                                  <Link
+                                    href={getPropertyUrl(row)}
+                                    prefetch={true}
+                                    className="font-bold text-zinc-900 group-hover:text-amber-700 hover:underline block truncate max-w-xs sm:max-w-sm transition-colors"
+                                  >
+                                    <span className="inline-flex items-center gap-1.5 flex-wrap">
+                                      <span className="truncate">{row.name}</span>
+                                      {row.hideName && (
+                                        <span className="shrink-0 px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                                          Confidential
+                                        </span>
+                                      )}
+                                      {row.searchBadges && row.searchBadges.length > 0 && (
+                                        row.searchBadges.map((badge, bIdx) => (
+                                          <span
+                                            key={bIdx}
+                                            className={`shrink-0 px-1.5 py-0.2 rounded text-[9px] font-bold border ${badge.includes('Exact')
+                                              ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                                              : badge.includes('Nearby')
+                                                ? 'bg-blue-50 text-blue-800 border-blue-300'
+                                                : badge.includes('Above')
+                                                  ? 'bg-orange-50 text-orange-800 border-orange-300'
+                                                  : 'bg-amber-50 text-amber-900 border-amber-300'
+                                              }`}
+                                          >
+                                            {badge}
+                                          </span>
+                                        ))
+                                      )}
+                                    </span>
+                                  </Link>
+                                  {row.developer &&
+                                    !/anv\b/i.test(row.developer) && (
+                                      <div className="text-[10px] text-zinc-400 truncate mt-0.5">
+                                        {row.developer}
+                                      </div>
+                                    )}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-5 py-3.5" onMouseEnter={handleTablePropertyLeave}>
+                              <span className="font-semibold text-zinc-800">{row.locality || 'Pune'}</span>
+                            </td>
+                            <td className="px-5 py-3.5" onMouseEnter={handleTablePropertyLeave}>
+                              {(() => {
+                                const rawVal = row.configuration || row.bhk || '';
+                                const isPreleased = /\b(?:preleased|pre-leased)\b/i.test(rawVal);
+                                const isPreLaunch = /\b(?:prelaunch|pre-launch)\b/i.test(rawVal);
+                                const isNew = /\bnew\b/i.test(rawVal);
+                                const baseCategory = rawVal
+                                  .replace(/\s*\((?:Preleased|New|PreLaunch|Pre-Launch)\)\s*/gi, '')
+                                  .replace(/^(?:Preleased|Pre-Leased|New|PreLaunch|Pre-Launch)\s+/gi, '')
+                                  .trim();
+
+                                return (
+                                  <div>
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      <span className="font-bold text-zinc-800">{baseCategory || rawVal}</span>
+                                      {isPreleased && (
+                                        <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-amber-100 text-amber-900 border border-amber-300">
+                                          Preleased
+                                        </span>
+                                      )}
+                                      {isPreLaunch && (
+                                        <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-purple-100 text-purple-900 border border-purple-300">
+                                          PreLaunch
+                                        </span>
+                                      )}
+                                      {isNew && !isPreleased && !isPreLaunch && (
+                                        <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300">
+                                          New
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="text-[10px] text-zinc-400 font-medium">{cleanSqft(row.sqft)}</div>
+                                  </div>
+                                );
+                              })()}
+                            </td>
+                            <td className="px-5 py-3.5" onMouseEnter={handleTablePropertyLeave}>
+                              {formatPriceDisplay(row.price) === 'Price on Request' || row.hidePrice ? (
+                                <button
+                                  type="button"
+                                  onClick={() => handleInstantEnquiry(row)}
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#b9974f] hover:bg-[#a4823d] text-zinc-950 font-bold text-xs transition cursor-pointer shadow-2xs"
+                                >
+                                  <Lock className="w-3 h-3 text-zinc-950" />
+                                  <span>Request Price</span>
+                                </button>
+                              ) : (
+                                <>
+                                  <div className="font-black text-zinc-950">{formatPriceDisplay(row.price)}</div>
+                                  <div className="text-[10px] text-zinc-400">{row.status}</div>
+                                </>
+                              )}
+                            </td>
+                            <td className="px-5 py-3.5 text-right whitespace-nowrap" onMouseEnter={handleTablePropertyLeave}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedPropertyForSiteVisit(row);
+                                  setSiteVisitModalOpen(true);
+                                }}
+                                className="inline-flex items-center justify-center p-2 rounded-xl bg-[#b9974f] hover:bg-[#a4823d] text-zinc-950 shadow-xs hover:shadow-md transition-all cursor-pointer active:scale-95 group"
+                                title={`Book VIP Site Visit for ${row.name}`}
+                                aria-label={`Book VIP Site Visit for ${row.name}`}
+                              >
+                                <Calendar className="w-4 h-4 text-zinc-950 stroke-[2.5]" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* ================= MOBILE VIEW: RESPONSIVE CARDS (ZERO HORIZONTAL SCROLL) ================= */}
+                  <div className="sm:hidden w-full bg-white divide-y divide-zinc-100">
+                    {/* Mobile Property List Cards */}
+
+                    {/* Mobile Property List Cards */}
+                    {displayedComparisonProperties.length === 0 ? (
+                      <div className="p-8 text-center bg-zinc-50/50">
+                        <Building2 className="w-8 h-8 text-zinc-300 mx-auto mb-2" />
+                        <p className="text-xs font-bold text-zinc-700">No properties match your active filters.</p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedLocality('All');
+                            setSelectedBhk('All');
+                            setSelectedStatus('All');
+                            setSelectedDeveloper('All');
+                            setSortBy('price_low');
+                          }}
+                          className="mt-3 text-xs font-bold text-amber-700 hover:text-amber-800 underline cursor-pointer"
+                        >
+                          Reset all filters
+                        </button>
+                      </div>
+                    ) : (
+                      displayedComparisonProperties.map((row, mRowIdx) => (
+                        <div key={row.id} className="p-3.5 bg-white space-y-2.5 hover:bg-amber-50/30 transition-colors">
+                          {/* 1. Property & Developer */}
+                          <div className="flex items-start gap-3">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                openPropertyGallery(row, 'photos');
+                              }}
+                              className="relative w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-zinc-200 shadow-2xs bg-zinc-100 block group/thumb cursor-pointer text-left active:scale-95 transition-transform"
+                              title={`Click to view photo & video gallery for ${row.name}`}
+                            >
+                              <Image
+                                src={
+                                  row.image ||
+                                  'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
+                                }
+                                alt={row.name}
+                                fill
+                                sizes="64px"
+                                unoptimized
+                                className="object-cover"
+                              />
+                              <div className="absolute inset-0 bg-black/35 flex items-center justify-center">
+                                <div className="w-6 h-6 rounded-lg bg-black/70 backdrop-blur-xs flex items-center justify-center text-white border border-white/20 shadow-xs">
+                                  <Expand className="w-3.5 h-3.5 text-white drop-shadow stroke-[2.5]" />
+                                </div>
+                              </div>
+                            </button>
+
+                            <div className="flex-1 min-w-0">
+                              <Link
+                                href={getPropertyUrl(row)}
+                                prefetch={true}
+                                className="font-bold text-zinc-950 text-sm leading-snug line-clamp-2 hover:text-amber-700 active:text-amber-800 transition-colors"
+                              >
+                                <span className="inline-flex items-center gap-1.5 flex-wrap">
+                                  <span>{row.name}</span>
+                                  {row.hideName && (
+                                    <span className="shrink-0 px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                                      Confidential
+                                    </span>
+                                  )}
+                                  {row.searchBadges && row.searchBadges.length > 0 && (
+                                    row.searchBadges.map((badge, bIdx) => (
+                                      <span
+                                        key={bIdx}
+                                        className={`shrink-0 px-1.5 py-0.2 rounded text-[9px] font-bold border ${badge.includes('Exact')
+                                          ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                                          : badge.includes('Nearby')
+                                            ? 'bg-blue-50 text-blue-800 border-blue-300'
+                                            : badge.includes('Above')
+                                              ? 'bg-orange-50 text-orange-800 border-orange-300'
+                                              : 'bg-amber-50 text-amber-900 border-amber-300'
+                                          }`}
+                                      >
+                                        {badge}
+                                      </span>
+                                    ))
+                                  )}
+                                </span>
+                              </Link>
+                              {(() => {
+                                const bldgOrDev = (row.developer && !/anv\b/i.test(row.developer))
+                                  ? row.developer
+                                  : (row.buildingName || (row as any)?.dossier?.BuildingName);
+                                if (!bldgOrDev) return null;
+                                return (
+                                  <div className="text-[11px] text-zinc-500 font-medium truncate mt-0.5 flex items-center gap-1">
+                                    <Building2 className="w-3 h-3 text-zinc-400 shrink-0" />
+                                    <span>{bldgOrDev}</span>
+                                  </div>
+                                );
+                              })()}
+                            </div>
+                          </div>
+
+                          {/* 2. Price & Status */}
+                          <div className="grid grid-cols-2 gap-2 bg-zinc-50/90 p-2.5 rounded-xl border border-zinc-100 text-xs">
+                            {/* Price */}
+                            <div>
+                              <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider block">Price</span>
+                              {formatPriceDisplay(row.price) === 'Price on Request' || row.hidePrice ? (
+                                <button
+                                  type="button"
+                                  onClick={() => handleInstantEnquiry(row)}
+                                  className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#b9974f] hover:bg-[#a4823d] text-zinc-950 font-bold text-[11px] transition cursor-pointer"
+                                >
+                                  <Lock className="w-2.5 h-2.5 text-zinc-950" />
+                                  <span>Request Price</span>
+                                </button>
+                              ) : (
+                                <div className="font-black text-zinc-950 text-sm mt-0.5">{formatPriceDisplay(row.price)}</div>
+                              )}
+                            </div>
+
+                            {/* Status */}
+                            <div>
+                              <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider block">Status</span>
+                              <div className="mt-0.5">
+                                <span className="inline-block text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200/60">
+                                  {row.status}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* 3. Site Visit icon & Explore button */}
+                          <div className="flex items-center gap-2 pt-0.5">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedPropertyForSiteVisit(row);
+                                setSiteVisitModalOpen(true);
+                              }}
+                              className="inline-flex items-center justify-center p-2.5 rounded-xl bg-[#b9974f] hover:bg-[#a4823d] active:scale-95 text-zinc-950 shadow-xs transition-all cursor-pointer shrink-0"
+                              title={`Book VIP Site Visit for ${row.name}`}
+                              aria-label={`Book VIP Site Visit for ${row.name}`}
+                            >
+                              <Calendar className="w-4 h-4 text-zinc-950 stroke-[2.5]" />
+                            </button>
+
+                            <Link
+                              href={getPropertyUrl(row)}
+                              prefetch={true}
+                              className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 active:scale-95 text-zinc-900 font-bold text-xs transition-all cursor-pointer"
+                              title="Explore property"
+                            >
+                              <span>Explore</span>
+                              <ArrowRight className="w-3.5 h-3.5 text-zinc-700" />
+                            </Link>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  {/* FLOATING HOVER DETAILS PREVIEW CARD */}
+                  {hoveredTableProperty && (
+                    <div
+                      style={{
+                        position: 'fixed',
+                        top: `${hoveredTableProperty.y}px`,
+                        left: `${hoveredTableProperty.x}px`,
+                        width: '350px',
+                        maxHeight: 'min(450px, calc(100vh - 90px))'
+                      }}
+                      className="hidden sm:flex z-[75] bg-white rounded-2xl shadow-2xl border border-amber-300/90 ring-1 ring-black/10 overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex-col pointer-events-auto"
+                      onMouseEnter={() => {
+                        if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+                      }}
+                      onMouseLeave={() => {
+                        hoverTimerRef.current = setTimeout(() => {
+                          setHoveredTableProperty(null);
+                        }, 220);
+                      }}
+                    >
+                      {/* Top Preview Image */}
+                      <div
+                        className="relative w-full h-32 bg-zinc-950 overflow-hidden shrink-0 cursor-pointer group/hoverimg"
+                        onClick={() => {
+                          openPropertyGallery(hoveredTableProperty.property, 'photos');
+                          setHoveredTableProperty(null);
                         }}
-                        onOpenGallery={openPropertyGallery}
-                      />
-                    ))}
+                        title="Click to view full photo & video gallery"
+                      >
+                        <Image
+                          src={
+                            hoveredTableProperty.property.image ||
+                            'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
+                          }
+                          alt={hoveredTableProperty.property.name}
+                          fill
+                          sizes="320px"
+                          unoptimized
+                          className="object-cover group-hover/hoverimg:scale-105 transition-transform duration-500"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
+
+                        {/* Badges on preview image */}
+                        <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
+                          <span
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-md backdrop-blur-md shadow-xs ${hoveredTableProperty.property.isCommercial ||
+                              hoveredTableProperty.property.bhk.includes('Commercial')
+                              ? 'bg-blue-950/90 text-blue-200 border border-blue-400/40'
+                              : 'bg-zinc-950/90 text-amber-300 border border-amber-500/40'
+                              }`}
+                          >
+                            {hoveredTableProperty.property.isCommercial ||
+                              hoveredTableProperty.property.bhk.includes('Commercial')
+                              ? 'Commercial'
+                              : 'Verified Listing'}
+                          </span>
+                        </div>
+
+                        <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-zinc-900/90 text-white backdrop-blur-md uppercase tracking-wider">
+                            {hoveredTableProperty.property.status}
+                          </span>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-black/60 text-white backdrop-blur-md uppercase tracking-wider group-hover/hoverimg:bg-amber-500 group-hover/hoverimg:text-zinc-950 transition-colors flex items-center gap-1">
+                            <Expand className="w-3 h-3" />
+                            <span>Expand</span>
+                          </span>
+                        </div>
+
+                        {/* Price on preview image */}
+                        <div className="absolute bottom-2 left-3 right-3 flex items-center justify-between text-white">
+                          <div className="text-lg font-black text-white tracking-tight drop-shadow-sm">
+                            {formatPriceDisplay(hoveredTableProperty.property.price)}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Details Content Body */}
+                      <div className="p-3 flex flex-col gap-2 overflow-y-auto max-h-full">
+                        <div>
+                          <h4 className="font-extrabold text-sm text-zinc-950 line-clamp-1 flex items-center gap-1.5">
+                            <span className="truncate">{hoveredTableProperty.property.name}</span>
+                            {hoveredTableProperty.property.hideName && (
+                              <span className="shrink-0 px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                                Confidential
+                              </span>
+                            )}
+                          </h4>
+                          <div className="flex items-center gap-1 text-[11px] text-zinc-500 mt-0.5">
+                            <MapPin className="w-3 h-3 text-amber-600 shrink-0" />
+                            <span className="truncate">{hoveredTableProperty.property.location}</span>
+                          </div>
+                        </div>
+
+                        {/* Specifications Grid */}
+                        <div className="grid grid-cols-2 gap-1.5 p-2 bg-zinc-50 rounded-xl border border-zinc-100 text-xs">
+                          <div>
+                            <span className="text-[9px] uppercase tracking-wider text-zinc-400 font-bold block">Typology</span>
+                            <span className="font-extrabold text-zinc-900 truncate block text-[11px]">
+                              {hoveredTableProperty.property.configuration || hoveredTableProperty.property.bhk}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-[9px] uppercase tracking-wider text-zinc-400 font-bold block">Carpet Area</span>
+                            <span className="font-extrabold text-zinc-900 block text-[11px]">
+                              {cleanSqft(hoveredTableProperty.property.sqft)}
+                            </span>
+                          </div>
+                          {(() => {
+                            const bldgOrDev = (hoveredTableProperty.property.developer && !/anv\b/i.test(hoveredTableProperty.property.developer))
+                              ? hoveredTableProperty.property.developer
+                              : (hoveredTableProperty.property.buildingName || (hoveredTableProperty.property as any)?.dossier?.BuildingName);
+                            if (!bldgOrDev) return null;
+                            return (
+                              <div>
+                                <span className="text-[9px] uppercase tracking-wider text-zinc-400 font-bold block">Building / Project</span>
+                                <span className="font-semibold text-zinc-800 truncate block text-[11px]">
+                                  {bldgOrDev}
+                                </span>
+                              </div>
+                            );
+                          })()}
+                          <div>
+                            <span className="text-[9px] uppercase tracking-wider text-zinc-400 font-bold block">MahaRERA</span>
+                            <span className="font-mono font-bold text-emerald-700 text-[10px] truncate block">
+                              {hoveredTableProperty.property.reraNumber || 'Verified Registered'}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Short Description */}
+                        <p className="text-[11px] text-zinc-600 line-clamp-2 leading-relaxed whitespace-pre-line">
+                          {formatPropertyDescription(hoveredTableProperty.property.description)}
+                        </p>
+
+                        {/* Action Button: Explore */}
+                        <div className="pt-1.5 border-t border-zinc-100 shrink-0 mt-auto">
+                          <Link
+                            href={getPropertyUrl(hoveredTableProperty.property)}
+                            prefetch={true}
+                            className="w-full py-2 px-3 rounded-xl bg-[#b9974f] hover:bg-[#a4823d] text-zinc-950 text-xs font-black transition flex items-center justify-center gap-1.5 shadow-xs active:scale-95 cursor-pointer"
+                          >
+                            <span>Explore</span>
+                            <ArrowRight className="w-3.5 h-3.5" />
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Show More / Show Less for Comparison Table (Top 4 initially) */}
+                  {sortedProperties.length > 4 && (
+                    <div className="p-4 bg-zinc-50 border-t border-zinc-200 text-center flex items-center justify-center">
+                      <button
+                        type="button"
+                        onClick={() => setShowAllComparison(!showAllComparison)}
+                        className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-bold transition shadow-sm cursor-pointer group"
+                      >
+                        <span>
+                          {showAllComparison
+                            ? 'Show Less Comparison (Show Top 4)'
+                            : `Show More Comparison (${sortedProperties.length - 4} More Properties)`}
+                        </span>
+                        <ChevronDown
+                          className={`w-4 h-4 text-amber-400 transition-transform duration-200 ${showAllComparison ? 'rotate-180' : ''
+                            }`}
+                        />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ================= 2. PROPERTY PREVIEW CARDS ================= */}
+              {sortedProperties.length > 0 ? (
+                propertyViewMode === 'paragraph' ? (
+                  <div id="properties-showcase-container" className="space-y-6">
+                    <div className="flex items-center justify-between pb-1 border-b border-zinc-200/80">
+                      <h3 className="text-sm sm:text-base font-extrabold text-zinc-950 tracking-tight flex items-center gap-2">
+                        <Building2 className="w-4 h-4 text-amber-500" />
+                        <span>Property Showcase (Cards)</span>
+                        <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
+                          {sortedProperties.length} Available
+                        </span>
+                      </h3>
+
+                      <div className="flex items-center gap-1.5 sm:gap-2">
+                        {/* Sort Icon Button for Cards View - Mobile Only (hidden on laptop/desktop) */}
+                        <div className="relative sm:hidden">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveHeaderDropdown(activeHeaderDropdown === 'sort_cards' ? null : 'sort_cards');
+                              setHeaderSearchQuery('');
+                            }}
+                            className={`p-1.5 sm:px-2 sm:py-1.5 rounded-xl transition flex items-center justify-center gap-1 shadow-xs cursor-pointer ${sortBy !== 'price_low'
+                              ? 'bg-amber-400 text-zinc-950 font-black ring-1 ring-amber-300'
+                              : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-800 border border-zinc-200'
+                              }`}
+                            title={`Sort properties (Active: ${getSortLabel(sortBy)})`}
+                            aria-label="Sort properties"
+                          >
+                            <ArrowUpDown className={`w-3.5 h-3.5 ${sortBy !== 'price_low' ? 'text-zinc-950' : 'text-amber-600'}`} />
+                          </button>
+
+                          {activeHeaderDropdown === 'sort_cards' && (
+                            <div
+                              ref={headerDropdownRef}
+                              className="fixed inset-x-3 bottom-4 max-h-[85vh] overflow-y-auto sm:max-h-none sm:overflow-visible z-[100] sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 w-auto sm:w-88 max-w-sm mx-auto sm:mx-0 shadow-2xl"
+                            >
+                              {renderSortDropdownContent()}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {displayedCardProperties.map((property) => (
+                        <PropertyCard
+                          key={property.id}
+                          property={property}
+                          onInstantEnquiry={handleInstantEnquiry}
+                          onQuickView={(p) => {
+                            setSelectedDetailsProperty(p);
+                            setDetailsModalOpen(true);
+                          }}
+                          onOpenGallery={openPropertyGallery}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ) : null
+              ) : isUserSeller(catalogueSearch || searchQuery) ? (
+                <div className="bg-amber-50/70 rounded-3xl border border-amber-300/80 p-8 sm:p-10 text-center space-y-4 shadow-sm w-full max-w-2xl mx-auto my-6">
+                  <div className="w-14 h-14 rounded-2xl bg-amber-100 border border-amber-300 text-amber-800 flex items-center justify-center mx-auto shadow-2xs">
+                    <Users className="w-7 h-7 text-amber-700" />
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="text-xl sm:text-2xl font-black text-zinc-950 tracking-tight">
+                      Seller Query Detected
+                    </h3>
+                    <p className="text-zinc-600 text-xs sm:text-sm font-medium">
+                      Looking for buyers for your property? Active buyers are displayed in the <strong>Buyers Table</strong> right below.
+                    </p>
+                  </div>
+
+                  <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+                    <a
+                      href="#buyers-section"
+                      className="w-full sm:w-auto bg-[#b9974f] hover:bg-[#a4823d] text-zinc-950 font-black px-6 py-3 rounded-xl text-xs shadow-md transition flex items-center justify-center gap-1.5"
+                    >
+                      <Users className="w-3.5 h-3.5" />
+                      <span>Scroll to Buyer Table ({filteredCatalogueBuyerDemands.length} Buyers)</span>
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => handleOpenSubmitProperty()}
+                      className="w-full sm:w-auto bg-zinc-950 hover:bg-zinc-800 text-white font-bold px-6 py-3 rounded-xl text-xs transition cursor-pointer"
+                    >
+                      Register My Property
+                    </button>
                   </div>
                 </div>
-              ) : null
-            ) : isUserSeller(catalogueSearch || searchQuery) ? (
-              <div className="bg-amber-50/70 rounded-3xl border border-amber-300/80 p-8 sm:p-10 text-center space-y-4 shadow-sm w-full max-w-2xl mx-auto my-6">
-                <div className="w-14 h-14 rounded-2xl bg-amber-100 border border-amber-300 text-amber-800 flex items-center justify-center mx-auto shadow-2xs">
-                  <Users className="w-7 h-7 text-amber-700" />
+              ) : (
+                <div className="bg-white rounded-3xl border border-zinc-200/90 p-8 sm:p-12 text-center space-y-6 shadow-sm w-full max-w-2xl mx-auto my-6">
+                  <div className="w-16 h-16 rounded-2xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center mx-auto shadow-2xs">
+                    <Search className="w-8 h-8 text-amber-600" />
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="text-xl sm:text-2xl font-black text-zinc-950 tracking-tight">
+                      {selectedLocality !== 'All' || (searchQuery && /in\s+([a-zA-Z\s]+)/i.test(searchQuery))
+                        ? 'Property not found within 5 km of your selected location'
+                        : '0 Properties Found matching your criteria'}
+                    </h3>
+                    <p className="text-zinc-500 text-xs sm:text-sm font-medium max-w-md mx-auto">
+                      We could not find matching verified properties. Try one of the quick recovery actions below:
+                    </p>
+                  </div>
+
+                  {/* 6 Actionable Recovery Buttons */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 pt-2 text-left">
+                    {/* 1. Change Location */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const input = document.getElementById('main-search-input') as HTMLInputElement | null;
+                        if (input) {
+                          input.focus();
+                          input.select();
+                        }
+                        setSelectedLocality('All');
+                      }}
+                      className="p-3 rounded-xl border border-zinc-200 hover:border-amber-400 bg-zinc-50 hover:bg-amber-50/50 transition cursor-pointer text-xs group"
+                    >
+                      <div className="font-bold text-zinc-900 group-hover:text-amber-900 flex items-center gap-1.5">
+                        <MapPin className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                        <span>Change Location</span>
+                      </div>
+                      <p className="text-[11px] text-zinc-500 mt-0.5">Select a different corridor or locality</p>
+                    </button>
+
+                    {/* 2. Increase Search Radius */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedLocality('All');
+                        executeSearch({ search: searchQuery.replace(/\b(?:in\s+[a-zA-Z\s,]+)\b/gi, '').trim(), locality: 'All' });
+                      }}
+                      className="p-3 rounded-xl border border-zinc-200 hover:border-amber-400 bg-zinc-50 hover:bg-amber-50/50 transition cursor-pointer text-xs group"
+                    >
+                      <div className="font-bold text-zinc-900 group-hover:text-amber-900 flex items-center gap-1.5">
+                        <Compass className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                        <span>Increase Radius</span>
+                      </div>
+                      <p className="text-[11px] text-zinc-500 mt-0.5">Expand search to entire Pune region</p>
+                    </button>
+
+                    {/* 3. Modify Budget */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedPriceRange('All');
+                        executeSearch({ priceRange: 'All' });
+                      }}
+                      className="p-3 rounded-xl border border-zinc-200 hover:border-amber-400 bg-zinc-50 hover:bg-amber-50/50 transition cursor-pointer text-xs group"
+                    >
+                      <div className="font-bold text-zinc-900 group-hover:text-amber-900 flex items-center gap-1.5">
+                        <Tag className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                        <span>Modify Budget</span>
+                      </div>
+                      <p className="text-[11px] text-zinc-500 mt-0.5">Explore properties across all budgets</p>
+                    </button>
+
+                    {/* 4. Modify Property Area */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const cleaned = searchQuery.replace(/\b\d+[\d,\s-]*(?:sq\.?ft\.?|sqft|sq\s*feet|carpet)\b/gi, '').trim();
+                        setSearchQuery(cleaned);
+                        executeSearch({ search: cleaned });
+                      }}
+                      className="p-3 rounded-xl border border-zinc-200 hover:border-amber-400 bg-zinc-50 hover:bg-amber-50/50 transition cursor-pointer text-xs group"
+                    >
+                      <div className="font-bold text-zinc-900 group-hover:text-amber-900 flex items-center gap-1.5">
+                        <Maximize2 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                        <span>Modify Property Area</span>
+                      </div>
+                      <p className="text-[11px] text-zinc-500 mt-0.5">Remove strict Sq.Ft. filter</p>
+                    </button>
+
+                    {/* 5. Change Property Type */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedBhk('All');
+                        executeSearch({ bhk: 'All' });
+                      }}
+                      className="p-3 rounded-xl border border-zinc-200 hover:border-amber-400 bg-zinc-50 hover:bg-amber-50/50 transition cursor-pointer text-xs group"
+                    >
+                      <div className="font-bold text-zinc-900 group-hover:text-amber-900 flex items-center gap-1.5">
+                        <Building2 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                        <span>Change Type</span>
+                      </div>
+                      <p className="text-[11px] text-zinc-500 mt-0.5">View all property configurations</p>
+                    </button>
+
+                    {/* 6. Submit Property Requirement */}
+                    <button
+                      type="button"
+                      onClick={() => setRequirementModalOpen(true)}
+                      className="p-3 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100/80 transition cursor-pointer text-xs group"
+                    >
+                      <div className="font-bold text-amber-950 flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                        <span>Submit Requirement</span>
+                      </div>
+                      <p className="text-[11px] text-amber-800/80 mt-0.5">We source verified off-market matches</p>
+                    </button>
+                  </div>
+
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      onClick={handleResetFilters}
+                      className="text-xs font-bold text-zinc-500 hover:text-zinc-900 px-4 py-2 transition cursor-pointer underline underline-offset-4"
+                    >
+                      Reset All Filters
+                    </button>
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <h3 className="text-xl sm:text-2xl font-black text-zinc-950 tracking-tight">
-                    Seller Query Detected
-                  </h3>
-                  <p className="text-zinc-600 text-xs sm:text-sm font-medium">
-                    Looking for buyers for your property? Active buyers are displayed in the <strong>Buyers Table</strong> right below.
-                  </p>
-                </div>
-
-                <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
-                  <a
-                    href="#buyers-section"
-                    className="w-full sm:w-auto bg-[#b9974f] hover:bg-[#a4823d] text-zinc-950 font-black px-6 py-3 rounded-xl text-xs shadow-md transition flex items-center justify-center gap-1.5"
-                  >
-                    <Users className="w-3.5 h-3.5" />
-                    <span>Scroll to Buyer Table ({filteredCatalogueBuyerDemands.length} Buyers)</span>
-                  </a>
-                  <button
-                    type="button"
-                    onClick={() => handleOpenSubmitProperty()}
-                    className="w-full sm:w-auto bg-zinc-950 hover:bg-zinc-800 text-white font-bold px-6 py-3 rounded-xl text-xs transition cursor-pointer"
-                  >
-                    Register My Property
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="bg-white rounded-3xl border border-zinc-200/90 p-8 sm:p-12 text-center space-y-6 shadow-sm w-full max-w-2xl mx-auto my-6">
-                <div className="w-16 h-16 rounded-2xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center mx-auto shadow-2xs">
-                  <Search className="w-8 h-8 text-amber-600" />
-                </div>
-                <div className="space-y-2">
-                  <h3 className="text-xl sm:text-2xl font-black text-zinc-950 tracking-tight">
-                    {selectedLocality !== 'All' || (searchQuery && /in\s+([a-zA-Z\s]+)/i.test(searchQuery))
-                      ? 'Property not found within 5 km of your selected location'
-                      : '0 Properties Found matching your criteria'}
-                  </h3>
-                  <p className="text-zinc-500 text-xs sm:text-sm font-medium max-w-md mx-auto">
-                    We could not find matching verified properties. Try one of the quick recovery actions below:
-                  </p>
-                </div>
-
-                {/* 6 Actionable Recovery Buttons */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 pt-2 text-left">
-                  {/* 1. Change Location */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const input = document.getElementById('main-search-input') as HTMLInputElement | null;
-                      if (input) {
-                        input.focus();
-                        input.select();
-                      }
-                      setSelectedLocality('All');
-                    }}
-                    className="p-3 rounded-xl border border-zinc-200 hover:border-amber-400 bg-zinc-50 hover:bg-amber-50/50 transition cursor-pointer text-xs group"
-                  >
-                    <div className="font-bold text-zinc-900 group-hover:text-amber-900 flex items-center gap-1.5">
-                      <MapPin className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                      <span>Change Location</span>
-                    </div>
-                    <p className="text-[11px] text-zinc-500 mt-0.5">Select a different corridor or locality</p>
-                  </button>
-
-                  {/* 2. Increase Search Radius */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedLocality('All');
-                      executeSearch({ search: searchQuery.replace(/\b(?:in\s+[a-zA-Z\s,]+)\b/gi, '').trim(), locality: 'All' });
-                    }}
-                    className="p-3 rounded-xl border border-zinc-200 hover:border-amber-400 bg-zinc-50 hover:bg-amber-50/50 transition cursor-pointer text-xs group"
-                  >
-                    <div className="font-bold text-zinc-900 group-hover:text-amber-900 flex items-center gap-1.5">
-                      <Compass className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                      <span>Increase Radius</span>
-                    </div>
-                    <p className="text-[11px] text-zinc-500 mt-0.5">Expand search to entire Pune region</p>
-                  </button>
-
-                  {/* 3. Modify Budget */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedPriceRange('All');
-                      executeSearch({ priceRange: 'All' });
-                    }}
-                    className="p-3 rounded-xl border border-zinc-200 hover:border-amber-400 bg-zinc-50 hover:bg-amber-50/50 transition cursor-pointer text-xs group"
-                  >
-                    <div className="font-bold text-zinc-900 group-hover:text-amber-900 flex items-center gap-1.5">
-                      <Tag className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                      <span>Modify Budget</span>
-                    </div>
-                    <p className="text-[11px] text-zinc-500 mt-0.5">Explore properties across all budgets</p>
-                  </button>
-
-                  {/* 4. Modify Property Area */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const cleaned = searchQuery.replace(/\b\d+[\d,\s-]*(?:sq\.?ft\.?|sqft|sq\s*feet|carpet)\b/gi, '').trim();
-                      setSearchQuery(cleaned);
-                      executeSearch({ search: cleaned });
-                    }}
-                    className="p-3 rounded-xl border border-zinc-200 hover:border-amber-400 bg-zinc-50 hover:bg-amber-50/50 transition cursor-pointer text-xs group"
-                  >
-                    <div className="font-bold text-zinc-900 group-hover:text-amber-900 flex items-center gap-1.5">
-                      <Maximize2 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                      <span>Modify Property Area</span>
-                    </div>
-                    <p className="text-[11px] text-zinc-500 mt-0.5">Remove strict Sq.Ft. filter</p>
-                  </button>
-
-                  {/* 5. Change Property Type */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedBhk('All');
-                      executeSearch({ bhk: 'All' });
-                    }}
-                    className="p-3 rounded-xl border border-zinc-200 hover:border-amber-400 bg-zinc-50 hover:bg-amber-50/50 transition cursor-pointer text-xs group"
-                  >
-                    <div className="font-bold text-zinc-900 group-hover:text-amber-900 flex items-center gap-1.5">
-                      <Building2 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                      <span>Change Type</span>
-                    </div>
-                    <p className="text-[11px] text-zinc-500 mt-0.5">View all property configurations</p>
-                  </button>
-
-                  {/* 6. Submit Property Requirement */}
-                  <button
-                    type="button"
-                    onClick={() => setRequirementModalOpen(true)}
-                    className="p-3 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100/80 transition cursor-pointer text-xs group"
-                  >
-                    <div className="font-bold text-amber-950 flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-amber-700 shrink-0" />
-                      <span>Submit Requirement</span>
-                    </div>
-                    <p className="text-[11px] text-amber-800/80 mt-0.5">We source verified off-market matches</p>
-                  </button>
-                </div>
-
-                <div className="pt-2">
-                  <button
-                    type="button"
-                    onClick={handleResetFilters}
-                    className="text-xs font-bold text-zinc-500 hover:text-zinc-900 px-4 py-2 transition cursor-pointer underline underline-offset-4"
-                  >
-                    Reset All Filters
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
 
           {/* ================= SECTION 2: BUYERS ================= */}
-          <div id="buyers-section" className="space-y-8 pt-12 border-t border-zinc-200/90">
+          <div id="buyers-section" className={`space-y-8 ${activeResultTab === 'buyer_leads' ? 'pt-4' : 'pt-12 border-t border-zinc-200/90'}`}>
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
               <div>

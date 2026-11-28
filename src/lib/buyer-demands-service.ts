@@ -7,6 +7,7 @@
 import { query } from "@/lib/db";
 import { isBuyerLead } from "@/lib/crm-data";
 import { detectSellerTypologyAndLocality, type SellerIntentAnalysis } from './seller-intent';
+import { parseEightFieldRequirements, getPropertyTypeMatchTerms, EightFieldCriteria } from './eight-field-parser';
 
 export { isBuyerLead, detectSellerTypologyAndLocality, type SellerIntentAnalysis };
 
@@ -227,7 +228,7 @@ export async function getAllLiveBuyerDemands(forceRefresh = false): Promise<Buye
           maskedName: maskBuyerName(row.name),
           displayPhone: OFFICIAL_ANV_PHONE,
           displayEmail: OFFICIAL_ANV_EMAIL,
-          locality: row.location?.replace(/,.*$/, '').trim() || 'Pune',
+          locality: row.location?.replace(/,\s*Pune(?:\s*\([^)]+\))?\s*$/i, '').trim() || 'Pune',
           bhk: row.bhk || 'Commercial / Residence',
           budget: row.budget || '₹1.50 Cr - ₹3.00 Cr',
           timeline: 'Ready to Move / 60 Days',
@@ -355,4 +356,271 @@ export async function getMatchingBuyerDemands(
   filtered.sort((a, b) => b.score - a.score);
 
   return filtered.slice(0, limit).map((s) => s.demand);
+}
+
+const SQL_BUYER_BASE_WHERE = `
+  status NOT IN ('Lost', 'Archived')
+  AND LOWER(TRIM(COALESCE(name, ''))) NOT IN ('hs', 'te', 'test', 'dummy', 'abc', 'xyz', 'demo', 'null', 'undefined', '')
+  AND length(TRIM(COALESCE(name, ''))) > 2
+  AND LOWER(COALESCE(notes, '')) !~* '(kkjkk|addasdd|asdf|qwerty|test\\s*lead)'
+  AND (
+    UPPER(COALESCE(code, '')) LIKE 'BYR-%'
+    OR UPPER(COALESCE(code, '')) LIKE 'REQ-%'
+    OR LOWER(COALESCE(source_type, '')) IN ('bulk_upload', 'import', 'buyer')
+    OR LOWER(COALESCE(source, '')) LIKE '%excel%'
+    OR LOWER(COALESCE(source, '')) LIKE '%upload%'
+    OR LOWER(COALESCE(source, '')) LIKE '%buyer%'
+    OR LOWER(COALESCE(status, '')) LIKE '%buyer%'
+    OR LOWER(COALESCE(designation, '')) LIKE '%buyer%'
+  )
+`;
+
+const SQL_CRM_BUDGET_MIN_EXPR = `
+  COALESCE(
+    NULLIF(budget_raw, 0),
+    CASE
+      WHEN LOWER(COALESCE(budget, '')) ~ '([0-9]+(?:\\.[0-9]+)?)\\s*(?:cr|crore)'
+        THEN (regexp_match(LOWER(REPLACE(COALESCE(budget, ''), ',', '')), '([0-9]+(?:\\.[0-9]+)?)\\s*(?:cr|crore)'))[1]::numeric * 10000000
+      WHEN LOWER(COALESCE(budget, '')) ~ '([0-9]+(?:\\.[0-9]+)?)\\s*(?:lac|lakh|l\\b)'
+        THEN (regexp_match(LOWER(REPLACE(COALESCE(budget, ''), ',', '')), '([0-9]+(?:\\.[0-9]+)?)\\s*(?:lac|lakh|l\\b)'))[1]::numeric * 100000
+      ELSE 0
+    END,
+    0
+  )
+`;
+
+function escapePgRegexBuyer(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function mapCrmRowToBuyerDemand(row: any): BuyerDemandRecord {
+  return {
+    id: `CRM-${row.id}`,
+    referenceCode: row.code || `BYR-${row.id}`,
+    maskedName: maskBuyerName(row.name),
+    displayPhone: OFFICIAL_ANV_PHONE,
+    displayEmail: OFFICIAL_ANV_EMAIL,
+    locality: row.location?.replace(/,\s*Pune(?:\s*\([^)]+\))?\s*$/i, '').trim() || 'Pune',
+    bhk: row.bhk || 'Commercial / Residence',
+    budget: row.budget || '₹1.50 Cr - ₹3.00 Cr',
+    timeline: 'Ready to Move / 60 Days',
+    purpose: row.designation || 'Self-Use / Investment',
+    requirements:
+      row.notes ||
+      row.property_interest ||
+      `Looking for ${row.bhk || 'property'} in ${row.location || 'Pune'}. Verified buyer registered with ANV REEALTY.`,
+    createdAt: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString(),
+    status: row.status || 'Verified Active Buyer'
+  };
+}
+
+export interface BuyerSqlQueryResult {
+  demands: BuyerDemandRecord[];
+  totalCount: number;
+  criteria: EightFieldCriteria;
+  whereSql: string;
+  facets: {
+    intentTypes: Array<{ value: string; count: number }>;
+    propertyTypes: Array<{ value: string; count: number }>;
+  };
+}
+
+/**
+ * Executes real PostgreSQL WHERE ... AND ... + GROUP BY queries directly on `crm_leads`
+ * for buyer/seller search queries ("buyer", "seller", "i need a buyer for my commercial property in Baner", etc.).
+ */
+export async function queryBuyerDemandsSql(
+  rawQuery: string,
+  explicit?: {
+    locality?: string | null;
+    propertyType?: string | null;
+    bhk?: string | null;
+    city?: string | null;
+    priceRange?: string | null;
+    minPrice?: number | null;
+    maxPrice?: number | null;
+  }
+): Promise<BuyerSqlQueryResult> {
+  const criteria = parseEightFieldRequirements(rawQuery, {
+    locality: explicit?.locality,
+    propertyType: explicit?.propertyType || explicit?.bhk,
+    bhk: explicit?.bhk,
+    city: explicit?.city,
+    priceRange: explicit?.priceRange,
+    minPrice: explicit?.minPrice,
+    maxPrice: explicit?.maxPrice
+  });
+
+  const clauses: string[] = [SQL_BUYER_BASE_WHERE.trim()];
+  const params: any[] = [];
+  let idx = 1;
+
+  // 1. Locality (WHERE ... AND ... with word boundary across full multi-locality column)
+  if (criteria.localities.length > 0) {
+    const locOrs: string[] = [];
+    for (const loc of criteria.localities) {
+      const cleanLoc = loc.toLowerCase().trim();
+      if (!cleanLoc) continue;
+      const pattern = /^[a-z0-9\s]+$/.test(cleanLoc)
+        ? `\\m${escapePgRegexBuyer(cleanLoc).replace(/\\ /g, '\\s+')}\\M`
+        : escapePgRegexBuyer(cleanLoc);
+      params.push(pattern);
+      const lIdx = idx++;
+      locOrs.push(
+        `(COALESCE(location, '') ~* $${lIdx} OR COALESCE(property_interest, '') ~* $${lIdx} OR COALESCE(notes, '') ~* $${lIdx})`
+      );
+    }
+    if (locOrs.length > 0) clauses.push(`(${locOrs.join(' OR ')})`);
+  }
+
+  // 2. City (if explicitly non-Pune or specific Pune zone)
+  if (criteria.cities.length > 0) {
+    const cityOrs: string[] = [];
+    for (const c of criteria.cities) {
+      const cl = c.toLowerCase().trim();
+      if (cl === 'pune' || cl === 'pune(all)') {
+        cityOrs.push(`(LOWER(COALESCE(location, '')) LIKE '%pune%' OR COALESCE(location, '') != '')`);
+      } else {
+        params.push(`%${cl.replace(/[()]/g, '%')}%`);
+        const cIdx = idx++;
+        cityOrs.push(`(LOWER(COALESCE(location, '')) LIKE $${cIdx} OR LOWER(COALESCE(property_interest, '')) LIKE $${cIdx})`);
+      }
+    }
+    if (cityOrs.length > 0) clauses.push(`(${cityOrs.join(' OR ')})`);
+  }
+
+  // 3. Property Type (WHERE ... AND ...)
+  if (criteria.propertyTypes.length > 0) {
+    const ptOrs: string[] = [];
+    for (const ptLabel of criteria.propertyTypes) {
+      if (ptLabel.toLowerCase() === 'commercial') {
+        ptOrs.push(
+          `(COALESCE(bhk, '') || ' ' || COALESCE(property_interest, '') || ' ' || COALESCE(notes, '')) ~* '\\m(?:commercial|office|shop|showroom|retail|workspace|warehouse|godown|industrial|hospital|restaurant|hotel|building)\\M'`
+        );
+        continue;
+      }
+      const terms = getPropertyTypeMatchTerms(ptLabel);
+      const termOrs: string[] = [];
+      for (const term of terms) {
+        const cleanTerm = term.toLowerCase().trim();
+        if (!cleanTerm) continue;
+        params.push(`\\m${escapePgRegexBuyer(cleanTerm).replace(/\\ /g, '\\s+')}\\M`);
+        const tIdx = idx++;
+        termOrs.push(
+          `(COALESCE(bhk, '') ~* $${tIdx} OR COALESCE(property_interest, '') ~* $${tIdx} OR COALESCE(notes, '') ~* $${tIdx})`
+        );
+      }
+      if (termOrs.length > 0) ptOrs.push(`(${termOrs.join(' OR ')})`);
+    }
+    if (ptOrs.length > 0) clauses.push(`(${ptOrs.join(' OR ')})`);
+  }
+
+  // 4. BHK (AND constraint)
+  if (criteria.bhkNums.length > 0) {
+    const bhkOrs: string[] = [];
+    for (const bhkNum of criteria.bhkNums) {
+      const escBhk = escapePgRegexBuyer(String(bhkNum));
+      params.push(`(?:^|[^0-9.])${escBhk}\\s*[- ]*\\s*(?:bhk|bed|bedroom)`);
+      const bIdx = idx++;
+      bhkOrs.push(
+        `(COALESCE(bhk, '') ~* $${bIdx} OR COALESCE(property_interest, '') ~* $${bIdx} OR COALESCE(notes, '') ~* $${bIdx})`
+      );
+    }
+    if (bhkOrs.length > 0) clauses.push(`(${bhkOrs.join(' OR ')})`);
+  }
+
+  // 5. Transaction Classification / Intent ("prelease", "rent", "joint development")
+  if (criteria.transactionClassification) {
+    const tc = criteria.transactionClassification.toLowerCase();
+    if (tc.includes('pre lease')) {
+      clauses.push(
+        `LOWER(regexp_replace(COALESCE(designation, '') || ' ' || COALESCE(bhk, '') || ' ' || COALESCE(notes, ''), '[-_\\s/]+', '', 'g')) ~ '(prelease|prerent)'`
+      );
+    } else if (tc.includes('resale') || tc === 'new' || tc.includes('pre launch')) {
+      params.push(`%${tc}%`);
+      const tcIdx = idx++;
+      clauses.push(
+        `(LOWER(COALESCE(designation, '')) LIKE $${tcIdx} OR LOWER(COALESCE(notes, '')) LIKE $${tcIdx} OR LOWER(COALESCE(bhk, '')) LIKE $${tcIdx})`
+      );
+    }
+  }
+
+  if (criteria.transactionType === 'Rent') {
+    clauses.push(`(LOWER(COALESCE(designation, '')) LIKE '%rent%' OR LOWER(COALESCE(designation, '')) LIKE '%lease%')`);
+  } else if (criteria.transactionType === 'Joint Development') {
+    clauses.push(`(LOWER(COALESCE(designation, '')) LIKE '%joint%' OR LOWER(COALESCE(notes, '')) LIKE '%joint%')`);
+  }
+
+  // 6. Budget (WHERE ... AND ...)
+  if (criteria.expectedPrice.min !== null) {
+    params.push(criteria.expectedPrice.min);
+    clauses.push(`${SQL_CRM_BUDGET_MIN_EXPR} >= $${idx++}`);
+  }
+  if (criteria.expectedPrice.max !== null) {
+    params.push(criteria.expectedPrice.max);
+    clauses.push(`(${SQL_CRM_BUDGET_MIN_EXPR} > 0 AND ${SQL_CRM_BUDGET_MIN_EXPR} <= $${idx++})`);
+  }
+
+  // 7. Residual Keywords (WHERE ... AND ...)
+  if (criteria.keywords.length > 0) {
+    for (const kw of criteria.keywords.slice(0, 5)) {
+      params.push(`%${kw.toLowerCase()}%`);
+      const kIdx = idx++;
+      clauses.push(
+        `(LOWER(COALESCE(location, '')) LIKE $${kIdx} OR LOWER(COALESCE(property_interest, '')) LIKE $${kIdx} OR LOWER(COALESCE(bhk, '')) LIKE $${kIdx} OR LOWER(COALESCE(notes, '')) LIKE $${kIdx} OR LOWER(COALESCE(designation, '')) LIKE $${kIdx})`
+      );
+    }
+  }
+
+  const whereSql = clauses.join('\n  AND ');
+
+  try {
+    const [rows, intentRows, ptRows] = await Promise.all([
+      query(
+        `SELECT id, code, name, location, property_interest, bhk, budget, notes, created_at, status, source, source_type, designation
+         FROM crm_leads
+         WHERE ${whereSql}
+         ORDER BY created_at DESC;`,
+        params
+      ),
+      query<{ value: string; count: number }>(
+        `SELECT COALESCE(NULLIF(TRIM(designation), ''), 'Purchase / Buy') AS value, COUNT(*)::int AS count
+         FROM crm_leads
+         WHERE ${whereSql}
+         GROUP BY 1
+         ORDER BY count DESC;`,
+        params
+      ),
+      query<{ value: string; count: number }>(
+        `SELECT COALESCE(NULLIF(TRIM(REGEXP_REPLACE(bhk, '\\s*\\([^)]*\\)\\s*$', '')), ''), 'Commercial / Residence') AS value, COUNT(*)::int AS count
+         FROM crm_leads
+         WHERE ${whereSql}
+         GROUP BY 1
+         ORDER BY count DESC
+         LIMIT 25;`,
+        params
+      )
+    ]);
+
+    const demands = (rows || []).map(mapCrmRowToBuyerDemand);
+    return {
+      demands,
+      totalCount: demands.length,
+      criteria,
+      whereSql,
+      facets: {
+        intentTypes: intentRows || [],
+        propertyTypes: ptRows || []
+      }
+    };
+  } catch (err: any) {
+    console.error('queryBuyerDemandsSql error:', err?.message || err);
+    return {
+      demands: [],
+      totalCount: 0,
+      criteria,
+      whereSql,
+      facets: { intentTypes: [], propertyTypes: [] }
+    };
+  }
 }

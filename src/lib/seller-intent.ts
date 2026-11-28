@@ -21,16 +21,17 @@ export interface SellerIntentAnalysis {
 export function isUserSeller(queryText: string, conversationContext?: string): boolean {
   const lowerQuery = (queryText || '').toLowerCase().trim();
 
-  // 1. Direct buyer override in current query (e.g. "i want to buy", "looking to buy", "show properties to buy", "to buy")
+  // 1. Direct buyer looking to purchase/rent property (explicitly wants to BUY properties, not looking for buyers)
   const isDirectBuyerOverride =
-    /\b(?:to\s*buy|want\s*to\s*buy|looking\s*to\s*buy|plan\s*to\s*buy|wish\s*to\s*buy|ready\s*to\s*buy|buy\s+(?:a|an|the|\d+|me|properties|property|flat|apartment|office|commercial|hospital)|show\s*(?:me\s*)?(?:\d+\s*bhk|properties|flats|apartments|offices)|i\s*want\s*to\s*invest)\b/i.test(lowerQuery);
+    /\b(?:i\s*am\s*a\s*buyer\s*(?:looking|wanting)?\s*to\s*buy|buyer\s*looking\s*to\s*buy|want\s*to\s*buy|looking\s*to\s*buy|plan\s*to\s*buy|wish\s*to\s*buy|ready\s*to\s*buy|buy\s+(?:a|an|the|\d+|me|properties|property|flat|apartment|office|commercial|hospital)|show\s*(?:me\s*)?(?:\d+\s*bhk|properties|flats|apartments|offices)|i\s*want\s*to\s*invest)\b/i.test(lowerQuery) &&
+    !/\b(?:buyers?\s*for|need\s*(?:a\s*)?buyers?|want\s*(?:a\s*)?buyers?|looking\s*for\s*(?:a\s*)?buyers?|sell|selling|seller)\b/i.test(lowerQuery);
   if (isDirectBuyerOverride) {
     return false;
   }
 
-  // 2. Direct seller phrases in current query
+  // 2. Direct seller / "show buyers" phrases in current query ("buyer", "buyers", "seller", "i need a buyer...")
   const directSellerRegex =
-    /\b(?:sell|selling|seller|list\s*(?:my)?\s*property|owner|property\s*person\s*says|(?:want|need|looking\s*for|find|match|get|connect\s*(?:with)?)\s*(?:a\s*|me\s*)?buyers?|have\s*a\s*(?:flat|apartment|office|property|commercial|plot|house)\s*to\s*sell|i\s*want\s*buyer|buyers?\s*for\s*my|buyers?\s*needed|buyers?\s*wanted)\b/i;
+    /\b(?:sell|selling|sellers?|buyers?|list\s*(?:my)?\s*property|owner|property\s*person\s*says)\b/i;
   const ownerPropertyRegex =
     /\b(?:my\s+(?:this\s+)?(?:property|flat|apartment|office|shop|showroom|penthouse|building|land|plot|commercial|residence)\s*(?:is|in|at|located|asking|needs?)|i\s+(?:have|own|got)\s+(?:a\s+)?(?:\d+\s*bhk|flat|apartment|office|property|commercial)|asking\s*price|quoting\s*price|expected\s*price|carpet\s*area\s*of\s*my|builtup\s*area\s*of\s*my)\b/i;
 

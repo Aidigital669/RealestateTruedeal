@@ -161,11 +161,19 @@ async function main() {
   console.log(`   ✓ All ${preVariants.length} pre-lease variants matched exact ${baselineIds?.length} identical IDs across SQL, /api/unified-search, and /api/properties!`);
 
   console.log('5b. Testing all other TransactionName classifications match DB schema strictly...');
-  const txChecks: Array<{ query: string; expectedMin: number; verify: (tc: string) => boolean }> = [
+  const txChecks: Array<{ query: string; expectedMin: number; verify: (tc: string, r?: any) => boolean }> = [
     { query: 'New', expectedMin: 1750, verify: (tc) => tc === 'New' },
     { query: 'New project', expectedMin: 1750, verify: (tc) => tc === 'New' },
     { query: 'Resale', expectedMin: 500, verify: (tc) => tc === 'Resale' },
-    { query: 'Pre Launch', expectedMin: 85, verify: (tc) => tc === 'Pre Launch' },
+    {
+      query: 'Pre Launch',
+      expectedMin: 150,
+      verify: (tc, r) =>
+        tc === 'Pre Launch' ||
+        /prelaunch|newlylaunch|newlaunch|upcoming|readytomove/i.test(
+          `${r?.status || ''} ${r?.configuration || ''} ${r?.type_name || ''}`.replace(/[-_\s]+/g, '')
+        )
+    },
     { query: 'Individual/Company', expectedMin: 85, verify: (tc) => tc === 'Individual/Company' },
     { query: 'Group Booking', expectedMin: 5, verify: (tc) => tc === 'Group Booking' },
     { query: 'Individual', expectedMin: 95, verify: (tc) => tc.startsWith('Individual') }
@@ -179,7 +187,7 @@ async function main() {
     assert.ok(txTotal >= txc.expectedMin, `Expected >=${txc.expectedMin} rows for "${txc.query}", got ${txTotal}`);
     for (const r of txSample) {
       const tcVal = String(r.transactionClassification || r.dossierData?.TransactionName || '');
-      assert.ok(txc.verify(tcVal), `Classification "${tcVal}" invalid for query "${txc.query}" on id=${r.id}`);
+      assert.ok(txc.verify(tcVal, r), `Classification "${tcVal}" invalid for query "${txc.query}" on id=${r.id}`);
     }
     console.log(`   ✓ TransactionName "${txc.query}" -> ${txTotal} exact matching rows`);
   }
@@ -285,6 +293,123 @@ async function main() {
     );
   }
   console.log(`   ✓ "prelease office in viman nagar" -> ${preOfficeJson.properties.length} verified pre-leased office rows`);
+
+  console.log('7. Testing Buyer/Seller intent routing & direct crm_leads PostgreSQL WHERE ... AND ... queries...');
+  for (const bq of ['buyer', 'buyers', 'seller', 'sellers']) {
+    const res = await unifiedSearchRoute.GET(
+      new NextRequest('http://localhost:3000/api/unified-search?search=' + encodeURIComponent(bq))
+    );
+    const json = await res.json();
+    assert.equal(json.success, true);
+    assert.equal(json.ai.primaryView, 'buyer_leads', `Expected buyer_leads view for "${bq}"`);
+    assert.equal(json.properties.length, 0, `Expected 0 properties when searching "${bq}"`);
+    assert.equal(json.propertiesCount, 0);
+    assert.ok(json.buyerDemands.length >= 250, `Expected >=250 active buyers for "${bq}", got ${json.buyerDemands.length}`);
+  }
+  console.log('   ✓ Standalone buyer/buyers/seller/sellers queries return ONLY buyer data & 0 properties');
+
+  const banerBuyerRes = await unifiedSearchRoute.GET(
+    new NextRequest(
+      'http://localhost:3000/api/unified-search?search=' +
+        encodeURIComponent('i need a buyer for my commercial property in Baner')
+    )
+  );
+  const banerBuyerJson = await banerBuyerRes.json();
+  assert.equal(banerBuyerJson.success, true);
+  assert.equal(banerBuyerJson.ai.primaryView, 'buyer_leads');
+  assert.equal(banerBuyerJson.properties.length, 0, 'Expected 0 properties for seller Baner commercial query');
+  assert.ok(banerBuyerJson.buyerDemands.length > 0, 'Expected >0 Baner commercial buyers in crm_leads');
+  for (const bd of banerBuyerJson.buyerDemands) {
+    const bText = `${bd.locality} ${bd.bhk} ${bd.requirements} ${bd.purpose}`.toLowerCase();
+    assert.ok(bText.includes('baner'), `Expected Baner on buyer ${bd.code}: "${bd.locality}"`);
+    assert.match(
+      bText,
+      /\b(?:commercial|office|shop|showroom|retail|workspace|warehouse|industrial|hospital|restaurant|hotel|building)\b/i,
+      `Expected commercial requirement on buyer ${bd.code}: "${bd.bhk}"`
+    );
+  }
+  console.log(`   ✓ "i need a buyer for my commercial property in Baner" -> ${banerBuyerJson.buyerDemands.length} verified Baner commercial buyers (0 properties)`);
+
+  const buyFlatRes = await unifiedSearchRoute.GET(
+    new NextRequest('http://localhost:3000/api/unified-search?search=' + encodeURIComponent('want to buy 3 bhk flat in kharadi'))
+  );
+  const buyFlatJson = await buyFlatRes.json();
+  assert.equal(buyFlatJson.ai.primaryView, 'properties');
+  assert.ok(buyFlatJson.properties.length > 0, 'Expected >0 properties when user wants to buy a 3 bhk flat');
+  console.log(`   ✓ Contrast check: "want to buy 3 bhk flat in kharadi" -> primaryView=properties (${buyFlatJson.properties.length} properties)`);
+
+  console.log('8. Testing Newly Launched / Pre-Launch / Upcoming / Ready to Move return IDENTICAL results...');
+  const launchVariants = ['Newly Launched', 'Pre-Launch', 'Pre Launch', 'prelaunch', 'Upcoming', 'Ready to Move'];
+  let launchBaselineIds: string[] | null = null;
+  for (const lv of launchVariants) {
+    const parsedLv = parseEightFieldRequirements(lv);
+    assert.equal(parsedLv.transactionClassification, 'Pre Launch', `Failed classification for "${lv}"`);
+    assert.equal(parsedLv.keywords.length, 0, `Unexpected leftover keywords for "${lv}": ${parsedLv.keywords}`);
+
+    const builtLv = buildEightFieldWhereClause(parsedLv);
+    const sqlLv = await executeEightFieldSqlRows(builtLv.whereSql, builtLv.params, 300);
+
+    const uLvRes = await unifiedSearchRoute.GET(
+      new NextRequest('http://localhost:3000/api/unified-search?search=' + encodeURIComponent(lv))
+    );
+    const uLvJson = await uLvRes.json();
+    assert.equal(uLvJson.success, true);
+    assert.equal(uLvJson.ai.primaryView, 'properties');
+
+    const pLvRes = await publicPropertiesRoute.GET(
+      new NextRequest('http://localhost:3000/api/properties?search=' + encodeURIComponent(lv))
+    );
+    const pLvJson = await pLvRes.json();
+    assert.equal(pLvJson.success, true);
+
+    const sortedSqlIds = sqlLv.map((r: any) => String(r.id)).sort();
+    const sortedUnifiedIds = uLvJson.properties.map((p: any) => String(p.id)).sort();
+    const sortedPropsIds = pLvJson.properties.map((p: any) => String(p.id)).sort();
+    assert.ok(sortedSqlIds.length >= 150, `Expected >=150 rows for "${lv}", got ${sortedSqlIds.length}`);
+    assert.deepEqual(sortedUnifiedIds, sortedSqlIds, `Unified ID mismatch for "${lv}"`);
+    assert.deepEqual(sortedPropsIds, sortedSqlIds, `Properties API ID mismatch for "${lv}"`);
+
+    if (launchBaselineIds === null) launchBaselineIds = sortedSqlIds;
+    else assert.deepEqual(sortedSqlIds, launchBaselineIds, `Variant "${lv}" returned different IDs from "${launchVariants[0]}"`);
+  }
+  console.log(`   ✓ All ${launchVariants.length} launch/status variants ("Newly Launched", "Pre-Launch", "Upcoming", "Ready to Move", etc.) matched identical ${launchBaselineIds?.length} IDs!`);
+
+  console.log('9. Testing New / Latest / Fresh / Newly return IDENTICAL results across SQL & HTTP routes...');
+  const newVariants = ['New', 'Latest', 'Fresh', 'Newly'];
+  let newBaselineIds: string[] | null = null;
+  for (const nv of newVariants) {
+    const parsedNv = parseEightFieldRequirements(nv);
+    assert.equal(parsedNv.transactionClassification, 'New', `Failed classification for "${nv}"`);
+    assert.equal(parsedNv.keywords.length, 0, `Unexpected leftover keywords for "${nv}": ${parsedNv.keywords}`);
+
+    const builtNv = buildEightFieldWhereClause(parsedNv);
+    const sqlNv = await executeEightFieldSqlRows(builtNv.whereSql, builtNv.params, 200);
+    const facetsNv = await fetchEightFieldGroupByFacets(builtNv.whereSql, builtNv.params);
+    const totalNv = facetsNv.transactionTypes.reduce((s, x) => s + x.count, 0);
+    assert.equal(totalNv, 1754, `Expected exact 1754 total rows for "${nv}", got ${totalNv}`);
+
+    const uNvRes = await unifiedSearchRoute.GET(
+      new NextRequest('http://localhost:3000/api/unified-search?search=' + encodeURIComponent(nv))
+    );
+    const uNvJson = await uNvRes.json();
+    assert.equal(uNvJson.success, true);
+    assert.equal(uNvJson.phase2.totalCount, 1754, `Unified totalCount mismatch for "${nv}"`);
+
+    const pNvRes = await publicPropertiesRoute.GET(
+      new NextRequest('http://localhost:3000/api/properties?search=' + encodeURIComponent(nv))
+    );
+    const pNvJson = await pNvRes.json();
+    assert.equal(pNvJson.success, true);
+    assert.equal(pNvJson.count, 1754, `/api/properties count mismatch for "${nv}"`);
+
+    const sortedSqlIds = sqlNv.map((r: any) => String(r.id)).sort();
+    const sortedUnifiedIds = uNvJson.properties.map((p: any) => String(p.id)).sort();
+    assert.deepEqual(sortedUnifiedIds, sortedSqlIds, `Unified ID mismatch for "${nv}"`);
+
+    if (newBaselineIds === null) newBaselineIds = sortedSqlIds;
+    else assert.deepEqual(sortedSqlIds, newBaselineIds, `Variant "${nv}" returned different IDs from "New"`);
+  }
+  console.log(`   ✓ All ${newVariants.length} variants ("New", "Latest", "Fresh", "Newly") matched exact 1754 total & identical ${newBaselineIds?.length} returned IDs!`);
 
   console.log('\nALL 8-FIELD SQL SEARCH TESTS PASSED!');
   process.exit(0);

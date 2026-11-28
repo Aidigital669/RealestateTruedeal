@@ -153,19 +153,21 @@ export const SELLER_FILLERS = new Set([
 export function detectQueryIntent(queryText: string): { intent: QueryIntent; primaryView: PrimaryView } {
   const lower = (queryText || '').toLowerCase().trim();
 
-  // 1. Direct seller phrases (seller looking for buyer, or owner selling property)
+  // 1. Direct buyer-mandate / seller phrases ("buyer", "buyers", "seller", "need a buyer...", "sell my property")
   const explicitSellerPattern =
-    /\b(?:need\s*(?:a\s*)?buyers?|want\s*(?:a\s*)?buyers?|looking\s*for\s*(?:a\s*)?buyers?|find\s*(?:me\s*)?(?:a\s*)?buyers?|get\s*(?:me\s*)?(?:a\s*)?buyers?|buyers?\s*for\s*my|buyers?\s*needed|buyers?\s*wanted|connect\s*(?:me\s*)?(?:with\s*)?buyers?|match\s*(?:my\s*)?property\s*with\s*buyers?|property\s*person\s*says|i\s*(?:have|got|own)\s+(?:a\s+)?(?:property|flat|apartment|shop|office|showroom|plot|land)\s*(?:and\s*)?(?:need|want|looking\s*for)\s*(?:a\s*)?buyers?|i\s*want\s*to\s*sell|willing\s*to\s*sell|looking\s*to\s*sell|sell\s*my\s*property|sell\s*my\s*flat|sell\s*my\s*office|sell\s*my\s*shop|list\s*my\s*property|selling\s*my|owner\s*selling)\b/i;
+    /\b(?:buyers?|sellers?|need\s*(?:a\s*)?buyers?|want\s*(?:a\s*)?buyers?|looking\s*for\s*(?:a\s*)?buyers?|find\s*(?:me\s*)?(?:a\s*)?buyers?|get\s*(?:me\s*)?(?:a\s*)?buyers?|buyers?\s*for|buyers?\s*needed|buyers?\s*wanted|connect\s*(?:me\s*)?(?:with\s*)?buyers?|match\s*(?:my\s*)?property\s*with\s*buyers?|property\s*person\s*says|i\s*want\s*to\s*sell|willing\s*to\s*sell|looking\s*to\s*sell|sell\s*my\s*property|sell\s*my\s*flat|sell\s*my\s*office|sell\s*my\s*shop|list\s*my\s*property|selling\s*my|owner\s*selling)\b/i;
 
-  // 2. Direct buyer phrases take precedence if query clearly says "want to buy", "looking to buy", etc.
+  // 2. Direct property-buying phrases ("want to buy a flat", "looking to buy 3 bhk", "buyer looking to buy")
   const explicitBuyerPattern =
-    /\b(?:want\s*to\s*buy|looking\s*to\s*buy|plan\s*to\s*buy|wish\s*to\s*buy|ready\s*to\s*buy|seeking\s*to\s*buy|i\s*want\s*to\s*purchase|looking\s*for\s*(?:\d+\s*bhk|flat|apartment|office|shop|showroom)\s*(?:to\s*buy|for\s*sale)|buy\s+(?:a|an|the|\d+|flat|apartment|office|shop|property|home|luxury|commercial|pre\s*leased)|interested\s*in\s*buying|to\s*buy|buyer\s*says|buyer\s*looking|buyer\s*requirement|i\s*need\s*to\s*buy)\b/i;
+    /\b(?:buyer\s*looking\s*to\s*buy|i\s*am\s*a\s*buyer\s*(?:looking|wanting)?\s*to\s*buy|want\s*to\s*buy|looking\s*to\s*buy|plan\s*to\s*buy|wish\s*to\s*buy|ready\s*to\s*buy|seeking\s*to\s*buy|i\s*want\s*to\s*purchase|looking\s*for\s*(?:\d+\s*bhk|flat|apartment|office|shop|showroom)\s*(?:to\s*buy|for\s*sale)|buy\s+(?:a|an|the|\d+|flat|apartment|office|shop|property|home|luxury|commercial|pre\s*leased)|interested\s*in\s*buying|to\s*buy|i\s*need\s*to\s*buy)\b/i;
 
-  // 3. Natural search query patterns typical for buyers (e.g. "show me 2 BHK in Baner", "looking for prime office")
+  // 3. Natural search query patterns typical for property searches (when not asking for buyers/sellers)
   const buyerSearchPattern =
     explicitBuyerPattern.test(lower) ||
-    /\b(?:show\s*(?:me)?|looking\s*for|find\s*(?:me)?|search\s*(?:for)?)\s+(?:ready\s*to\s*move|prime|verified|luxury|affordable|new)?\s*(?:\d+\s*bhk|flat|apartment|office|shop|showroom|warehouse|plot|villa|penthouse)\b/i.test(lower) ||
-    /\b(?:for\s*sale|ready\s*to\s*move\s*(?:\d+\s*bhk|flat|apartment)|buy)\b/i.test(lower);
+    (!/\b(?:buyers?|sellers?)\b/i.test(lower) && (
+      /\b(?:show\s*(?:me)?|looking\s*for|find\s*(?:me)?|search\s*(?:for)?)\s+(?:ready\s*to\s*move|prime|verified|luxury|affordable|new)?\s*(?:\d+\s*bhk|flat|apartment|office|shop|showroom|warehouse|plot|villa|penthouse)\b/i.test(lower) ||
+      /\b(?:for\s*sale|ready\s*to\s*move\s*(?:\d+\s*bhk|flat|apartment)|buy)\b/i.test(lower)
+    ));
 
   const hasSeller = explicitSellerPattern.test(lower);
   const hasBuyer = buyerSearchPattern;
@@ -185,7 +187,7 @@ export function detectQueryIntent(queryText: string): { intent: QueryIntent; pri
   }
 
   // Fallback checks
-  if (/\b(?:sell|seller|selling|list\s*my)\b/i.test(lower)) {
+  if (/\b(?:buyers?|sell|sellers?|selling|list\s*my)\b/i.test(lower)) {
     return { intent: 'seller', primaryView: 'buyer_leads' };
   }
   if (/\b(?:buy|buying|purchase|rent|lease)\b/i.test(lower)) {

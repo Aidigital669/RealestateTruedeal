@@ -97,7 +97,9 @@ export const CLASSIFICATION_RULES: { value: string; patterns: RegExp[] }[] = [
   },
   {
     value: 'Pre Launch',
-    patterns: [/\b(?:pre[-_\s]*launch|prelaunch|early\s*bird|eoi)\b/i]
+    patterns: [
+      /\b(?:pre[-_\s]*launch(?:ed)?|prelaunch(?:ed)?|newly\s*launch(?:ed)?|new\s*launch(?:ed)?|upcoming|launching\s*soon|ready[-\s]*to[-\s]*move|early\s*bird|eoi)\b/i
+    ]
   },
   {
     value: 'Resale',
@@ -118,8 +120,8 @@ export const CLASSIFICATION_RULES: { value: string; patterns: RegExp[] }[] = [
   {
     value: 'New',
     patterns: [
-      /^\s*new\s*$/i,
-      /\b(?:new\s*(?:project|projects|booking|launch|property|office|shop|showroom|flat|apartment|villa|space|unit|listing)|fresh\s*booking|brand\s*new|primary\s*sale)\b/i
+      /^\s*(?:new|latest|fresh|newly)\s*$/i,
+      /\b(?:latest|fresh|newly|new\s*(?:project|projects|booking|launch|property|properties|office|shop|showroom|flat|apartment|villa|space|unit|listing)|brand\s*new|primary\s*sale)\b/i
     ]
   }
 ];
@@ -207,14 +209,15 @@ const EXTRA_STOP_WORDS = new Set([
   'of', 'to', 'from', 'with', 'and', 'or', 'is', 'are', 'was', 'have', 'want', 'need', 'looking',
   'look', 'search', 'find', 'show', 'give', 'get', 'please', 'required', 'requirement', 'requirements',
   'person', 'his', 'her', 'their', 'property', 'properties', 'project', 'projects', 'listing', 'listings', 'space', 'unit',
+  'buyer', 'buyers', 'seller', 'sellers', 'client', 'clients', 'lead', 'leads', 'mandate', 'mandates', 'data', 'list', 'record', 'records',
   'units', 'available', 'area', 'areas', 'size', 'built', 'builtup', 'buildup', 'build', 'up', 'carpet',
   'super', 'sqft', 'sq', 'ft', 'feet', 'price', 'expected', 'budget', 'cost', 'under', 'below',
   'above', 'over', 'between', 'from', 'upto', 'within', 'min', 'max', 'more', 'less', 'than', 'approx',
   'around', 'transaction', 'type', 'classification', 'class', 'locality', 'city', 'location',
   'buy', 'buying', 'purchase', 'sale', 'sell', 'selling', 'rent', 'rental', 'renting', 'rented', 'lease', 'leases',
-  'leasing', 'leased', 'joint', 'development', 'jv', 'new', 'resale', 'pre', 'launch', 'launched', 'prelaunch',
+  'leasing', 'leased', 'joint', 'development', 'jv', 'new', 'newly', 'resale', 'pre', 'launch', 'launched', 'launching', 'prelaunch', 'prelaunched', 'upcoming', 'ready', 'move', 'soon',
   'preleased', 'prelease', 'preleases', 'prerent', 'prerented', 'rerented', 'tenanted', 'yield', 'roi',
-  'eoi', 'early', 'bird', 'fresh', 'brand', 'secondary', 'market', 'second', 'hand',
+  'eoi', 'early', 'bird', 'fresh', 'latest', 'brand', 'secondary', 'market', 'second', 'hand',
   'individual', 'company', 'corporate', 'owned', 'group', 'booking', 'bulk',
   'cr', 'crore', 'crores', 'lakh', 'lakhs', 'lac', 'lacs', 'th', 'thousand', 'k', 'rs', 'inr',
   'month', 'monthly', 'per', 'office', 'offices', 'commercial', 'commercials', 'residential',
